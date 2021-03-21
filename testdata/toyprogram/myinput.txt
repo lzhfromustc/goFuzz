@@ -1,0 +1,2 @@
+500
+/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram/main_test.go:20:0:0

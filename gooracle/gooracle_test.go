@@ -86,6 +86,31 @@ func TestCICS(t *testing.T) {
 }
 
 func Test1(t *testing.T) {
-	runtime.TimerTest()
+	defer runtime.DumpBlockingInfo()
+	runtime.MapSelectInput["\t/data/ziheng/shared/gotest/gotest/src/gotest/gooracle/gooracle_test.go:109"] = runtime.SelectInput{
+		StrFileName: "\t/data/ziheng/shared/gotest/gotest/src/gotest/gooracle/gooracle_test.go",
+		StrLineNum:  "109",
+		IntNumCase:  2,
+		IntPrioCase: 1,
+	}
+	runtime.SelectDelayMS = 1000
+
+	ch := make(chan int)
+	ch2 := make(chan int)
+	go func() {
+		ch <- 1
+	}()
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println("After sleep")
+		ch2 <- 1
+	}()
+
+	select {
+	case <-ch:
+		fmt.Println("Normal")
+	case <-ch2:
+		fmt.Println("Buggy")
+	}
 }
 

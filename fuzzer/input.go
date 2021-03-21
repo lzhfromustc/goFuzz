@@ -54,7 +54,7 @@ func CreateInput(input Input) {
 
 func StrOfInput(input Input) (retStr string) {
 	if input.Note == NoteEmpty {
-		retStr = "Empty"
+		retStr = NoteEmpty
 		return
 	}
 
@@ -124,6 +124,12 @@ func ParseInputFile() (retInput Input) {
 	}
 
 	for i, eachLine := range text {
+		if i == 0 {
+			continue
+		}
+		if eachLine == "" {
+			continue
+		}
 		selectInput := SelectInput{}
 		// filename:linenum:totalCaseNum:chooseCaseNum
 		vecStr := strings.Split(eachLine, ":")
@@ -161,7 +167,7 @@ func GenInputs(input Input) []Input {
 			newInput := copyInput(input)
 			newInput.SelectDelayMS = delayMS
 			newSelectInput := copySelectInput(selectInput)
-			if newSelectInput.IntPrioCase < newSelectInput.IntNumCase {
+			if newSelectInput.IntPrioCase < newSelectInput.IntNumCase - 1 {
 				newSelectInput.IntPrioCase += 1
 			} else { // if this is the last case, go back to zero
 				newSelectInput.IntPrioCase = 0

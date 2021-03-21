@@ -5,6 +5,7 @@ import (
 	"gotest/config"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -14,24 +15,37 @@ func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
 	CreateInput(input)
 
 	// Run the test
-	cmd := exec.Command("export", "GOPATH=" + config.StrProjectGOPATH)
-	err := cmd.Run()
+	err := os.Setenv("GOPATH", config.StrProjectGOPATH)
 	if err != nil {
 		fmt.Println("The export of GOPATH fails:", err)
 		return
 	}
-	cmd = exec.Command("cd", config.StrTestPath)
-	err = cmd.Run()
+	err = os.Setenv("TestPath", config.StrTestPath)
 	if err != nil {
-		fmt.Println("cd to the test path fails:", err)
+		fmt.Println("The export of TestPath fails:", err)
 		return
 	}
-	cmd = exec.Command("go", "test", "-run", strTestName)
-	err = cmd.Run()
+	//cmd := exec.Command("cd", config.StrTestPath)
+	//err = cmd.Run()
+	//if err != nil {
+	//	fmt.Println("cd to the test path fails:", err)
+	//	return
+	//}
+	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH + "/src/")
+	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName)
+	//err = cmd.Run()
+	//if err != nil {
+	//	fmt.Println("The go test command fails:", err)
+	//	return
+	//}
+	out, err := cmd.Output()
 	if err != nil {
 		fmt.Println("The go test command fails:", err)
 		return
 	}
+	fmt.Println("Output of unit test:")
+	fmt.Println(string(out))
+	time.Sleep(5 * time.Second)
 
 	// Read the newly printed input file if this is the first run
 	if boolFirstRun {

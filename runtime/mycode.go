@@ -18,6 +18,12 @@ func init() {
 
 	mys.mpGoID2Bytes = make(map[int64][]byte)
 	ReportedPlace = make(map[string]struct{})
+	MapFirstInput = make(map[string]SelectInput)
+	MapInput = make(map[string]SelectInput)
+	StructRecord = Record{
+		MapTupleRecord: make(map[string]uint16),
+		MapChanRecord:  make(map[*hchan]*ChanRecord),
+	}
 }
 
 var FlagSkipMyCode = false
@@ -63,30 +69,67 @@ func DumpBlockingInfo() {
 	if FlagSkipMyCode {
 		return
 	}
+	SleepMS(100)
 	lock(&muMap)
 	outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
 		if gid != 1 { // No need to print the main goroutine
 			str := string(sliceByte)
-			//switch true {
-			//case Index(str, "tools/cache/shared_informer.go:628") >= 0:
-			//	continue
-			//case Index(str, "k8s.io/client-go/tools/cache/reflector.go") >= 0:
-			//	continue
-			//case Index(str, "k8s.io/kubernetes/vendor/k8s.io/klog/v2/klog.go:1169") >= 0:
-			//	continue
-			//case Index(str, "testing.go") >= 0:
-			//	continue
-			//case Index(str, "k8s.io/apimachinery/pkg/watch/mux.go:247") >= 0:
-			//	continue
-			//case Index(str, "k8s.io/apimachinery/pkg/util/wait/wait.go:167") >= 0:
-			//	continue
-			//case Index(str, "scheduler/internal/cache/debugger/debugger.go:63") >= 0:
-			//	continue
-			//case Index(str, "testing.go") >= 0:
-			//	continue
-			//default:
-			//}
+			switch true {
+			case Index(str, "tools/cache/shared_informer.go:628") >= 0:
+				continue
+			case Index(str, "k8s.io/client-go/tools/cache/reflector.go:373") >= 0:
+				continue
+			case Index(str, "k8s.io/kubernetes/vendor/k8s.io/klog/v2/klog.go:1169") >= 0:
+				continue
+			case Index(str, "testing.go") >= 0:
+				continue
+			case Index(str, "k8s.io/apimachinery/pkg/watch/mux.go:247") >= 0:
+				continue
+			case Index(str, "k8s.io/apimachinery/pkg/util/wait/wait.go:167") >= 0:
+				continue
+			case Index(str, "scheduler/internal/cache/debugger/debugger.go:63") >= 0:
+				continue
+			case Index(str, "testing.go") >= 0:
+				continue
+			case Index(str, "k8s.io/client-go/tools/cache/shared_informer.go:772") >= 0:
+				continue
+			case Index(str, "vendor/k8s.io/client-go/tools/record/event.go:301") >= 0:
+				continue
+			case Index(str, "vendor/k8s.io/client-go/tools/cache/shared_informer.go:742 ") >= 0:
+				continue
+			case Index(str, "k8s.io/client-go/tools/cache/reflector.go:463 ") >= 0:
+				continue
+			case Index(str, "/vendor/") >= 0 && Index(str, "Lock(") == -1:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			case Index(str, "=====") >= 0:
+				continue
+			default:
+			}
 
 			stackSingleGo := ParseStackStr(str)
 			if len(stackSingleGo.VecFuncName) == 0 {
@@ -138,4 +181,3 @@ func DumpBlockingInfo() {
 	}
 	unlock(&muMap)
 }
-

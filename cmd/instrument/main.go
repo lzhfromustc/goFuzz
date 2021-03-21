@@ -163,37 +163,39 @@ func pre(c *astutil.Cursor) bool {
 	//	//	}
 	//	//}
 	//
-	//case *ast.SelectStmt:
-	//	//cases := concrete.Body.List
-	//	//for _, case_ := range cases {
-	//	//	if case_cc,ok := case_.(*ast.CommClause); ok {
-	//	//		case_comm := case_cc.Comm
-	//	//		switch case_concrete := case_comm.(type) {
-	//	//		case *ast.SendStmt:
-	//	//			var copyLhs []ast.Expr
-	//	//			copyLhs = append(copyLhs, case_concrete.Chan)
-	//	//			newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-	//	//			c.InsertBefore(newCallExpr)
-	//	//			usePackage = true
-	//	//		case *ast.ExprStmt:
-	//	//			if unary, ok := case_concrete.X.(*ast.UnaryExpr); ok {
-	//	//				if unary.Op == token.ARROW {
-	//	//					var copyLhs []ast.Expr
-	//	//					copyLhs = append(copyLhs, unary.X)
-	//	//					newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-	//	//					c.InsertBefore(newCallExpr)
-	//	//					usePackage = true
-	//	//				}
-	//	//			}
-	//	//		}
-	//	//	}
-	//	//}
-	//	_ = concrete
-	//	newBeforeExpr := NewArgCallExpr("gooracle", "BeforeBlock", nil)
-	//	c.InsertBefore(newBeforeExpr)
-	//	newAfterExpr := NewArgCallExpr("gooracle", "AfterBlock", nil)
-	//	c.InsertAfter(newAfterExpr)
-	//	usePackage = true
+	case *ast.SelectStmt:
+		//cases := concrete.Body.List
+		//for _, case_ := range cases {
+		//	if case_cc,ok := case_.(*ast.CommClause); ok {
+		//		case_comm := case_cc.Comm
+		//		switch case_concrete := case_comm.(type) {
+		//		case *ast.SendStmt:
+		//			var copyLhs []ast.Expr
+		//			copyLhs = append(copyLhs, case_concrete.Chan)
+		//			newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
+		//			c.InsertBefore(newCallExpr)
+		//			usePackage = true
+		//		case *ast.ExprStmt:
+		//			if unary, ok := case_concrete.X.(*ast.UnaryExpr); ok {
+		//				if unary.Op == token.ARROW {
+		//					var copyLhs []ast.Expr
+		//					copyLhs = append(copyLhs, unary.X)
+		//					newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
+		//					c.InsertBefore(newCallExpr)
+		//					usePackage = true
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
+		_ = concrete
+		newBeforeExpr := NewArgCallExpr("gooracle", "BeforeBlock", nil)
+		c.InsertBefore(newBeforeExpr)
+		newAfterExpr := NewArgCallExpr("gooracle", "AfterBlock", nil)
+		c.InsertAfter(newAfterExpr)
+
+	case *ast.SwitchStmt:
+		print()
 
 	case *ast.FuncDecl:
 		if strings.HasPrefix(concrete.Name.Name, "Test") {

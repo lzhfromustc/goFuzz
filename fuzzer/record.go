@@ -71,6 +71,9 @@ func ParseRecordFile() (retRecord Record) {
 			indexSplitter = i
 			break
 		}
+		if eachline == "" {
+			continue
+		}
 		vecStr := strings.Split(eachline, ":")
 		if len(vecStr) != 2 {
 			fmt.Println("One line of tuple in record has incorrect format:", eachline, "\tLine:", i)
@@ -95,29 +98,32 @@ func ParseRecordFile() (retRecord Record) {
 
 	for i := indexSplitter + 1; i < len(text); i++ {
 		eachline := text[i]
-		// chIDString:closedBit:notClosedBit:capBuf:peakBuf
+		if eachline == "" {
+			continue
+		}
+		// chID_Filename:chID_LineNumStr:closedBit:notClosedBit:capBuf:peakBuf
 		vecStr := strings.Split(eachline, ":")
-		if len(vecStr) != 5 {
+		if len(vecStr) != 6 {
 			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
 			return
 		}
 		chRecord := ChanRecord{}
-		chRecord.ChID = vecStr[0]
-		if vecStr[1] == "0" {
+		chRecord.ChID = vecStr[0] + vecStr[1]
+		if vecStr[2] == "0" {
 			chRecord.Closed = false
 		} else {
 			chRecord.Closed = true
 		}
-		if vecStr[2] == "0" {
+		if vecStr[3] == "0" {
 			chRecord.NotClosed = false
 		} else {
 			chRecord.NotClosed = true
 		}
-		if chRecord.CapBuf, err = strconv.Atoi(vecStr[3]); err != nil {
+		if chRecord.CapBuf, err = strconv.Atoi(vecStr[4]); err != nil {
 			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
 			return
 		}
-		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[4]); err != nil {
+		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[5]); err != nil {
 			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
 			return
 		}
