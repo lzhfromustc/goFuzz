@@ -1,8 +1,9 @@
 package fuzzer
 
 import (
+	"bytes"
 	"fmt"
-	"gotest/config"
+	"goFuzz/config"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,27 +26,20 @@ func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
 		fmt.Println("The export of TestPath fails:", err)
 		return
 	}
-	//cmd := exec.Command("cd", config.StrTestPath)
-	//err = cmd.Run()
-	//if err != nil {
-	//	fmt.Println("cd to the test path fails:", err)
-	//	return
-	//}
 	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH + "/src/")
 	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName)
-	//err = cmd.Run()
-	//if err != nil {
-	//	fmt.Println("The go test command fails:", err)
-	//	return
-	//}
-	out, err := cmd.Output()
+	time.Sleep(5 * time.Second)
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	err = cmd.Run()
 	if err != nil {
 		fmt.Println("The go test command fails:", err)
 		return
 	}
 	fmt.Println("Output of unit test:")
-	fmt.Println(string(out))
-	time.Sleep(5 * time.Second)
+	fmt.Println("out:", outb.String(), "\nerr:", errb.String())
+
 
 	// Read the newly printed input file if this is the first run
 	if boolFirstRun {

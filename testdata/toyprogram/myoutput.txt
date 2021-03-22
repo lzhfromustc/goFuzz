@@ -1,0 +1,6 @@
+Normal
+-----Output from runtime:
+DumpBlockingInfo is printing:
+
+-----
+PASS

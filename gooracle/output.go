@@ -10,6 +10,44 @@ import (
 	"strings"
 )
 
+func FileNameOfOutput() string {
+	return StrTestpath + "/" + OutputFileName
+}
+
+var OutputFile os.File
+
+func CreateOutputFile() {
+	out, err := os.Create(FileNameOfOutput())
+	if err != nil {
+		fmt.Println("Failed to create file:", FileNameOfOutput())
+		return
+	}
+	os.Stdout = out
+}
+
+func CloseOutputFile() {
+	OutputFile.Close()
+}
+
+func FileNameOfErr() string {
+	return StrTestpath + "/" + ErrFileName
+}
+
+var ErrFile os.File
+
+func CreateErrFile() {
+	out, err := os.Create(FileNameOfErr())
+	if err != nil {
+		fmt.Println("Failed to create file:", FileNameOfErr())
+		return
+	}
+	os.Stderr = out
+}
+
+func CloseErrFile() {
+	ErrFile.Close()
+}
+
 func FileNameOfRecord() string {
 	return StrTestpath + "/" + RecordFileName
 }
@@ -17,7 +55,7 @@ func FileNameOfRecord() string {
 func CreateRecordFile() {
 	out, err := os.Create(FileNameOfRecord())
 	if err != nil {
-		fmt.Println("Failed to create file:", FileNameOfInput())
+		fmt.Println("Failed to create file:", FileNameOfRecord())
 		return
 	}
 	defer out.Close()

@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"gotest/config"
-	"gotest/fuzzer"
+	"goFuzz/config"
+	"goFuzz/fuzzer"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package fuzzer
 import (
 	"bufio"
 	"fmt"
-	"gotest/config"
+	"goFuzz/config"
 	"os"
 	"strconv"
 	"strings"

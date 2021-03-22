@@ -21,6 +21,8 @@ const (
 	NoteEmpty string = "Empty"
 	InputFileName string = "myinput.txt"
 	RecordFileName = "myrecord.txt"
+	OutputFileName = "myoutput.txt"
+	ErrFileName = "myerror.txt"
 	RecordSplitter = "-----"
 )
 
@@ -28,9 +30,13 @@ var StrTestpath string
 var BoolFirstRun bool = false
 
 func PreRun() {
-	// read input file
 	StrTestpath = os.Getenv("TestPath")
 	//StrTestpath ="/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram"
+
+	// Create an output file and bound os.Stdout to it
+	CreateOutputFile()
+
+	// read input file
 	file, err := os.Open(FileNameOfInput())
 	if err != nil {
 		fmt.Println("Failed to open input file:", FileNameOfInput())
@@ -77,5 +83,9 @@ func AfterRun() {
 	CreateRecordFile()
 
 	// print debug info
-	runtime.DumpBlockingInfo()
+	str := runtime.DumpBlockingInfo()
+	fmt.Println("-----Output from runtime:")
+	fmt.Println(str)
+	fmt.Println("-----")
+	CloseOutputFile()
 }

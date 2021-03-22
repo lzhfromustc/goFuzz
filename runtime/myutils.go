@@ -82,18 +82,10 @@ func ParseStackStr(stackStr string) StackSingleGo {
 			print(str)
 		}
 		if boolCreatedBy {
-			strFuncFile := str[ : indexColon]
-			if indexTab := Index(strFuncFile, "\t"); indexTab > -1 { // remove "\t"
-				strFuncFile = strFuncFile[indexTab + 1:]
-			}
-			stackSingleGo.CreaterFile = strFuncFile
+			stackSingleGo.CreaterFile = str[ : indexColon]
 			stackSingleGo.CreaterLine = str[indexColon + 1: indexSpace]
 		} else {
-			strFuncFile := str[ : indexColon]
-			if indexTab := Index(strFuncFile, "\t"); indexTab > -1 { // remove "\t"
-				strFuncFile = strFuncFile[indexTab + 1:]
-			}
-			stackSingleGo.VecFuncFile = append(stackSingleGo.VecFuncFile, strFuncFile)
+			stackSingleGo.VecFuncFile = append(stackSingleGo.VecFuncFile, str[ : indexColon])
 			stackSingleGo.VecFuncLine = append(stackSingleGo.VecFuncLine, str[indexColon + 1: indexSpace])
 		}
 

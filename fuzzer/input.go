@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"fmt"
-	"gotest/config"
+	"goFuzz/config"
 	"os"
 	"strconv"
 	"strings"
