@@ -13,6 +13,8 @@ type SelectInput struct {
 	IntPrioCase int
 }
 
+var BoolChangeSelect bool = true
+
 func StoreSelectInput(intNumCase, intPrioCase int) {
 	lock(&MuFirstInput)
 	newSelectInput := NewSelectInputFromRuntime(intNumCase, intPrioCase, 3)
@@ -49,19 +51,21 @@ func TimePassedSince(begin int64, duration int64) bool {
 }
 
 func ChangeSelect() (needChange bool, indexPrioCase int) {
+	if BoolChangeSelect == false {
+		return
+	}
 	const size = 64 << 10
 	buf := make([]byte, size)
 	buf = buf[:Stack(buf, false)]
 	strStack := string(buf)
 	stackSingleGo := ParseStackStr(strStack)
 	if len(stackSingleGo.VecFuncFile) < 2 {
-		print("less 2")
+		println("less 2")
 		return false, -1
 	}
 	secondFuncStr := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
 	selectInput, exist := MapInput[secondFuncStr]
-	print("Second func:", secondFuncStr, "\n")
-	print("MInput:", MapInput, "\n")
+	//print("Second func:", secondFuncStr, "\n")
 	if exist {
 		return true, selectInput.IntPrioCase
 	} else {

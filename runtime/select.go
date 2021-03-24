@@ -124,6 +124,8 @@ func selectgo(cas0 *scase, order0 *uint16, ncases int) (int, bool) {
 	BeforeBlock()
 	defer AfterBlock()
 
+	boolCheckSelect, intPrioCase := ChangeSelect()
+
 	cas1 := (*[1 << 16]scase)(unsafe.Pointer(cas0))
 	order1 := (*[1 << 17]uint16)(unsafe.Pointer(order0))
 
@@ -239,14 +241,28 @@ loop:
 			continue
 
 		case caseRecv:
+			if boolCheckSelect {
+				if casi != intPrioCase {
+					continue
+				}
+			}
 			sg = c.sendq.dequeue()
 			if sg != nil {
+				if GenFirstInput {
+					StoreSelectInput(ncases, casi)
+				}
 				goto recv
 			}
 			if c.qcount > 0 {
+				if GenFirstInput {
+					StoreSelectInput(ncases, casi)
+				}
 				goto bufrecv
 			}
 			if c.closed != 0 {
+				if GenFirstInput {
+					StoreSelectInput(ncases, casi)
+				}
 				goto rclose
 			}
 
@@ -254,17 +270,30 @@ loop:
 			if raceenabled {
 				racereadpc(c.raceaddr(), cas.pc, chansendpc)
 			}
+			if boolCheckSelect {
+				if casi != intPrioCase {
+					continue
+				}
+			}
 			if c.closed != 0 {
+				if GenFirstInput {
+					StoreSelectInput(ncases, casi)
+				}
 				goto sclose
 			}
 			sg = c.recvq.dequeue()
 			if sg != nil {
+				if GenFirstInput {
+					StoreSelectInput(ncases, casi)
+				}
 				goto send
 			}
 			if c.qcount < c.dataqsiz {
+				if GenFirstInput {
+					StoreSelectInput(ncases, casi)
+				}
 				goto bufsend
 			}
-
 		case caseDefault:
 			dfli = casi
 			dfl = cas
@@ -277,6 +306,13 @@ loop:
 		cas = dfl
 		goto retc
 	}
+
+	if boolCheckSelect {
+		SleepMS(SelectDelayMS)
+	}
+
+	_ = boolCheckSelect
+	_ = intPrioCase
 
 	// pass 2 - enqueue on all chans
 	gp = getg()
@@ -365,6 +401,10 @@ loop:
 		sglist.waitlink = nil
 		releaseSudog(sglist)
 		sglist = sgnext
+	}
+
+	if GenFirstInput {
+		StoreSelectInput(ncases, casi)
 	}
 
 	if cas == nil {

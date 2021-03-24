@@ -14,12 +14,16 @@ func main() {
 	pProjectPath := flag.String("path","","Full path of the target project")
 	pProjectGOPATH := flag.String("GOPATH","","GOPATH of the target project")
 	pTestName := flag.String("test","","Function name of the unit test")
+	pOutputFullPath := flag.String("output","","Full path of the output file")
+	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
 
 	flag.Parse()
 
 	config.StrTestPath = *pProjectPath
 	config.StrProjectGOPATH = *pProjectGOPATH
 	config.StrTestName = *pTestName
+	config.StrOutputFullPath = *pOutputFullPath
+	config.BoolGlobalTuple = *pModeGlobalTuple
 
 	// Run the instrumented program for one time,
 	//  generate original input and record

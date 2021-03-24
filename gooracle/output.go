@@ -11,17 +11,19 @@ import (
 )
 
 func FileNameOfOutput() string {
-	return StrTestpath + "/" + OutputFileName
+	return os.Getenv("OutputFullPath")
 }
 
-var OutputFile os.File
+var OutputFile *os.File
 
-func CreateOutputFile() {
-	out, err := os.Create(FileNameOfOutput())
+func OpenOutputFile() {
+	out, err := os.OpenFile(FileNameOfOutput(),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Failed to create file:", FileNameOfOutput())
+		fmt.Println("Failed to open file:", FileNameOfOutput())
 		return
 	}
+	OutputFile = out
 	os.Stdout = out
 }
 
@@ -33,7 +35,7 @@ func FileNameOfErr() string {
 	return StrTestpath + "/" + ErrFileName
 }
 
-var ErrFile os.File
+var ErrFile *os.File
 
 func CreateErrFile() {
 	out, err := os.Create(FileNameOfErr())
@@ -41,6 +43,7 @@ func CreateErrFile() {
 		fmt.Println("Failed to create file:", FileNameOfErr())
 		return
 	}
+	ErrFile = out
 	os.Stderr = out
 }
 

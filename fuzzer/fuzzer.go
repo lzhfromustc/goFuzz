@@ -15,6 +15,9 @@ func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
 	// Create the input file into disk
 	CreateInput(input)
 
+	// Load the output file before running the test
+	outputNumBugBefore := ParseOutputFile()
+
 	// Run the test
 	err := os.Setenv("GOPATH", config.StrProjectGOPATH)
 	if err != nil {
@@ -26,9 +29,22 @@ func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
 		fmt.Println("The export of TestPath fails:", err)
 		return
 	}
+	err = os.Setenv("OutputFullPath", config.StrOutputFullPath)
+	if err != nil {
+		fmt.Println("The export of OutputFullPath fails:", err)
+		return
+	}
+	if config.BoolGlobalTuple {
+		err = os.Setenv("BitGlobalTuple", "1")
+	} else {
+		err = os.Setenv("BitGlobalTuple", "0")
+	}
+	if err != nil {
+		fmt.Println("The export of TestPath fails:", err)
+		return
+	}
 	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH + "/src/")
 	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName)
-	time.Sleep(5 * time.Second)
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
@@ -38,7 +54,14 @@ func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
 		return
 	}
 	fmt.Println("Output of unit test:")
-	fmt.Println("out:", outb.String(), "\nerr:", errb.String())
+	fmt.Println("test out:", outb.String(), "\ntest err:", errb.String())
+
+	// If the output file is longer, it means we found a new bug
+	outputNumBugAfter := ParseOutputFile()
+	if outputNumBugAfter > outputNumBugBefore {
+		fmt.Println("Found a new bug. Now exit")
+		os.Exit(1)
+	}
 
 
 	// Read the newly printed input file if this is the first run

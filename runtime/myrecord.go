@@ -12,15 +12,22 @@ type ChanRecord struct {
 	NotClosed bool
 	CapBuf uint16
 	PeakBuf uint16
+	LastOpID string
 	Ch *hchan
 }
 
 var StructRecord Record
 var MuChRecord mutex
-var MuTupleRecord mutex
+//var MuTupleRecord mutex
 var LastOpID string
 
+var BoolRecord bool = true
+var BoolRecordPerCh bool = true
+
 func RecordChMake(capBuf int, c *hchan) {
+	if BoolRecord == false {
+		return
+	}
 	const size = 64 << 10
 	buf := make([]byte, size)
 	buf = buf[:Stack(buf, false)]
@@ -45,6 +52,9 @@ func RecordChMake(capBuf int, c *hchan) {
 }
 
 func RecordChOp(c *hchan) {
+	if BoolRecord == false {
+		return
+	}
 	lock(&MuChRecord)
 
 	chRecord, exist := StructRecord.MapChanRecord[c]
@@ -67,7 +77,7 @@ func RecordChOp(c *hchan) {
 		chRecord.NotClosed = false
 	}
 
-	unlock(&MuChRecord)
+
 
 	const size = 64 << 10
 	buf := make([]byte, size)
@@ -78,11 +88,18 @@ func RecordChOp(c *hchan) {
 		return
 	}
 	strOpID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	xorOpID := LastOpID + "|" + strOpID
-	LastOpID = strOpID
+	var xorOpID string
+	if BoolRecordPerCh {
+		xorOpID = chRecord.LastOpID + "|" + strOpID
+		chRecord.LastOpID = strOpID
+	} else {
+		xorOpID = LastOpID + "|" + strOpID
+		LastOpID = strOpID
+	}
+
 	//print("xorOpID:", xorOpID, "\n")
 
-	lock(&MuTupleRecord)
 	StructRecord.MapTupleRecord[xorOpID] += 1
-	unlock(&MuTupleRecord)
+
+	unlock(&MuChRecord)
 }

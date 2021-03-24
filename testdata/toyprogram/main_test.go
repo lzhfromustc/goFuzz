@@ -8,7 +8,7 @@ import (
 )
 
 func TestF1(t *testing.T) {
-	gooracle.PreRun()
+	gooracle.BeforeRun()
 	defer gooracle.AfterRun()
 
 	ch := make(chan int)

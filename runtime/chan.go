@@ -105,6 +105,7 @@ func makechan(t *chantype, size int) *hchan {
 		c = new(hchan)
 		c.buf = mallocgc(mem, elem, true)
 	}
+	RecordChMake(size, c)
 
 	c.elemsize = uint16(elem.size)
 	c.elemtype = elem
@@ -147,6 +148,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}
+	defer RecordChOp(c)
 	///MYCODE
 	BeforeBlock()
 	defer AfterBlock()
@@ -340,6 +342,8 @@ func closechan(c *hchan) {
 		panic(plainError("close of nil channel"))
 	}
 
+	defer RecordChOp(c)
+
 	lock(&c.lock)
 	if c.closed != 0 {
 		unlock(&c.lock)
@@ -437,6 +441,8 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		gopark(nil, nil, waitReasonChanReceiveNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}
+
+	defer RecordChOp(c)
 
 	///MYCODE
 	BeforeBlock()

@@ -29,12 +29,18 @@ const (
 var StrTestpath string
 var BoolFirstRun bool = false
 
-func PreRun() {
+func BeforeRun() {
+	StrBitGlobalTuple := os.Getenv("BitGlobalTuple")
+	if StrBitGlobalTuple == "1" {
+		runtime.BoolRecordPerCh = false
+	} else {
+		runtime.BoolRecordPerCh = true
+	}
 	StrTestpath = os.Getenv("TestPath")
 	//StrTestpath ="/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram"
 
 	// Create an output file and bound os.Stdout to it
-	CreateOutputFile()
+	OpenOutputFile()
 
 	// read input file
 	file, err := os.Open(FileNameOfInput())
@@ -82,10 +88,11 @@ func AfterRun() {
 	// create output file using runtime's global variable
 	CreateRecordFile()
 
-	// print debug info
-	str := runtime.DumpBlockingInfo()
-	fmt.Println("-----Output from runtime:")
-	fmt.Println(str)
-	fmt.Println("-----")
+	// print bug info
+	str, foundBug := runtime.DumpBlockingInfo()
+	if foundBug {
+		fmt.Println("-----New Bug:")
+		fmt.Println(str)
+	}
 	CloseOutputFile()
 }

@@ -46,13 +46,14 @@ func main() {
 	newAST := astutil.Apply(oldAST, pre, nil)
 
 	if needRuntime {
-		if imports(oldAST, "", "runtime") == false {
-			ok := astutil.AddNamedImport(tokenFSet, oldAST, "myruntime", "runtime")
-			if !ok {
-				fmt.Printf("add import failed when parsing %s\n", filename)
-				return
-			}
+		ok := astutil.AddNamedImport(tokenFSet, oldAST, "gooracle", "gooracle")
+		if !ok {
+			fmt.Printf("add import failed when parsing %s\n", filename)
+			return
 		}
+		//if imports(oldAST, "", "runtime") == false {
+		//
+		//}
 	}
 
 
@@ -86,10 +87,13 @@ func pre(c *astutil.Cursor) bool {
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
-		newDumpCall := NewArgCall("myruntime", "DumpBlockingInfo", nil)
+		newBeforeTestCall := NewArgCallExpr("gooracle", "BeforeRun", nil)
+		c.InsertBefore(newBeforeTestCall)
+
+		newAfterTestCall := NewArgCall("gooracle", "AfterRun", nil)
 		newDefer := &ast.DeferStmt{
 			Defer: 0,
-			Call:  newDumpCall,
+			Call:  newAfterTestCall,
 		}
 		c.InsertBefore(newDefer)
 		additionalNode = nil
@@ -163,39 +167,39 @@ func pre(c *astutil.Cursor) bool {
 	//	//	}
 	//	//}
 	//
-	case *ast.SelectStmt:
-		//cases := concrete.Body.List
-		//for _, case_ := range cases {
-		//	if case_cc,ok := case_.(*ast.CommClause); ok {
-		//		case_comm := case_cc.Comm
-		//		switch case_concrete := case_comm.(type) {
-		//		case *ast.SendStmt:
-		//			var copyLhs []ast.Expr
-		//			copyLhs = append(copyLhs, case_concrete.Chan)
-		//			newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-		//			c.InsertBefore(newCallExpr)
-		//			usePackage = true
-		//		case *ast.ExprStmt:
-		//			if unary, ok := case_concrete.X.(*ast.UnaryExpr); ok {
-		//				if unary.Op == token.ARROW {
-		//					var copyLhs []ast.Expr
-		//					copyLhs = append(copyLhs, unary.X)
-		//					newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-		//					c.InsertBefore(newCallExpr)
-		//					usePackage = true
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
-		_ = concrete
-		newBeforeExpr := NewArgCallExpr("gooracle", "BeforeBlock", nil)
-		c.InsertBefore(newBeforeExpr)
-		newAfterExpr := NewArgCallExpr("gooracle", "AfterBlock", nil)
-		c.InsertAfter(newAfterExpr)
+	//case *ast.SelectStmt:
+	//	//cases := concrete.Body.List
+	//	//for _, case_ := range cases {
+	//	//	if case_cc,ok := case_.(*ast.CommClause); ok {
+	//	//		case_comm := case_cc.Comm
+	//	//		switch case_concrete := case_comm.(type) {
+	//	//		case *ast.SendStmt:
+	//	//			var copyLhs []ast.Expr
+	//	//			copyLhs = append(copyLhs, case_concrete.Chan)
+	//	//			newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
+	//	//			c.InsertBefore(newCallExpr)
+	//	//			usePackage = true
+	//	//		case *ast.ExprStmt:
+	//	//			if unary, ok := case_concrete.X.(*ast.UnaryExpr); ok {
+	//	//				if unary.Op == token.ARROW {
+	//	//					var copyLhs []ast.Expr
+	//	//					copyLhs = append(copyLhs, unary.X)
+	//	//					newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
+	//	//					c.InsertBefore(newCallExpr)
+	//	//					usePackage = true
+	//	//				}
+	//	//			}
+	//	//		}
+	//	//	}
+	//	//}
+	//	_ = concrete
+	//	newBeforeExpr := NewArgCallExpr("gooracle", "BeforeBlock", nil)
+	//	c.InsertBefore(newBeforeExpr)
+	//	newAfterExpr := NewArgCallExpr("gooracle", "AfterBlock", nil)
+	//	c.InsertAfter(newAfterExpr)
 
-	case *ast.SwitchStmt:
-		print()
+	//case *ast.SwitchStmt:
+	//	print()
 
 	case *ast.FuncDecl:
 		if strings.HasPrefix(concrete.Name.Name, "Test") {
