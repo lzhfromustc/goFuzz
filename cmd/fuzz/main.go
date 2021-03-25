@@ -78,6 +78,10 @@ func main() {
 	mainRandomLoopIdx := 0
 	for {
 		fmt.Println("Beginning main random fuzzing loop idx: ", mainRandomLoopIdx)
+		if len(fuzzingQueue) == 0 {
+			fmt.Println("Fuzzing Queue is nil (no components). Some error occurs. ")
+			break
+		}
 		for _, currentEntry := range fuzzingQueue{
 			// TODO:: Maybe we should cull the queue first. (Or maybe after the calibration?)
 
