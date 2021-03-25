@@ -2,15 +2,98 @@ package fuzzer
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
 	"goFuzz/config"
+	"math/big"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 )
 
-func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
+
+
+type FuzzQueryEntry struct {
+	IsFavored              bool
+	BestScore			   int   // TODO:: I only save the BestScore for the CurrentInput, is that enough?
+	ExecutionCount         int
+	IsCalibrateFail        bool
+	CurrentInput           Input
+	CurrentRecordHashSlice []string
+	/* Add more features to the queue if necessary. */
+}
+
+func Deterministic_enumerate_input(input Input) (reInputSlice []Input) {
+	var tmp_input Input
+	for idx_vec_select, select_input := range input.VecSelect {
+		for i := 0; i < select_input.IntNumCase; i++ {
+			tmp_input = copyInput(input)
+			tmp_input.VecSelect[idx_vec_select].IntPrioCase = i
+			reInputSlice = append(reInputSlice, tmp_input)
+		}
+	}
+	return
+}
+
+func Get_Random_Int_With_Max(max int) int {
+	mutateMethod, err := rand.Int(rand.Reader, big.NewInt(1))
+	if err != nil {
+		fmt.Println("Crypto/rand returned non-nil errors: ", err)
+	}
+	return int(mutateMethod.Int64())
+}
+
+func Random_Mutate_Input(input Input) (reInput Input){
+	/* TODO:: In the current stage, I am not mutating the delayMS number!!! */
+	reInput = copyInput(input)
+	mutateMethod := Get_Random_Int_With_Max(2)
+	switch mutateMethod {
+	case 0:
+		/* Mutate one select per time */
+		mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
+		mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+		reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
+
+	case 1:
+		/* Mutate two select per time */
+		for mutateIdx := 0; mutateIdx < 2; mutateIdx++{
+			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
+			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
+		}
+
+	case 3:
+		/* Mutate three select per time */
+		for mutateIdx := 0; mutateIdx < 3; mutateIdx++{
+			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
+			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
+		}
+
+	case 4:
+		/* Mutate random number of select. */ // TODO:: Not sure whether it is necessary. Just put it here now.
+		mutateChance := Get_Random_Int_With_Max(len(reInput.VecSelect))
+		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++{
+			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
+			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
+		}
+
+	default:
+		/* ??? ERROR ??? */
+		fmt.Println("Random Mutate Input is not mutating.")
+	}
+	return
+}
+
+
+func Run(input Input) (retInput Input, retRecord Record) {
+	if input.TestName == "Empty" || input.TestName == "" {
+		fmt.Println("The Run command in the fuzzer receive an input without input.TestName. ")
+		return
+	}
+	strTestName := input.TestName
 	boolFirstRun := input.Note == NoteEmpty
 	// Create the input file into disk
 	CreateInput(input)
@@ -70,6 +153,8 @@ func Run(strTestName string, input Input) (retInput Input, retRecord Record) {
 	} else {
 		retInput = EmptyInput()
 	}
+	// Save the current TestName to the retInput.
+	retInput.TestName = strTestName
 	// Read the printed record file
 	retRecord = ParseRecordFile()
 	return
@@ -83,13 +168,13 @@ func SetDeadline() {
 	}()
 }
 
-func PopWorklist(workList *[]Input) (result Input, numFile int) {
-	result = (*workList)[0]
-	if len(*workList) == 1 {
-		*workList = nil
-		return result, 0
-	} else {
-		(*workList) = (*workList)[1:]
-		return result, len(*workList)
-	}
-}
+//func PopWorklist(workList *[]Input) (result Input, numFile int) {
+//	result = (*workList)[0]
+//	if len(*workList) == 1 {
+//		*workList = nil
+//		return result, 0
+//	} else {
+//		(*workList) = (*workList)[1:]
+//		return result, len(*workList)
+//	}
+//}

@@ -12,6 +12,7 @@ import (
 
 type Input struct {
 	Note string
+	TestName string
 	SelectDelayMS int // How many milliseconds a select will wait for the prioritized case
 	VecSelect []SelectInput
 }
@@ -31,6 +32,7 @@ const (
 
 func EmptyInput() Input {
 	return Input{
+		TestName:	   NoteEmpty,
 		Note:          NoteEmpty,
 		SelectDelayMS: 0,
 		VecSelect:     nil,
@@ -73,12 +75,19 @@ func StrOfInput(input Input) (retStr string) {
 	return
 }
 
-func HashOfInput(input Input) string {
-	strOfInput := StrOfInput(input)
+func HashOfRecord(record Record) string {
 	h := sha256.New()
-	h.Write([]byte(strOfInput))
-	hash := string(h.Sum(nil))
-	return hash
+	h.Write([]byte(fmt.Sprintf("%v", record)))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func FindRecordHashInSlice(recordHash string, recordHashSlice []string) bool {
+	for _, searchRecordHash := range recordHashSlice{
+		if recordHash == searchRecordHash {
+			return true
+		}
+	}
+	return false
 }
 
 func FileNameOfInput() string {
@@ -157,66 +166,66 @@ func ParseInputFile() (retInput Input) {
 	return
 }
 
-func GenInputs(input Input) []Input {
-	// for each select in input, generate a different file where other selects remain the same,
-	// but one select prioritize the next case
-	// Then for each different file, copy it multiple times, where SelectDelayMS are different
-	vecInputs := []Input{}
-	for i, selectInput := range input.VecSelect {
-		for _, delayMS := range config.FuzzerSelectDelayVector {
-			newInput := copyInput(input)
-			newInput.SelectDelayMS = delayMS
-			newSelectInput := copySelectInput(selectInput)
-			if newSelectInput.IntPrioCase < newSelectInput.IntNumCase - 1 {
-				newSelectInput.IntPrioCase += 1
-			} else { // if this is the last case, go back to zero
-				newSelectInput.IntPrioCase = 0
-			}
-			newInput.VecSelect[i] = newSelectInput
-
-			vecInputs = append(vecInputs, newInput)
-		}
-	}
-
-	return vecInputs
-}
-
-func InsertWorklist(newInputs, workList []Input, indexInsertAfter int) []Input {
-	result := []Input{}
-	if indexInsertAfter == -1 {
-		for _, newInput := range newInputs {
-			result = append(result, newInput)
-		}
-	}
-	for i, oldInput := range workList {
-		result = append(result, oldInput)
-		if i == indexInsertAfter {
-			for _, newInput := range newInputs {
-				result = append(result, newInput)
-			}
-		}
-	}
-	return result
-}
-
-func InsertWorklistScore(curScore int, numNewInputs int, workListScore []int, indexInsertAfter int) []int {
-	result := []int{}
-	if indexInsertAfter == -1 {
-		for i := 0; i < numNewInputs; i++ {
-			result = append(result, curScore)
-		}
-	}
-	for i, oldScore := range workListScore {
-		result = append(result, oldScore)
-		if i == indexInsertAfter {
-			for i := 0; i < numNewInputs; i++ {
-				result = append(result, curScore)
-			}
-		}
-	}
-	return result
-}
-
+//func GenInputs(input Input) []Input {
+//	// for each select in input, generate a different file where other selects remain the same,
+//	// but one select prioritize the next case
+//	// Then for each different file, copy it multiple times, where SelectDelayMS are different
+//	vecInputs := []Input{}
+//	for i, selectInput := range input.VecSelect {
+//		for _, delayMS := range config.FuzzerSelectDelayVector {
+//			newInput := copyInput(input)
+//			newInput.SelectDelayMS = delayMS
+//			newSelectInput := copySelectInput(selectInput)
+//			if newSelectInput.IntPrioCase < newSelectInput.IntNumCase - 1 {
+//				newSelectInput.IntPrioCase += 1
+//			} else { // if this is the last case, go back to zero
+//				newSelectInput.IntPrioCase = 0
+//			}
+//			newInput.VecSelect[i] = newSelectInput
+//
+//			vecInputs = append(vecInputs, newInput)
+//		}
+//	}
+//
+//	return vecInputs
+//}
+//
+//func InsertWorklist(newInputs, workList []Input, indexInsertAfter int) []Input {
+//	result := []Input{}
+//	if indexInsertAfter == -1 {
+//		for _, newInput := range newInputs {
+//			result = append(result, newInput)
+//		}
+//	}
+//	for i, oldInput := range workList {
+//		result = append(result, oldInput)
+//		if i == indexInsertAfter {
+//			for _, newInput := range newInputs {
+//				result = append(result, newInput)
+//			}
+//		}
+//	}
+//	return result
+//}
+//
+//func InsertWorklistScore(curScore int, numNewInputs int, workListScore []int, indexInsertAfter int) []int {
+//	result := []int{}
+//	if indexInsertAfter == -1 {
+//		for i := 0; i < numNewInputs; i++ {
+//			result = append(result, curScore)
+//		}
+//	}
+//	for i, oldScore := range workListScore {
+//		result = append(result, oldScore)
+//		if i == indexInsertAfter {
+//			for i := 0; i < numNewInputs; i++ {
+//				result = append(result, curScore)
+//			}
+//		}
+//	}
+//	return result
+//}
+//
 func copySelectInput(sI SelectInput) SelectInput {
 	return SelectInput{
 		StrFileName: sI.StrFileName,
@@ -229,11 +238,12 @@ func copySelectInput(sI SelectInput) SelectInput {
 func copyInput(input Input) Input {
 	newInput :=  Input{
 		Note:          input.Note,
+		TestName:       input.TestName,
 		SelectDelayMS: input.SelectDelayMS,
 		VecSelect:     []SelectInput{},
 	}
 	for _, selectInput := range input.VecSelect {
-		newInput.VecSelect = append(newInput.VecSelect, selectInput)
+		newInput.VecSelect = append(newInput.VecSelect, copySelectInput(selectInput))  // TODO:: Here, the original is append(..., selectInput), not the copy of it. A bug?
 	}
 	return newInput
 }
