@@ -82,11 +82,14 @@ func main() {
 			fmt.Println("Fuzzing Queue is nil (no components). Some error occurs. ")
 			break
 		}
-		for _, currentEntry := range fuzzingQueue{
-			// TODO:: Maybe we should cull the queue first. (Or maybe after the calibration?)
-
+		// TODO:: Maybe we should cull the queue first. (Or maybe after the calibration?)
+		// TODO:: Prioritize queue based on scores.
+		fuzzingQueueLen := len(fuzzingQueue)
+		for fuzzingIdx := 0; fuzzingIdx < fuzzingQueueLen; fuzzingIdx++ {
+			currentEntry := fuzzingQueue[fuzzingIdx]
 			/* Calibrate case. */
 			for i := 0; i < 1; i++ {   // TODO:: Maybe we can have multiple times of Calibrate case here. Since the retRecord might not be completely stable.
+				// TODO:: If the seed case has already been calibrated, maybe we can skip the duplicated calibrate case.
 				// TODO:: There seems to be no way to get an error message from the Run func?
 				// TODO:: Set calibration_failed to the queue entry if calibration failed (fuzz.Run() failed)
 				retInput, retRecord := fuzzer.Run(currentEntry.CurrentInput)
@@ -119,7 +122,7 @@ func main() {
 						IsFavored:              false,
 						ExecutionCount:         1,
 						BestScore:              curScore,
-						CurrentInput:           retInput,
+						CurrentInput:           retInput,   // TODO:: Should we save ori_input or retInput???
 						CurrentRecordHashSlice: []string{recordHash},
 					}
 					fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)

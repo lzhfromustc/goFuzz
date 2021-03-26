@@ -47,7 +47,7 @@ func Get_Random_Int_With_Max(max int) int {
 func Random_Mutate_Input(input *Input) (reInput *Input){
 	/* TODO:: In the current stage, I am not mutating the delayMS number!!! */
 	reInput = copyInput(input)
-	mutateMethod := Get_Random_Int_With_Max(2)
+	mutateMethod := Get_Random_Int_With_Max(4)
 	switch mutateMethod {
 	case 0:
 		/* Mutate one select per time */
@@ -63,7 +63,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
 
-	case 3:
+	case 2:
 		/* Mutate three select per time */
 		for mutateIdx := 0; mutateIdx < 3; mutateIdx++{
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
@@ -71,7 +71,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
 
-	case 4:
+	case 3:
 		/* Mutate random number of select. */ // TODO:: Not sure whether it is necessary. Just put it here now.
 		mutateChance := Get_Random_Int_With_Max(len(reInput.VecSelect))
 		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++{
