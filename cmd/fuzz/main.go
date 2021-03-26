@@ -36,7 +36,7 @@ func main() {
 	/* Standard initialize the necessary data structure. */
 	var fuzzingQueue []fuzzer.FuzzQueryEntry
 	var mainRecord = fuzzer.EmptyRecord()
-	var allRecordHashSlice []string
+	allRecordHashMap := make(map[string]struct{})
 
 	for _, pTestName := range pTestNameList {
 		//  Run the instrumented program for one time,
@@ -49,7 +49,7 @@ func main() {
 		deterInputSlice := fuzzer.Deterministic_enumerate_input(retInput)
 
 		/* Now we deterministically enumerate one select per time, iterating through all the pTestName and all selects */
-		for _, deterInput := range deterInputSlice {
+		for  _, deterInput := range deterInputSlice {
 			retInput, retRecord := fuzzer.Run(deterInput)
 			if len(retInput.VecSelect) == 0 {   // TODO:: Should we ignore the output that contains no VecSelects entry?
 				// TODO:: In the toy project, we notice that the retInput.VecSelect is nil.
@@ -57,7 +57,7 @@ func main() {
 			}
 			recordHash := fuzzer.HashOfRecord(retRecord)
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
-			if fuzzer.FindRecordHashInSlice(recordHash, allRecordHashSlice) == false {
+			if _, exist := allRecordHashMap[recordHash]; exist == false {
 				curScore := fuzzer.ComputeScore(mainRecord, retRecord)
 				currentFuzzEntry := fuzzer.FuzzQueryEntry{
 					IsFavored:              false,
@@ -67,7 +67,7 @@ func main() {
 					CurrentRecordHashSlice: []string{recordHash},
 				}
 				fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
-				allRecordHashSlice = append(allRecordHashSlice, recordHash)
+				allRecordHashMap[recordHash] = struct{}{}
 			} else {
 				continue
 			}
@@ -97,8 +97,8 @@ func main() {
 				if fuzzer.FindRecordHashInSlice(recordHash, currentEntry.CurrentRecordHashSlice) == false {
 					currentEntry.CurrentRecordHashSlice = append(currentEntry.CurrentRecordHashSlice, recordHash)
 				}
-				if fuzzer.FindRecordHashInSlice(recordHash, allRecordHashSlice) == false {
-					allRecordHashSlice = append(allRecordHashSlice, recordHash)
+				if _, exist := allRecordHashMap[recordHash]; exist == false {
+					allRecordHashMap[recordHash] = struct{}{}
 				}
 				curScore := fuzzer.ComputeScore(mainRecord, retRecord)
 				if curScore > currentEntry.BestScore {
@@ -113,7 +113,7 @@ func main() {
 				currentMutatedInput := fuzzer.Random_Mutate_Input(currentEntry.CurrentInput)
 				retInput, retRecord := fuzzer.Run(currentMutatedInput)
 				recordHash := fuzzer.HashOfRecord(retRecord)
-				if fuzzer.FindRecordHashInSlice(recordHash, allRecordHashSlice) == false {   // Found a new input with unique record!!!
+				if _, exist := allRecordHashMap[recordHash]; exist == false {   // Found a new input with unique record!!!
 					curScore := fuzzer.ComputeScore(mainRecord, retRecord)
 					currentFuzzEntry := fuzzer.FuzzQueryEntry{
 						IsFavored:              false,
@@ -123,7 +123,7 @@ func main() {
 						CurrentRecordHashSlice: []string{recordHash},
 					}
 					fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
-					allRecordHashSlice = append(allRecordHashSlice, recordHash)
+					allRecordHashMap[recordHash] = struct{}{}
 				} else {continue}  // This mutation does not create new record. Discarded.
 				currentEntry.ExecutionCount += 1
 			}

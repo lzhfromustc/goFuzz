@@ -32,11 +32,11 @@ func FileNameOfRecord() string {
 	return config.StrTestPath + "/" + RecordFileName
 }
 
-func EmptyRecord() Record {
-	return Record{}
+func EmptyRecord() *Record {
+	return &Record{}
 }
 
-func ParseRecordFile() (retRecord Record) {
+func ParseRecordFile() (retRecord *Record) {
 	retRecord = EmptyRecord()
 	// The input being parsed shouldn't be empty
 	file, err := os.Open(FileNameOfRecord())
@@ -60,7 +60,7 @@ func ParseRecordFile() (retRecord Record) {
 		return
 	}
 
-	newRecord := Record{
+	newRecord := &Record{
 		MapTupleRecord: make(map[int]int),
 		MapChanRecord:  make(map[string]ChanRecord),
 	}

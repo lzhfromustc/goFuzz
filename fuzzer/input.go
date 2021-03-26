@@ -30,8 +30,8 @@ const (
 	InputFileName string = "myinput.txt"
 )
 
-func EmptyInput() Input {
-	return Input{
+func EmptyInput() *Input {
+	return &Input{
 		TestName:	   NoteEmpty,
 		Note:          NoteEmpty,
 		SelectDelayMS: 0,
@@ -39,7 +39,7 @@ func EmptyInput() Input {
 	}
 }
 
-func CreateInput(input Input) {
+func CreateInput(input *Input) {
 	out, err := os.Create(FileNameOfInput())
 	if err != nil {
 		fmt.Println("Failed to create file:", FileNameOfInput())
@@ -54,7 +54,7 @@ func CreateInput(input Input) {
 	w.WriteString(str)
 }
 
-func StrOfInput(input Input) (retStr string) {
+func StrOfInput(input *Input) (retStr string) {
 	if input.Note == NoteEmpty {
 		retStr = NoteEmpty
 		return
@@ -75,9 +75,9 @@ func StrOfInput(input Input) (retStr string) {
 	return
 }
 
-func HashOfRecord(record Record) string {
+func HashOfRecord(record *Record) string {
 	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%v", record)))
+	h.Write([]byte(fmt.Sprintf("%v", record))) // TODO: we may need to replace `record` with `StrOfRecord(record)`
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
@@ -94,7 +94,7 @@ func FileNameOfInput() string {
 	return config.StrTestPath + "/" + InputFileName
 }
 
-func ParseInputFile() (retInput Input) {
+func ParseInputFile() (retInput *Input) {
 	retInput = EmptyInput()
 
 	// The input being parsed shouldn't be empty
@@ -119,7 +119,7 @@ func ParseInputFile() (retInput Input) {
 		return
 	}
 
-	newInput := Input{
+	newInput := &Input{
 		Note:          "",
 		SelectDelayMS: 0,
 		VecSelect:     []SelectInput{},
@@ -235,8 +235,8 @@ func copySelectInput(sI SelectInput) SelectInput {
 	}
 }
 
-func copyInput(input Input) Input {
-	newInput :=  Input{
+func copyInput(input *Input) *Input {
+	newInput :=  &Input{
 		Note:          input.Note,
 		TestName:       input.TestName,
 		SelectDelayMS: input.SelectDelayMS,

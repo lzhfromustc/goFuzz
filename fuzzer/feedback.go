@@ -16,7 +16,7 @@ const (
 // ScoreNewClosed/ScoreNewNotClosed: score if this is the first time for a closed/notclosed status of existing channel
 // ScorePeakBufLog2Increase: score for each +1 of log2(peakBuf)
 // ScoreBufFull: score if this is the first time for buffer to be full: peakBuf equals to capBuf and not zero
-func ComputeScore(mainRecord, curRecord Record) int {
+func ComputeScore(mainRecord, curRecord *Record) int {
 	score := 0
 	for tuple, count := range curRecord.MapTupleRecord {
 		mainCount, exist := mainRecord.MapTupleRecord[tuple]

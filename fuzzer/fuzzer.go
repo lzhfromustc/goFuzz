@@ -19,13 +19,13 @@ type FuzzQueryEntry struct {
 	BestScore			   int   // TODO:: I only save the BestScore for the CurrentInput, is that enough?
 	ExecutionCount         int
 	IsCalibrateFail        bool
-	CurrentInput           Input
+	CurrentInput           *Input
 	CurrentRecordHashSlice []string
 	/* Add more features to the queue if necessary. */
 }
 
-func Deterministic_enumerate_input(input Input) (reInputSlice []Input) {
-	var tmp_input Input
+func Deterministic_enumerate_input(input *Input) (reInputSlice []*Input) {
+	var tmp_input *Input
 	for idx_vec_select, select_input := range input.VecSelect {
 		for i := 0; i < select_input.IntNumCase; i++ {
 			tmp_input = copyInput(input)
@@ -44,7 +44,7 @@ func Get_Random_Int_With_Max(max int) int {
 	return int(mutateMethod.Int64())
 }
 
-func Random_Mutate_Input(input Input) (reInput Input){
+func Random_Mutate_Input(input *Input) (reInput *Input){
 	/* TODO:: In the current stage, I am not mutating the delayMS number!!! */
 	reInput = copyInput(input)
 	mutateMethod := Get_Random_Int_With_Max(2)
@@ -88,7 +88,7 @@ func Random_Mutate_Input(input Input) (reInput Input){
 }
 
 
-func Run(input Input) (retInput Input, retRecord Record) {
+func Run(input *Input) (retInput *Input, retRecord *Record) {
 	if input.TestName == "Empty" || input.TestName == "" {
 		fmt.Println("The Run command in the fuzzer receive an input without input.TestName. ")
 		return
