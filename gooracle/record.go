@@ -18,12 +18,12 @@ func XOR(a, b [2]byte) [2]byte {
 }
 
 const (
-	NoteEmpty string = "Empty"
-	InputFileName string = "myinput.txt"
-	RecordFileName = "myrecord.txt"
-	OutputFileName = "myoutput.txt"
-	ErrFileName = "myerror.txt"
-	RecordSplitter = "-----"
+	NotePrintInput string = "PrintInput"
+	InputFileName  string = "myinput.txt"
+	RecordFileName        = "myrecord.txt"
+	OutputFileName        = "myoutput.txt"
+	ErrFileName           = "myerror.txt"
+	RecordSplitter        = "-----"
 )
 
 var StrTestpath string
@@ -59,7 +59,7 @@ func BeforeRun() {
 		text = append(text, scanner.Text())
 	}
 
-	if len(text) == 1 && text[0] == NoteEmpty {
+	if len(text) > 0 && text[0] == NotePrintInput {
 		BoolFirstRun = true
 	}
 

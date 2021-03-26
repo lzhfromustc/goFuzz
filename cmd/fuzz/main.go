@@ -50,9 +50,9 @@ func main() {
 
 		/* Now we deterministically enumerate one select per time, iterating through all the pTestName and all selects */
 		for  _, deterInput := range deterInputSlice {
-			retInput, retRecord := fuzzer.Run(deterInput)
-			if len(retInput.VecSelect) == 0 {   // TODO:: Should we ignore the output that contains no VecSelects entry?
-				// TODO:: In the toy project, we notice that the retInput.VecSelect is nil.
+			retInputInDeter, retRecord := fuzzer.Run(deterInput)
+			if len(retInputInDeter.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
+				// TODO:: In the toy project, we notice that the retInputInDeter.VecSelect is nil.
 				continue
 			}
 			recordHash := fuzzer.HashOfRecord(retRecord)
@@ -63,7 +63,7 @@ func main() {
 					IsFavored:              false,
 					ExecutionCount:         1,
 					BestScore:              curScore,
-					CurrentInput:           retInput,
+					CurrentInput:           retInputInDeter,
 					CurrentRecordHashSlice: []string{recordHash},
 				}
 				fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)

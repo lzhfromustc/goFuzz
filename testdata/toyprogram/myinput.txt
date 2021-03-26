@@ -1,2 +1,3 @@
+PrintInput
 0
 /data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram/main_test.go:20:2:0

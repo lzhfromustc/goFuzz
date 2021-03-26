@@ -25,15 +25,15 @@ type SelectInput struct {
 }
 
 const (
-	NoteEmpty string = "Empty"
-
+	NotePrintInput string = "PrintInput"
+	NoteEmptyName string = "Empty"
 	InputFileName string = "myinput.txt"
 )
 
 func EmptyInput() *Input {
 	return &Input{
-		TestName:	   NoteEmpty,
-		Note:          NoteEmpty,
+		TestName:      NoteEmptyName,
+		Note:          NotePrintInput,
 		SelectDelayMS: 0,
 		VecSelect:     nil,
 	}
@@ -55,15 +55,17 @@ func CreateInput(input *Input) {
 }
 
 func StrOfInput(input *Input) (retStr string) {
-	if input.Note == NoteEmpty {
-		retStr = NoteEmpty
-		return
+	retStr = ""
+	if input.Note == NotePrintInput {
+		retStr += NotePrintInput + "\n"
+	} else {
+		retStr += "\n"
 	}
 
-	// The first line is how many seconds to wait
-	retStr = strconv.Itoa(input.SelectDelayMS) + "\n"
+	// The second line is how many seconds to wait
+	retStr += strconv.Itoa(input.SelectDelayMS) + "\n"
 
-	// Each line corresponds to a select
+	// From the third line, each line corresponds to a select
 	for _, selectInput := range input.VecSelect {
 		// filename:linenum:totalCaseNum:chooseCaseNum
 		str := selectInput.StrFileName + ":" + strconv.Itoa(selectInput.IntLineNum)
@@ -114,18 +116,18 @@ func ParseInputFile() (retInput *Input) {
 		text = append(text, scanner.Text())
 	}
 
-	if len(text) == 0 {
-		fmt.Println("Input is empty:", FileNameOfInput())
+	if len(text) < 2 {
+		fmt.Println("Input has less than 2 lines:", text)
 		return
 	}
 
 	newInput := &Input{
-		Note:          "",
+		Note:          strings.TrimSuffix(text[0], "\n"),
 		SelectDelayMS: 0,
 		VecSelect:     []SelectInput{},
 	}
 
-	strDelayMS := text[0]
+	strDelayMS := text[1]
 	newInput.SelectDelayMS, err = strconv.Atoi(strDelayMS)
 	if err != nil {
 		fmt.Println("The first line of input is not a number:", strDelayMS)
@@ -133,7 +135,7 @@ func ParseInputFile() (retInput *Input) {
 	}
 
 	for i, eachLine := range text {
-		if i == 0 {
+		if i < 2 {
 			continue
 		}
 		if eachLine == "" {

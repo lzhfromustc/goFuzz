@@ -16,7 +16,7 @@ func FileNameOfInput() string {
 func ParseInputStr(text []string) map[string]runtime.SelectInput {
 	result := make(map[string]runtime.SelectInput)
 
-	strDelayMS := text[0]
+	strDelayMS := text[1]
 	var err error
 	runtime.SelectDelayMS, err = strconv.Atoi(strDelayMS)
 	if err != nil {
@@ -25,7 +25,7 @@ func ParseInputStr(text []string) map[string]runtime.SelectInput {
 	}
 
 	for i, eachLine := range text {
-		if i == 0 { // SelectDelayMS already stored
+		if i < 2 { // SelectDelayMS already stored
 			continue
 		}
 		if eachLine == "" {
@@ -70,8 +70,12 @@ func CreateInput() {
 	w := bufio.NewWriter(out)
 	defer w.Flush()
 
-	// The first line is how many seconds to wait
-	str := strconv.Itoa(runtime.SelectDelayMS) + "\n"
+	str := ""
+	// The first line indicates that: if this input is used, then after the run a new input should be printed
+	str += NotePrintInput + "\n"
+
+	// The second line is how many seconds to wait
+	str += strconv.Itoa(runtime.SelectDelayMS) + "\n"
 
 	// Each line corresponds to a select
 	for _, selectInput := range runtime.MapFirstInput {

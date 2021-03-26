@@ -94,7 +94,7 @@ func Run(input *Input) (retInput *Input, retRecord *Record) {
 		return
 	}
 	strTestName := input.TestName
-	boolFirstRun := input.Note == NoteEmpty
+	boolFirstRun := input.Note == NotePrintInput
 	// Create the input file into disk
 	CreateInput(input)
 
