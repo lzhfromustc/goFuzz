@@ -127,7 +127,7 @@ func Run(input *Input) (retOutput *RunOutput) {
 		return
 	}
 	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH + "/src/")
-	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName)
+	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName) // TODO: Consider handling the case that strTestName isn't a unit test
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb

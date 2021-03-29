@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"goFuzz/config"
 	"goFuzz/fuzzer"
-	"sync"
 )
 
 func main() {
@@ -28,16 +27,13 @@ func main() {
 	config.StrOutputFullPath = *pOutputFullPath
 	config.BoolGlobalTuple = *pModeGlobalTuple
 
-	var wg sync.WaitGroup
-	workerInputChan := make(chan *fuzzer.Input)
+	workerInputChan := make(chan *fuzzer.Input) // TODO: consider add buffer here
 	workerOutputChan := make(chan *fuzzer.RunOutput)
 
 
 	/* Begin running specific number of worker subroutines. Blocked before we send them inputs from the main routine. */
 	for i := 0; i < *maxParallel; i++ {
-		wg.Add(1)
 		go func(i int) {
-			defer wg.Done()
 			for currentInput := range workerInputChan {
 				fmt.Println("Working with go subroutine: ", i)
 				retOutput := fuzzer.Run(currentInput)
@@ -75,25 +71,23 @@ func main() {
 		/* Now we deterministically enumerate one select per time, iterating through all the pTestName and all selects */
 		for  _, deterInput := range deterInputSlice {
 			deterInput.Stage = "deter"  // The current stage of fuzzing is "deterministic fuzzing".
+			innerFor:
 			for {
 				select {
 					case workerInputChan <- deterInput:
 						fmt.Println("Deter: Insert an input to the workers. ")
-						break
+						break innerFor
 					case retOutput := <- workerOutputChan:
 						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
 							// TODO:: I found some empty retInput again. Should I be worry?
 							fmt.Println("Error!!! Empty retInput!!!")
-							continue
+							continue innerFor
 						}
 						fmt.Println("Deter: Reading outputs from the workers. ")
 						/* We don't need to care about the running stage here. It would always be "deter". */
 						retInputInDeter := retOutput.RetInput
 						retRecord := retOutput.RetRecord
 						fuzzer.HandleRunOutput(retInputInDeter, retRecord, retOutput.Stage, nil, mainRecord, fuzzingQueue, allRecordHashMap)
-					default:
-						//fmt.Println("Waiting for the worker to complete their jobs. ")
-						continue
 				}
 			}
 		}
@@ -118,24 +112,22 @@ func main() {
 				// TODO:: There seems to be no way to get an error message from the Run func?
 				// TODO:: Set calibration_failed to the queue entry if calibration failed (fuzz.Run() failed)
 				currentEntry.CurrentInput.Stage = "calib"
+				innerLoop2:
 				for {
 					select {
 					case workerInputChan <- currentEntry.CurrentInput:
 						fmt.Println("Calib: Insert an input to the workers. ")
-						break
+						break innerLoop2
 					case retOutput := <- workerOutputChan:
 						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
 							// TODO:: I found some empty retInput again. Should I be worry?
 							fmt.Println("Error!!! Empty retInput!!!")
-							continue
+							continue innerLoop2
 						}
 						fmt.Println("Calib or Rand: Reading outputs from the workers. ")
 						retInput := retOutput.RetInput
 						retRecord := retOutput.RetRecord
 						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, fuzzingQueue, allRecordHashMap)
-					default:
-						//fmt.Println("Waiting for the worker to complete their jobs. ")
-						continue
 					}
 				}
 			}
@@ -146,24 +138,22 @@ func main() {
 			for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
 				currentMutatedInput := fuzzer.Random_Mutate_Input(currentEntry.CurrentInput)
 				currentMutatedInput.Stage = "rand"
+				innerLoop3:
 				for {
 					select {
 					case workerInputChan <- currentMutatedInput:
 						fmt.Println("Rand: Insert an input to the workers. ")
-						break
+						break innerLoop3
 					case retOutput := <- workerOutputChan:
 						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
 							// TODO:: I found some empty retInput again. Should I be worry?
 							fmt.Println("Error!!! Empty retInput!!!")
-							continue
+							continue innerLoop3
 						}
 						fmt.Println("Calib or Rand: Reading outputs from the workers. ")
 						retInput := retOutput.RetInput
 						retRecord := retOutput.RetRecord
 						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, fuzzingQueue, allRecordHashMap)
-					default:
-						//fmt.Println("Waiting for the worker to complete their jobs. ")
-						continue
 					}
 				}
 			}
