@@ -6,6 +6,13 @@ import (
 	"os"
 )
 
+type RunOutput struct {
+	RetInput  *Input
+	RetRecord *Record
+	// TODO:: Is there a better data structure than using string directly? enum?
+	Stage string // "unknown", "deter", "calib" or "rand"
+}
+
 func ParseOutputFile() (numBug int) {
 
 	file, err := os.Open(config.StrOutputFullPath)

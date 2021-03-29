@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"goFuzz/config"
 	"goFuzz/fuzzer"
+	"sync"
 )
 
 func main() {
@@ -17,6 +18,7 @@ func main() {
 	//pTestName := flag.String("test","","Function name of the unit test")
 	pOutputFullPath := flag.String("output","","Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
+	maxParallel := flag.Int("maxparallel", 1, "Specified the maximum subroutine number for fuzzing.")
 
 	flag.Parse()
 
@@ -25,6 +27,24 @@ func main() {
 	//config.StrTestName = *pTestName
 	config.StrOutputFullPath = *pOutputFullPath
 	config.BoolGlobalTuple = *pModeGlobalTuple
+
+	var wg sync.WaitGroup
+	workerInputChan := make(chan *fuzzer.Input)
+	workerOutputChan := make(chan *fuzzer.RunOutput)
+
+
+	/* Begin running specific number of worker subroutines. Blocked before we send them inputs from the main routine. */
+	for i := 0; i < *maxParallel; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for currentInput := range workerInputChan {
+				fmt.Println("Working with go subroutine: ", i)
+				retOutput := fuzzer.Run(currentInput)
+				workerOutputChan <- retOutput
+			}
+		}(i)
+	}
 
 	/* TODO:: Not finished in this part!!!
 	In this part, we should implement an algorithm that can iterate all the possible unit test inside our target program.
@@ -43,33 +63,38 @@ func main() {
 		//  generate original input and record
 		var emptyInput = fuzzer.EmptyInput()
 		emptyInput.TestName = pTestName
-		retInput, _ := fuzzer.Run(emptyInput)
+		// Give one job to the worker. And receive results.
+		workerInputChan <- emptyInput
+		retOutput := <- workerOutputChan
+
+		retInput := retOutput.RetInput
 
 		/* Generate all possible deter_inputs based on the current retInput. Only changing one select per time. */
 		deterInputSlice := fuzzer.Deterministic_enumerate_input(retInput)
 
 		/* Now we deterministically enumerate one select per time, iterating through all the pTestName and all selects */
 		for  _, deterInput := range deterInputSlice {
-			retInputInDeter, retRecord := fuzzer.Run(deterInput)
-			if len(retInputInDeter.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
-				// TODO:: In the toy project, we notice that the retInputInDeter.VecSelect is nil.
-				continue
-			}
-			recordHash := fuzzer.HashOfRecord(retRecord)
-			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
-			if _, exist := allRecordHashMap[recordHash]; exist == false {
-				curScore := fuzzer.ComputeScore(mainRecord, retRecord)
-				currentFuzzEntry := fuzzer.FuzzQueryEntry{
-					IsFavored:              false,
-					ExecutionCount:         1,
-					BestScore:              curScore,
-					CurrentInput:           retInputInDeter,
-					CurrentRecordHashSlice: []string{recordHash},
+			deterInput.Stage = "deter"  // The current stage of fuzzing is "deterministic fuzzing".
+			for {
+				select {
+					case workerInputChan <- deterInput:
+						fmt.Println("Deter: Insert an input to the workers. ")
+						break
+					case retOutput := <- workerOutputChan:
+						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
+							// TODO:: I found some empty retInput again. Should I be worry?
+							fmt.Println("Error!!! Empty retInput!!!")
+							continue
+						}
+						fmt.Println("Deter: Reading outputs from the workers. ")
+						/* We don't need to care about the running stage here. It would always be "deter". */
+						retInputInDeter := retOutput.RetInput
+						retRecord := retOutput.RetRecord
+						fuzzer.HandleRunOutput(retInputInDeter, retRecord, retOutput.Stage, nil, mainRecord, fuzzingQueue, allRecordHashMap)
+					default:
+						//fmt.Println("Waiting for the worker to complete their jobs. ")
+						continue
 				}
-				fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
-				allRecordHashMap[recordHash] = struct{}{}
-			} else {
-				continue
 			}
 		}
 	}
@@ -80,7 +105,7 @@ func main() {
 		fmt.Println("Beginning main random fuzzing loop idx: ", mainRandomLoopIdx)
 		if len(fuzzingQueue) == 0 {
 			fmt.Println("Fuzzing Queue is nil (no components). Some error occurs. ")
-			break
+			continue
 		}
 		// TODO:: Maybe we should cull the queue first. (Or maybe after the calibration?)
 		// TODO:: Prioritize queue based on scores.
@@ -92,20 +117,26 @@ func main() {
 				// TODO:: If the seed case has already been calibrated, maybe we can skip the duplicated calibrate case.
 				// TODO:: There seems to be no way to get an error message from the Run func?
 				// TODO:: Set calibration_failed to the queue entry if calibration failed (fuzz.Run() failed)
-				retInput, retRecord := fuzzer.Run(currentEntry.CurrentInput)
-				if len(retInput.VecSelect) == 0 {   // TODO:: Should we ignore the output that contains no VecSelects entry?
-					continue
-				}
-				recordHash := fuzzer.HashOfRecord(retRecord)
-				if fuzzer.FindRecordHashInSlice(recordHash, currentEntry.CurrentRecordHashSlice) == false {
-					currentEntry.CurrentRecordHashSlice = append(currentEntry.CurrentRecordHashSlice, recordHash)
-				}
-				if _, exist := allRecordHashMap[recordHash]; exist == false {
-					allRecordHashMap[recordHash] = struct{}{}
-				}
-				curScore := fuzzer.ComputeScore(mainRecord, retRecord)
-				if curScore > currentEntry.BestScore {
-					currentEntry.BestScore = curScore
+				currentEntry.CurrentInput.Stage = "calib"
+				for {
+					select {
+					case workerInputChan <- currentEntry.CurrentInput:
+						fmt.Println("Calib: Insert an input to the workers. ")
+						break
+					case retOutput := <- workerOutputChan:
+						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
+							// TODO:: I found some empty retInput again. Should I be worry?
+							fmt.Println("Error!!! Empty retInput!!!")
+							continue
+						}
+						fmt.Println("Calib or Rand: Reading outputs from the workers. ")
+						retInput := retOutput.RetInput
+						retRecord := retOutput.RetRecord
+						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, fuzzingQueue, allRecordHashMap)
+					default:
+						//fmt.Println("Waiting for the worker to complete their jobs. ")
+						continue
+					}
 				}
 			}
 
@@ -114,21 +145,27 @@ func main() {
 			currentFuzzingEnergy := 100
 			for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
 				currentMutatedInput := fuzzer.Random_Mutate_Input(currentEntry.CurrentInput)
-				retInput, retRecord := fuzzer.Run(currentMutatedInput)
-				recordHash := fuzzer.HashOfRecord(retRecord)
-				if _, exist := allRecordHashMap[recordHash]; exist == false {   // Found a new input with unique record!!!
-					curScore := fuzzer.ComputeScore(mainRecord, retRecord)
-					currentFuzzEntry := fuzzer.FuzzQueryEntry{
-						IsFavored:              false,
-						ExecutionCount:         1,
-						BestScore:              curScore,
-						CurrentInput:           retInput,   // TODO:: Should we save ori_input or retInput???
-						CurrentRecordHashSlice: []string{recordHash},
+				currentMutatedInput.Stage = "rand"
+				for {
+					select {
+					case workerInputChan <- currentMutatedInput:
+						fmt.Println("Rand: Insert an input to the workers. ")
+						break
+					case retOutput := <- workerOutputChan:
+						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
+							// TODO:: I found some empty retInput again. Should I be worry?
+							fmt.Println("Error!!! Empty retInput!!!")
+							continue
+						}
+						fmt.Println("Calib or Rand: Reading outputs from the workers. ")
+						retInput := retOutput.RetInput
+						retRecord := retOutput.RetRecord
+						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, fuzzingQueue, allRecordHashMap)
+					default:
+						//fmt.Println("Waiting for the worker to complete their jobs. ")
+						continue
 					}
-					fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
-					allRecordHashMap[recordHash] = struct{}{}
-				} else {continue}  // This mutation does not create new record. Discarded.
-				currentEntry.ExecutionCount += 1
+				}
 			}
 		}
 		mainRandomLoopIdx++

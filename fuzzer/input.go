@@ -14,6 +14,7 @@ type Input struct {
 	Note string
 	TestName string
 	SelectDelayMS int // How many milliseconds a select will wait for the prioritized case
+	Stage string // "unknown", "deter", "calib" or "rand"
 	VecSelect []SelectInput
 }
 
@@ -30,12 +31,21 @@ const (
 	InputFileName string = "myinput.txt"
 )
 
+func EmptyRunOutput() *RunOutput {
+	return &RunOutput{
+		RetInput:  nil,
+		RetRecord: nil,
+		Stage: "Unknown",
+	}
+}
+
 func EmptyInput() *Input {
 	return &Input{
 		TestName:      NoteEmptyName,
 		Note:          NotePrintInput,
 		SelectDelayMS: 0,
 		VecSelect:     nil,
+		Stage: 		   "unknown",
 	}
 }
 

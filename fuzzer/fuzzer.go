@@ -88,7 +88,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 }
 
 
-func Run(input *Input) (retInput *Input, retRecord *Record) {
+func Run(input *Input) (retOutput *RunOutput) {
 	if input.TestName == "Empty" || input.TestName == "" {
 		fmt.Println("The Run command in the fuzzer receive an input without input.TestName. ")
 		return
@@ -148,6 +148,7 @@ func Run(input *Input) (retInput *Input, retRecord *Record) {
 
 
 	// Read the newly printed input file if this is the first run
+	retInput := EmptyInput()
 	if boolFirstRun {
 		retInput = ParseInputFile()
 	} else {
@@ -156,7 +157,14 @@ func Run(input *Input) (retInput *Input, retRecord *Record) {
 	// Save the current TestName to the retInput.
 	retInput.TestName = strTestName
 	// Read the printed record file
-	retRecord = ParseRecordFile()
+	retRecord := ParseRecordFile()
+
+	retOutput = EmptyRunOutput()
+	retOutput.RetInput = retInput
+	retOutput.RetRecord = retRecord
+	/* Pass the stage information to the output, otherwise, when the main routine receive the output,
+			it does not know the context fo the executions. */
+	retOutput.Stage = input.Stage
 	return
 }
 
@@ -166,6 +174,64 @@ func SetDeadline() {
 		fmt.Println("The checker has been running for",config.FuzzerDeadline,". Now force exit")
 		os.Exit(1)
 	}()
+}
+
+func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEntry *FuzzQueryEntry, mainRecord *Record, fuzzingQueue []FuzzQueryEntry, allRecordHashMap map[string]struct{}) {
+	if stage == "calib" {
+		if len(retInput.VecSelect) == 0 {   // TODO:: Should we ignore the output that contains no VecSelects entry?
+			return
+		}
+		recordHash := HashOfRecord(retRecord)
+		if FindRecordHashInSlice(recordHash, currentEntry.CurrentRecordHashSlice) == false {
+			currentEntry.CurrentRecordHashSlice = append(currentEntry.CurrentRecordHashSlice, recordHash)
+		}
+		if _, exist := allRecordHashMap[recordHash]; exist == false {
+			allRecordHashMap[recordHash] = struct{}{}
+		}
+		curScore := ComputeScore(mainRecord, retRecord)
+		if curScore > currentEntry.BestScore {
+			currentEntry.BestScore = curScore
+		}
+
+
+	} else if stage == "deter" {
+		if len(retInput.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
+			return
+		}
+		recordHash := HashOfRecord(retRecord)
+		/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
+		if _, exist := allRecordHashMap[recordHash]; exist == false {
+			curScore := ComputeScore(mainRecord, retRecord)
+			currentFuzzEntry := FuzzQueryEntry{
+				IsFavored:              false,
+				ExecutionCount:         1,
+				BestScore:              curScore,
+				CurrentInput:           retInput,
+				CurrentRecordHashSlice: []string{recordHash},
+			}
+			fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
+			allRecordHashMap[recordHash] = struct{}{}
+		} else {
+			return
+		}
+
+
+	} else if stage == "rand" {
+		recordHash := HashOfRecord(retRecord)
+		if _, exist := allRecordHashMap[recordHash]; exist == false {   // Found a new input with unique record!!!
+			curScore := ComputeScore(mainRecord, retRecord)
+			currentFuzzEntry := FuzzQueryEntry{
+				IsFavored:              false,
+				ExecutionCount:         1,
+				BestScore:              curScore,
+				CurrentInput:           retInput,   // TODO:: Should we save ori_input or retInput???
+				CurrentRecordHashSlice: []string{recordHash},
+			}
+			fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
+			allRecordHashMap[recordHash] = struct{}{}
+		} else {return}  // This mutation does not create new record. Discarded.
+		currentEntry.ExecutionCount += 1
+	}
 }
 
 //func PopWorklist(workList *[]Input) (result Input, numFile int) {
