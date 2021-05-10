@@ -123,10 +123,6 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		print("select: cas0=", cas0, "\n")
 	}
 
-	///MYCODE
-	BeforeBlock()
-	defer AfterBlock()
-
 	SleepMS(200)
 
 	// NOTE: In order to maintain a lean stack size, the number of scases

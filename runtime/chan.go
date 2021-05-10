@@ -153,9 +153,6 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}
-	///MYCODE
-	BeforeBlock()
-	defer AfterBlock()
 
 	if debugChan {
 		print("chansend: chan=", c, "\n")
@@ -454,9 +451,6 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		throw("unreachable")
 	}
 
-	///MYCODE
-	BeforeBlock()
-	defer AfterBlock()
 
 	// Fast path: check for failed non-blocking operation without acquiring the lock.
 	//
