@@ -68,22 +68,19 @@ func CreateRecordFile() {
 
 	str := ""
 	// tuple record
-	for xorStr, count := range runtime.StructRecord.MapTupleRecord {
+	for xorLoc, count := range runtime.TupleRecord {
 		h := fnv.New32a()
-		h.Write([]byte(xorStr))
+		h.Write([]byte(string(xorLoc)))
 		tupleUint16 := uint16(h.Sum32())
 		str += strconv.Itoa(int(tupleUint16)) + ":" + strconv.Itoa(int(count)) + "\n"
 	}
 	str += RecordSplitter + "\n"
 
 	// channel record
-	for _, chRecord := range runtime.StructRecord.MapChanRecord {
+	for _, chRecord := range runtime.ChRecord {
 		// chIDString:closedBit:notClosedBit:capBuf:peakBuf
-		strChID := chRecord.ChID
-		if indexEnter := strings.Index(strChID, "\n"); indexEnter > -1 { // sometimes chID contains "\n"
-			strChID = strChID[:indexEnter]
-		}
-		str += strChID + ":"
+		uint32ChID := chRecord.ChID
+		str += string(uint32ChID) + ":"
 		if chRecord.Closed {
 			str += "1" + ":"
 		} else {

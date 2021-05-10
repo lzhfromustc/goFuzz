@@ -11,6 +11,54 @@ func SleepMS(numMs int) {
 	}
 }
 
+func Byte_to_Uint16(b []byte) uint16 {
+	return uint16(b[1]) | uint16(b[0])<<8
+}
+
+func Uint16_to_Byte(b []byte, v uint16) {
+	b[0] = byte(v >> 8)
+	b[1] = byte(v)
+}
+
+func Byte_to_Uint32(b []byte) uint32 {
+	return uint32(b[3]) | uint32(b[2])<<8 | uint32(b[1])<<16 | uint32(b[0])<<24
+}
+
+func Uint32_to_Byte(b []byte, v uint32) {
+	b[0] = byte(v >> 24)
+	b[1] = byte(v >> 16)
+	b[2] = byte(v >> 8)
+	b[3] = byte(v)
+}
+
+func XorUint16(a, b uint16) uint16 {
+	byteA := []byte{}
+	byteB := []byte{}
+	Uint16_to_Byte(byteA, a)
+	Uint16_to_Byte(byteB, a)
+
+	byteA = XorByte(byteA, byteB)
+	return Byte_to_Uint16(byteA)
+}
+
+func XorUint32(a, b uint32) uint32 {
+	byteA := []byte{}
+	byteB := []byte{}
+	Uint32_to_Byte(byteA, a)
+	Uint32_to_Byte(byteB, a)
+
+	byteA = XorByte(byteA, byteB)
+	return Byte_to_Uint32(byteA)
+}
+
+
+func XorByte(a, b []byte) []byte {
+	for _, i := range a {
+		a[i] ^= b[i]
+	}
+	return a
+}
+
 // Parse the string returned by Stack(*, false)
 // e.g.:
 //goroutine 181 [running]:

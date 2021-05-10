@@ -20,10 +20,6 @@ func init() {
 	ReportedPlace = make(map[string]struct{})
 	MapFirstInput = make(map[string]SelectInput)
 	MapInput = make(map[string]SelectInput)
-	StructRecord = Record{
-		MapTupleRecord: make(map[string]uint16),
-		MapChanRecord:  make(map[*hchan]*ChanRecord),
-	}
 }
 
 var FlagSkipMyCode = false
@@ -45,8 +41,6 @@ func BeforeBlock() {
 	unlock(&muMap)
 }
 
-
-
 func AfterBlock() {
 	if FlagSkipMyCode {
 		return
@@ -66,7 +60,7 @@ func DumpBlockingInfo() (retStr string, foundBug bool) {
 	}
 	SleepMS(1000)
 	lock(&muMap)
-	outer:
+outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
 		if gid != 1 { // No need to print the main goroutine
 			str := string(sliceByte)
@@ -142,13 +136,12 @@ func DumpBlockingInfo() (retStr string, foundBug bool) {
 				nextFuncFile := stackSingleGo.VecFuncFile[1]
 				nextFuncLine := stackSingleGo.VecFuncLine[1]
 
-
 				if nextFuncFile != "/usr/local/go/src/sync/mutex.go" {
 					// case 1: from channel op
-					if _, reported := ReportedPlace[nextFuncFile + nextFuncLine]; reported {
+					if _, reported := ReportedPlace[nextFuncFile+nextFuncLine]; reported {
 						continue outer
 					} else {
-						ReportedPlace[nextFuncFile + nextFuncLine] = struct{}{}
+						ReportedPlace[nextFuncFile+nextFuncLine] = struct{}{}
 					}
 				} else {
 					// case 2: from Lock op
@@ -158,10 +151,10 @@ func DumpBlockingInfo() (retStr string, foundBug bool) {
 					}
 					nextFuncFile := stackSingleGo.VecFuncFile[2]
 					nextFuncLine := stackSingleGo.VecFuncLine[2]
-					if _, reported := ReportedPlace[nextFuncFile + nextFuncLine]; reported {
+					if _, reported := ReportedPlace[nextFuncFile+nextFuncLine]; reported {
 						continue outer
 					} else {
-						ReportedPlace[nextFuncFile + nextFuncLine] = struct{}{}
+						ReportedPlace[nextFuncFile+nextFuncLine] = struct{}{}
 					}
 				}
 
@@ -169,8 +162,8 @@ func DumpBlockingInfo() (retStr string, foundBug bool) {
 				retStr += "Warning in DumpBlockingInfo: the first func is not BeforeBlock\n"
 			}
 
-
 			retStr += str + "\n"
+			print(str)
 			foundBug = true
 
 		}
