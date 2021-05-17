@@ -1,16 +1,15 @@
 Normal
-Normal
-Normal
-Normal
-Normal
 Should be buggy
 -----New Bug:
-goroutine 7 [running]:
+goroutine 19 [running]:
 runtime.BeforeBlock()
 	/usr/local/go/src/runtime/mycode.go:38 +0x90
-goFuzz/testdata/toyprogram.TestF1.func1(0xc00001c3c0)
+goFuzz/testdata/toyprogram.TestF1.func1(0xc000122300)
 	/data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram/main_test.go:17 +0x37
 created by goFuzz/testdata/toyprogram.TestF1
 	/data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram/main_test.go:16 +0x97
 
 
+Normal
+Normal
+Normal

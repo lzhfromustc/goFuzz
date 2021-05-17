@@ -48,6 +48,11 @@ type hchan struct {
 	// (in particular, do not ready a G), as this can deadlock
 	// with stack shrinking.
 	lock mutex
+
+	///MYCODE:
+	id uint32 // an uint32 assigned to the channel when it is made. Start from 0 and increase by 1 every time
+	preLoc uint16 // used when BoolRecordPerCh is true; stores the hash of last operation of this channel
+	chanRecord *ChanRecord // a data struct to record information of this channel
 }
 
 type waitq struct {
@@ -148,10 +153,6 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}
-	defer RecordChOp(c)
-	///MYCODE
-	BeforeBlock()
-	defer AfterBlock()
 
 	if debugChan {
 		print("chansend: chan=", c, "\n")
@@ -187,8 +188,12 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 
 	lock(&c.lock)
 
+	///MYCODE
+	RecordChOp(c)
+
 	if c.closed != 0 {
 		unlock(&c.lock)
+		print("MyBug: send on closed channel")
 		panic(plainError("send on closed channel"))
 	}
 
@@ -342,10 +347,14 @@ func closechan(c *hchan) {
 		panic(plainError("close of nil channel"))
 	}
 
-	defer RecordChOp(c)
 
 	lock(&c.lock)
+
+	///MYCODE
+	RecordChOp(c)
+
 	if c.closed != 0 {
+		print("MyBug: close of closed channel")
 		unlock(&c.lock)
 		panic(plainError("close of closed channel"))
 	}
@@ -442,11 +451,6 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		throw("unreachable")
 	}
 
-	defer RecordChOp(c)
-
-	///MYCODE
-	BeforeBlock()
-	defer AfterBlock()
 
 	// Fast path: check for failed non-blocking operation without acquiring the lock.
 	//
@@ -472,6 +476,9 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	lock(&c.lock)
+
+	///MYCODE
+	RecordChOp(c)
 
 	if c.closed != 0 && c.qcount == 0 {
 		if raceenabled {

@@ -1,83 +1,76 @@
 package runtime
 
-type Record struct {
-	MapTupleRecord map[string]uint16
-	MapChanRecord  map[*hchan]*ChanRecord
-}
+import "sync/atomic"
 
+const MaxRecordElem int = 65536 // 2^16
+
+// Settings:
+var BoolRecord bool = true
+var BoolRecordPerCh bool = true
+
+// TODO: important: extend similar algorithm for mutex, conditional variable, waitgroup, etc
+
+// For the record of each channel:
 
 type ChanRecord struct {
-	ChID string
+	ChID uint32
 	Closed bool
 	NotClosed bool
 	CapBuf uint16
 	PeakBuf uint16
-	LastOpID string
 	Ch *hchan
 }
 
-var StructRecord Record
-var MuChRecord mutex
-//var MuTupleRecord mutex
-var LastOpID string
+var ChRecord [MaxRecordElem]*ChanRecord
 
-var BoolRecord bool = true
-var BoolRecordPerCh bool = true
+// For the record of each channel operation
 
+var GlobalLastLoc uint32
+var TupleRecord [MaxRecordElem]uint32
+
+// When a channel is made, create new id, new ChanRecord
 func RecordChMake(capBuf int, c *hchan) {
 	if BoolRecord == false {
 		return
 	}
-	const size = 64 << 10
+
+	const size = 64 << 10 // TODO: is 64<<10 too big?
 	buf := make([]byte, size)
-	buf = buf[:Stack(buf, false)]
+	buf = buf[:Stack(buf, false)] // TODO: important: is Stack() too heavy? How about replace it will Caller(N)?
 	strStack := string(buf)
 	stackSingleGo := ParseStackStr(strStack)
 	if len(stackSingleGo.VecFuncLine) < 2 {
 		return
 	}
 	strChID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
+	c.id, _ = hashStr(strChID)
+
 	newChRecord := &ChanRecord{
-		ChID:      strChID,
+		ChID:      c.id,
 		Closed:    false,
 		NotClosed: true,
 		CapBuf:    uint16(capBuf),
 		PeakBuf:   0,
 		Ch:		   c,
 	}
-	//print("Record hchan:", c, "\tID:", strChID, "\n")
-	lock(&MuChRecord)
-	StructRecord.MapChanRecord[c] = newChRecord
-	unlock(&MuChRecord)
+
+	ChRecord[c.id] = newChRecord
+	c.chanRecord = newChRecord
 }
 
+// When a channel operation is executed, update ChanRecord, and update the tuple counter (curLoc XOR prevLoc)
 func RecordChOp(c *hchan) {
-	if BoolRecord == false {
-		return
-	}
-	lock(&MuChRecord)
 
-	chRecord, exist := StructRecord.MapChanRecord[c]
-	if !exist {
-		unlock(&MuChRecord)
-		//print("Warning: chRecord not exist when a send op is executed\n")
-		//const size = 64 << 10
-		//buf := make([]byte, size)
-		//buf = buf[:Stack(buf, false)]
-		//print(string(buf))
-		return
-	}
+	// Update ChanRecord
 	//print("qcount:",c.qcount, "dataqsiz", c.dataqsiz, "elemsize", c.elemsize, "\n")
-	if chRecord.PeakBuf < uint16(c.qcount) {
-		chRecord.PeakBuf = uint16(c.qcount)
-		//print("ch:", chRecord.ChID, "\tpeakBuf:", chRecord.PeakBuf, "\n")
+	if c.chanRecord.PeakBuf < uint16(c.qcount) { // TODO: only execute this when it is a send operation
+		c.chanRecord.PeakBuf = uint16(c.qcount)
+		//print("ch:", c.chanRecord.ChID, "\tpeakBuf:", c.chanRecord.PeakBuf, "\n")
 	}
-	chRecord.Closed = c.closed == 1
-	if chRecord.Closed {
-		chRecord.NotClosed = false
+	c.chanRecord.Closed = c.closed == 1 // TODO: only execute this when it is a close operation
+	if c.chanRecord.Closed {
+		c.chanRecord.NotClosed = false
 	}
-
-
 
 	const size = 64 << 10
 	buf := make([]byte, size)
@@ -88,18 +81,19 @@ func RecordChOp(c *hchan) {
 		return
 	}
 	strOpID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	var xorOpID string
+	uint32curLoc, _ := hashStr(strOpID) // TODO: important: how to have a uint16 hash of string
+	curLoc := uint16(uint32curLoc)
+	var preLoc, xorLoc uint16
 	if BoolRecordPerCh {
-		xorOpID = chRecord.LastOpID + "|" + strOpID
-		chRecord.LastOpID = strOpID
+		preLoc = c.preLoc
+		c.preLoc = curLoc >> 1
 	} else {
-		xorOpID = LastOpID + "|" + strOpID
-		LastOpID = strOpID
+		preLoc = uint16(atomic.LoadUint32(&GlobalLastLoc))
+		atomic.StoreUint32(&GlobalLastLoc, uint32(curLoc >> 1))
 	}
+	xorLoc = XorUint16(curLoc, preLoc)
 
-	//print("xorOpID:", xorOpID, "\n")
+	uint32Counter := TupleRecord[xorLoc]
+	atomic.AddUint32(&uint32Counter, 1)
 
-	StructRecord.MapTupleRecord[xorOpID] += 1
-
-	unlock(&MuChRecord)
 }
