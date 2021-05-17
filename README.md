@@ -5,7 +5,7 @@
 
 # Go Fuzz Project
 
-`Go Fuzz` aims find concurrency bugs during Golang program at runtime.
+`Go Fuzz` aims find concurrency bugs in Golang program at runtime.
 
 ## Project Structure
 - goFuzz: contains packages/utilities that used to/in instrument/instrumented program.
@@ -17,17 +17,15 @@
 
 ## Dev Setup
 
-1. Put goFuzz/gooracle under the same GOPATH of the target application
-
-    After this step, gooracle is copied to $GOPATH/src/gooracle
+1. Copy gooracle 
+- Go Module: Put `goFuzz/gooracle` under the same root of go module of the target application
+- Without Go Module: Put `goFuzz/gooracle` to $GOPATH/src/gooracle
     
 2. Use goFuzz/runtime to overwrite the original runtime 
-   
-   Note: goFuzz/runtime is based on the runtime of go-1.14.2
-   
-   Remember to have a backup of the original runtime.
+Note: goFuzz/runtime is based on the runtime of go-1.14.2
+Remember to have a backup of the original runtime.
 
-3. Build utilities
+2. Build utilities
 
 ```bash
 $ cd goFuzz
