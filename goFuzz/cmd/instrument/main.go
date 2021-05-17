@@ -8,11 +8,12 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"golang.org/x/tools/go/ast/astutil"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/ast/astutil"
 )
 
 var needRuntime bool = false
@@ -56,7 +57,6 @@ func main() {
 		//}
 	}
 
-
 	buf := &bytes.Buffer{}
 	err = format.Node(buf, tokenFSet, newAST)
 	if err != nil {
@@ -71,7 +71,6 @@ func main() {
 		return
 	}
 	ioutil.WriteFile(filename, newSource, fi.Mode())
-
 
 	// Parse input: source code
 
@@ -208,7 +207,6 @@ func pre(c *astutil.Cursor) bool {
 				additionalNode = firstStmt
 			}
 
-
 		}
 
 	default:
@@ -247,7 +245,6 @@ func importPath(s *ast.ImportSpec) string {
 	}
 	return t
 }
-
 
 func NewArgCall(strPkg, strCallee string, vecExprArg []ast.Expr) *ast.CallExpr {
 	newIdentPkg := &ast.Ident{

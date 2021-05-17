@@ -25,7 +25,6 @@ func testcase1() {
 		ch2 <- true
 	}()
 
-
 	select {
 	case <-ch1:
 		// op record(ID)
@@ -34,6 +33,5 @@ func testcase1() {
 	case <-ch2:
 		fmt.Println("Select 1 case 2")
 	}
-
 
 }
