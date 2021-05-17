@@ -8,12 +8,11 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"golang.org/x/tools/go/ast/astutil"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
-
-	"golang.org/x/tools/go/ast/astutil"
 )
 
 var needRuntime bool = false
@@ -50,8 +49,10 @@ func main() {
 		ok := astutil.AddNamedImport(tokenFSet, oldAST, "gooracle", "gooracle")
 		if !ok {
 			fmt.Printf("add import failed when parsing %s\n", filename)
+			return
 		}
 	}
+
 
 	buf := &bytes.Buffer{}
 	err = format.Node(buf, tokenFSet, newAST)
@@ -89,103 +90,107 @@ func pre(c *astutil.Cursor) bool {
 		needRuntime = true
 	}
 	switch concrete := c.Node().(type) {
-	//case *ast.GoStmt:
-	//	//newCallExpr := NewArgCallExpr("count", "NewGo", nil)
-	//	//c.InsertBefore(newCallExpr)
-	//	//usePackage = true
-	//
-	//case *ast.AssignStmt:
-	//	//var copyLhs []ast.Expr
-	//	//
-	//	//rhs := concrete.Rhs
-	//	//boolIsMake, boolIsChanRhs := false, false
-	//	//if len(rhs) == 1 && len(concrete.Lhs) == 1 {
-	//	//	if makeFnCallExpr, ok := rhs[0].(*ast.CallExpr); ok {
-	//	//		if makeFnIdent, ok := makeFnCallExpr.Fun.(*ast.Ident); ok {
-	//	//			if makeFnIdent.Name == "make" {
-	//	//				boolIsMake = true
-	//	//			}
-	//	//		}
-	//	//		if len(makeFnCallExpr.Args) <= 2 && len(makeFnCallExpr.Args) >= 1 { // make chan can have 1 or 2 arguments
-	//	//			if _, ok := makeFnCallExpr.Args[0].(*ast.ChanType); ok {
-	//	//				boolIsChanRhs = true
-	//	//			}
-	//	//		}
-	//	//	}
-	//	//}
-	//	//
-	//	//copyLhs = append(copyLhs, concrete.Lhs[0])
-	//	//
-	//	//if boolIsMake && boolIsChanRhs {
-	//	//	newCallExpr := NewArgCallExpr("count", "NewCh", copyLhs)
-	//	//	c.InsertAfter(newCallExpr)
-	//	//	usePackage = true
-	//	//}
-	//
-	//case *ast.SendStmt:
-	//	//var copyLhs []ast.Expr
-	//	//copyLhs = append(copyLhs, concrete.Chan)
-	//	newBeforeExpr := NewArgCallExpr("gooracle", "BeforeBlock", nil)
-	//	c.InsertBefore(newBeforeExpr)
-	//	newAfterExpr := NewArgCallExpr("gooracle", "AfterBlock", nil)
-	//	c.InsertAfter(newAfterExpr)
-	//	usePackage = true
-	//
-	//case *ast.ExprStmt:
-	//	//if unary, ok := concrete.X.(*ast.UnaryExpr); ok {
-	//	//	if unary.Op == token.ARROW {
-	//	//		var copyLhs []ast.Expr
-	//	//		copyLhs = append(copyLhs, unary.X)
-	//	//		newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-	//	//		c.InsertAfter(newCallExpr)
-	//	//		usePackage = true
-	//	//	}
-	//	//}
-	//	//
-	//	//if call, ok := concrete.X.(*ast.CallExpr); ok {
-	//	//	if fun_ident, ok := call.Fun.(*ast.Ident); ok {
-	//	//		if fun_ident.Name == "close" {
-	//	//			var copyLhs []ast.Expr
-	//	//			for _, arg := range call.Args {
-	//	//				copyLhs = append(copyLhs, arg)
-	//	//			}
-	//	//			newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-	//	//			c.InsertAfter(newCallExpr)
-	//	//			usePackage = true
-	//	//		}
-	//	//	}
-	//	//}
-	//
-	//case *ast.SelectStmt:
-	//	//cases := concrete.Body.List
-	//	//for _, case_ := range cases {
-	//	//	if case_cc,ok := case_.(*ast.CommClause); ok {
-	//	//		case_comm := case_cc.Comm
-	//	//		switch case_concrete := case_comm.(type) {
-	//	//		case *ast.SendStmt:
-	//	//			var copyLhs []ast.Expr
-	//	//			copyLhs = append(copyLhs, case_concrete.Chan)
-	//	//			newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-	//	//			c.InsertBefore(newCallExpr)
-	//	//			usePackage = true
-	//	//		case *ast.ExprStmt:
-	//	//			if unary, ok := case_concrete.X.(*ast.UnaryExpr); ok {
-	//	//				if unary.Op == token.ARROW {
-	//	//					var copyLhs []ast.Expr
-	//	//					copyLhs = append(copyLhs, unary.X)
-	//	//					newCallExpr := NewArgCallExpr("count", "NewOp", copyLhs)
-	//	//					c.InsertBefore(newCallExpr)
-	//	//					usePackage = true
-	//	//				}
-	//	//			}
-	//	//		}
-	//	//	}
-	//	//}
-	//	_ = concrete
-	//	newBeforeExpr := NewArgCallExpr("gooracle", "BeforeBlock", nil)
-	//	c.InsertBefore(newBeforeExpr)
-	//	newAfterExpr := NewArgCallExpr("gooracle", "AfterBlock", nil)
-	//	c.InsertAfter(newAfterExpr)
+
+	case *ast.SelectStmt:
+		break // temporarily disable the select reordering by AST rewriting
+		// store the original select
+		oriSelect := SelectStruct{
+			StmtSelect:    concrete,
+			VecCommClause: nil,
+			VecOp:         nil,
+			VecBody:       nil,
+		}
+		for _, stmtCommClause := range concrete.Body.List {
+			commClause, _ := stmtCommClause.(*ast.CommClause)
+			oriSelect.VecCommClause = append(oriSelect.VecCommClause, commClause)
+			oriSelect.VecOp = append(oriSelect.VecOp, commClause.Comm)
+			vecContent := []ast.Stmt{}
+			for _, stmt := range commClause.Body {
+				vecContent = append(vecContent, stmt)
+			}
+			oriSelect.VecBody = append(oriSelect.VecBody, vecContent)
+		}
+
+		// create a switch
+		newSwitch := &ast.SwitchStmt{
+			Switch: 0,
+			Init:   nil,
+			Tag:    NewArgCall("gooracle", "ReadSelect", nil),
+			Body:   &ast.BlockStmt{
+				Lbrace: 0,
+				List:   nil,
+				Rbrace: 0,
+			},
+		}
+		vecCaseClause := []ast.Stmt{}
+		// The number of switch case is (the number of non-default select cases + 1)
+		for i, stmtOp := range oriSelect.VecOp {
+
+			// if the case's expression is nil, this is a default case.
+			// We ignore it here, because the switch will have a default anyway
+			if stmtOp == nil {
+				continue
+			}
+
+			newCaseClause := &ast.CaseClause{
+				Case:  0,
+				List:  nil,
+				Colon: 0,
+				Body:  nil,
+			}
+			newBasicLit := &ast.BasicLit{
+				ValuePos: 0,
+				Kind:     token.INT,
+				Value:    strconv.Itoa(i),
+			}
+			newCaseClause.List = []ast.Expr{newBasicLit}
+
+			// the case's content is one select statement
+			newSelect := &ast.SelectStmt{
+				Select: 0,
+				Body:   &ast.BlockStmt{},
+			}
+			firstSelectCase := &ast.CommClause{
+				Case:  0,
+				Comm:  copyOp(oriSelect.VecOp[i]),
+				Colon: 0,
+				Body:  copyStmtBody(oriSelect.VecBody[i]),
+			}
+			secondSelectCase := &ast.CommClause{
+				Case:  0,
+				Comm:  &ast.ExprStmt{X: &ast.UnaryExpr{
+					OpPos: 0,
+					Op:    token.ARROW,
+					X:     NewArgCall("gooracle", "SelectTimeout", nil),
+				}},
+				Colon: 0,
+				Body:  []ast.Stmt{copySelect(oriSelect.StmtSelect)},
+			}
+			newSelect.Body.List = append(newSelect.Body.List, firstSelectCase, secondSelectCase)
+
+			newCaseClause.Body = []ast.Stmt{newSelect}
+
+			// add the created case to vector
+			vecCaseClause = append(vecCaseClause, newCaseClause)
+		}
+
+		// add one default case to switch
+		newCaseClauseDefault := &ast.CaseClause{
+			Case:  0,
+			List:  nil,
+			Colon: 0,
+			Body:  []ast.Stmt{copySelect(oriSelect.StmtSelect)},
+		}
+		vecCaseClause = append(vecCaseClause, newCaseClauseDefault)
+
+		newSwitch.Body.List = vecCaseClause
+
+		// Insert the new switch before the select
+		c.InsertBefore(newSwitch)
+
+		// Delete the original select
+		c.Delete()
+
 
 	//case *ast.SwitchStmt:
 	//	print()
@@ -197,12 +202,73 @@ func pre(c *astutil.Cursor) bool {
 				additionalNode = firstStmt
 			}
 
+
 		}
 
 	default:
 	}
 
 	return true
+}
+
+type SelectStruct struct {
+	StmtSelect *ast.SelectStmt // StmtSelect.Body.List is a vec of CommClause
+	VecCommClause []*ast.CommClause // a CommClause is a case and its content in select
+	VecOp []ast.Stmt // The operations of cases. Nil is default
+	VecBody [][]ast.Stmt // The content of cases
+}
+
+type SwitchStruct struct {
+	StmtSwitch *ast.SwitchStmt // StmtSwitch.Body.List is a vector of CaseClause
+	Tag ast.Expr
+	VecCaseClause []*ast.CaseClause // a CaseClause is a case and its content in switch.
+	VecVecExpr [][]ast.Expr // The expressions of each case.
+	VecBody [][]ast.Stmt // The content of cases
+}
+
+func copyOp(stmtOp ast.Stmt) ast.Stmt {
+	var result ast.Stmt
+	// the stmtOp is either *ast.SendStmt or *ast.ExprStmt
+	switch concrete := stmtOp.(type) {
+	case *ast.SendStmt:
+		oriChanIdent, _ := concrete.Chan.(*ast.Ident)
+		newSend := &ast.SendStmt{
+			Chan:  &ast.Ident{
+				NamePos: 0,
+				Name:    oriChanIdent.Name,
+				Obj:     oriChanIdent.Obj,
+			},
+			Arrow: 0,
+			Value: concrete.Value,
+		}
+		result = newSend
+	case *ast.ExprStmt:
+		oriUnaryExpr, _ := concrete.X.(*ast.UnaryExpr)
+		newRecv := &ast.ExprStmt{X: &ast.UnaryExpr{
+			OpPos: 0,
+			Op:    token.ARROW,
+			X:     oriUnaryExpr.X,
+		}}
+		result = newRecv
+	}
+
+	return result
+}
+
+func copyStmtBody(stmtBody []ast.Stmt) []ast.Stmt {
+	result := []ast.Stmt{}
+	for _, stmt := range stmtBody {
+		result = append(result, stmt)
+	}
+	return result
+}
+
+func copySelect(oriSelect *ast.SelectStmt) *ast.SelectStmt {
+	result := &ast.SelectStmt{
+		Select: 0,
+		Body:   oriSelect.Body,
+	}
+	return result
 }
 
 // imports reports whether f has an import with the specified name and path.
@@ -235,6 +301,7 @@ func importPath(s *ast.ImportSpec) string {
 	}
 	return t
 }
+
 
 func NewArgCall(strPkg, strCallee string, vecExprArg []ast.Expr) *ast.CallExpr {
 	newIdentPkg := &ast.Ident{
