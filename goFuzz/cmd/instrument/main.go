@@ -50,11 +50,7 @@ func main() {
 		ok := astutil.AddNamedImport(tokenFSet, oldAST, "gooracle", "gooracle")
 		if !ok {
 			fmt.Printf("add import failed when parsing %s\n", filename)
-			return
 		}
-		//if imports(oldAST, "", "runtime") == false {
-		//
-		//}
 	}
 
 	buf := &bytes.Buffer{}
@@ -71,12 +67,6 @@ func main() {
 		return
 	}
 	ioutil.WriteFile(filename, newSource, fi.Mode())
-
-	// Parse input: source code
-
-	// Static analysis: find which channels can be instrumented
-
-	// Instrumentation
 }
 
 func pre(c *astutil.Cursor) bool {

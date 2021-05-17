@@ -39,11 +39,13 @@ func RecordChMake(capBuf int, c *hchan) {
 	buf = buf[:Stack(buf, false)] // TODO: important: is Stack() too heavy? How about replace it will Caller(N)?
 	strStack := string(buf)
 	stackSingleGo := ParseStackStr(strStack)
-	if len(stackSingleGo.VecFuncLine) < 2 {
+	if len(stackSingleGo.VecFuncLine) < 2 { // if the channel is created in runtime, strStack won't contain enough
+		// information about where the channel is created. We won't record anything for such channels.
 		return
 	}
 	strChID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	c.id, _ = hashStr(strChID)
+	c.id, _ = hashStr(strChID)  // TODO: important: how to have a uint16 hash of string
+	c.id = uint32(uint16(c.id))
 
 	newChRecord := &ChanRecord{
 		ChID:      c.id,
@@ -60,6 +62,10 @@ func RecordChMake(capBuf int, c *hchan) {
 
 // When a channel operation is executed, update ChanRecord, and update the tuple counter (curLoc XOR prevLoc)
 func RecordChOp(c *hchan) {
+
+	if c.chanRecord == nil { // As mentioned above, we don't record channels created in runtime
+		return
+	}
 
 	// Update ChanRecord
 	//print("qcount:",c.qcount, "dataqsiz", c.dataqsiz, "elemsize", c.elemsize, "\n")
@@ -93,7 +99,5 @@ func RecordChOp(c *hchan) {
 	}
 	xorLoc = XorUint16(curLoc, preLoc)
 
-	uint32Counter := TupleRecord[xorLoc]
-	atomic.AddUint32(&uint32Counter, 1)
-
+	atomic.AddUint32(&TupleRecord[xorLoc], 1)
 }

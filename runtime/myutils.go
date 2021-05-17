@@ -32,20 +32,20 @@ func Uint32_to_Byte(b []byte, v uint32) {
 }
 
 func XorUint16(a, b uint16) uint16 {
-	byteA := []byte{}
-	byteB := []byte{}
+	byteA := []byte{0, 0}
+	byteB := []byte{0, 0}
 	Uint16_to_Byte(byteA, a)
-	Uint16_to_Byte(byteB, a)
+	Uint16_to_Byte(byteB, b)
 
 	byteA = XorByte(byteA, byteB)
 	return Byte_to_Uint16(byteA)
 }
 
 func XorUint32(a, b uint32) uint32 {
-	byteA := []byte{}
-	byteB := []byte{}
+	byteA := []byte{0, 0, 0, 0}
+	byteB := []byte{0, 0, 0, 0}
 	Uint32_to_Byte(byteA, a)
-	Uint32_to_Byte(byteB, a)
+	Uint32_to_Byte(byteB, b)
 
 	byteA = XorByte(byteA, byteB)
 	return Byte_to_Uint32(byteA)
@@ -53,7 +53,7 @@ func XorUint32(a, b uint32) uint32 {
 
 
 func XorByte(a, b []byte) []byte {
-	for _, i := range a {
+	for i, _ := range a {
 		a[i] ^= b[i]
 	}
 	return a

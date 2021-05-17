@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"goFuzz/gooracle"
+	"goFuzz/goFuzz/gooracle"
 	"testing"
 	"time"
 )
