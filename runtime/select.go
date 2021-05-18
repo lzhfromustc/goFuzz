@@ -126,6 +126,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	///MYCODE
 	TmpBeforeBlock()
 	defer TmpAfterBlock()
+	//Note: the return value casei doesn't represent the order of cases in original select. Need experiments
 
 	// NOTE: In order to maintain a lean stack size, the number of scases
 	// is capped at 65536.
@@ -505,7 +506,6 @@ retc:
 sclose:
 	// send on closed channel
 	selunlock(scases, lockorder)
-	print("MYBUG:send on closed channel")
 	panic(plainError("send on closed channel"))
 }
 
