@@ -481,6 +481,12 @@ type g struct {
 	// and check for debt in the malloc hot path. The assist ratio
 	// determines how this corresponds to scan work debt.
 	gcAssistBytes int64
+
+	///MYCODE
+	lastMySwitchLineNum string // Our inserted switch calls a function in gooracle, which records the line number of
+	// the original select corresponding to this switch. This variables records this line number so myselect.go can use it
+	lastMySwitchOriSelectNumCase int
+	lastMySwitchChoice int
 }
 
 type m struct {

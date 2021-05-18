@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
-	"goFuzz/config"
+	"goFuzz/goFuzz/config"
 	"math/big"
 	"os"
 	"os/exec"
@@ -132,12 +132,13 @@ func Run(input *Input) (retOutput *RunOutput) {
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 	err = cmd.Run()
+	fmt.Println("Output of unit test:") // this output is meaningless. It just prints things to indicate whether the unit test passed or not. This has nothing to do with whether a bug is triggered
+	fmt.Println("test out:", outb.String(), "\ntest err:", errb.String())
 	if err != nil {
 		fmt.Println("The go test command fails:", err)
+		fmt.Println("Could have found a bug! Check stdout and myoutput.txt")
 		return
 	}
-	fmt.Println("Output of unit test:")
-	fmt.Println("test out:", outb.String(), "\ntest err:", errb.String())
 
 	// If the output file is longer, it means we found a new bug
 	outputNumBugAfter := ParseOutputFile()
@@ -176,7 +177,7 @@ func SetDeadline() {
 	}()
 }
 
-func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEntry *FuzzQueryEntry, mainRecord *Record, fuzzingQueue []FuzzQueryEntry, allRecordHashMap map[string]struct{}) {
+func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEntry *FuzzQueryEntry, mainRecord *Record, fuzzingQueue *[]FuzzQueryEntry, allRecordHashMap map[string]struct{}) {
 	if stage == "calib" {
 		if len(retInput.VecSelect) == 0 {   // TODO:: Should we ignore the output that contains no VecSelects entry?
 			return
@@ -209,7 +210,7 @@ func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEn
 				CurrentInput:           retInput,
 				CurrentRecordHashSlice: []string{recordHash},
 			}
-			fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
+			*fuzzingQueue = append(*fuzzingQueue, currentFuzzEntry)
 			allRecordHashMap[recordHash] = struct{}{}
 		} else {
 			return
@@ -227,7 +228,7 @@ func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEn
 				CurrentInput:           retInput,   // TODO:: Should we save ori_input or retInput???
 				CurrentRecordHashSlice: []string{recordHash},
 			}
-			fuzzingQueue = append(fuzzingQueue, currentFuzzEntry)
+			*fuzzingQueue = append(*fuzzingQueue, currentFuzzEntry)
 			allRecordHashMap[recordHash] = struct{}{}
 		} else {return}  // This mutation does not create new record. Discarded.
 		currentEntry.ExecutionCount += 1

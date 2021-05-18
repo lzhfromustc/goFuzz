@@ -7,16 +7,6 @@ import (
 	"runtime"
 )
 
-const MapOpLength int = 65536 // 2^16
-const MapChLength int = 65536 // 2^16
-
-
-func XOR(a, b [2]byte) [2]byte {
-	a[0] ^= b[0]
-	a[1] ^= b[1]
-	return a
-}
-
 const (
 	NotePrintInput string = "PrintInput"
 	InputFileName  string = "myinput.txt"
@@ -27,7 +17,7 @@ const (
 )
 
 var StrTestpath string
-var BoolFirstRun bool = false
+var BoolFirstRun bool = true
 
 func BeforeRun() {
 	StrBitGlobalTuple := os.Getenv("BitGlobalTuple")
@@ -60,19 +50,12 @@ func BeforeRun() {
 	}
 
 	if len(text) > 0 && text[0] == NotePrintInput {
-		BoolFirstRun = true
+		runtime.RecordSelectChoice = true
 	}
 
-	if BoolFirstRun { // if input is empty, then this is the first run. Let runtime know
-		runtime.GenFirstInput = true
-		return
-	} else { // if input is not empty, store this input into runtime
-		runtime.GenFirstInput = false
-		runtime.MapInput = ParseInputStr(text)
-		if runtime.MapInput == nil {
-			fmt.Println("Error when parsing input during text start: runtime.MapInput is nil")
-		}
-		return
+	MapInput = ParseInputStr(text)
+	if MapInput == nil {
+		fmt.Println("Error when parsing input during text start: MapInput is nil")
 	}
 }
 
@@ -89,7 +72,7 @@ func AfterRun() {
 	CreateRecordFile()
 
 	// print bug info
-	str, foundBug := runtime.DumpBlockingInfo()
+	str, foundBug := runtime.TmpDumpBlockingInfo()
 	if foundBug {
 		fmt.Println("-----New Bug:")
 		fmt.Println(str)

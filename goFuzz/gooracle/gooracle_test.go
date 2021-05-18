@@ -55,7 +55,7 @@ func TestGLDetect(t *testing.T) {
 }
 
 func TestGL(t *testing.T) {
-	defer runtime.DumpBlockingInfo()
+	defer runtime.TmpDumpBlockingInfo()
 	ch := make(chan int)
 	go func() {
 		time.Sleep(time.Second)
@@ -69,7 +69,7 @@ func TestGL(t *testing.T) {
 }
 
 func TestCICS(t *testing.T) {
-	defer runtime.DumpBlockingInfo()
+	defer runtime.TmpDumpBlockingInfo()
 	ch := make(chan int)
 	mu := sync.Mutex{}
 	go func() {
@@ -86,14 +86,14 @@ func TestCICS(t *testing.T) {
 }
 
 func Test1(t *testing.T) {
-	defer runtime.DumpBlockingInfo()
-	runtime.MapSelectInput["\t/data/ziheng/shared/gotest/gotest/src/gotest/gooracle/gooracle_test.go:109"] = runtime.SelectInput{
+	defer runtime.TmpDumpBlockingInfo()
+	MapInput["\t/data/ziheng/shared/gotest/gotest/src/gotest/gooracle/gooracle_test.go:109"] = runtime.SelectInfo{
 		StrFileName: "\t/data/ziheng/shared/gotest/gotest/src/gotest/gooracle/gooracle_test.go",
 		StrLineNum:  "109",
 		IntNumCase:  2,
 		IntPrioCase: 1,
 	}
-	runtime.SelectDelayMS = 1000
+	SelectDelayMS = 1000
 
 	ch := make(chan int)
 	ch2 := make(chan int)

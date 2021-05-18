@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"fmt"
-	"goFuzz/config"
+	"goFuzz/goFuzz/config"
 	"os"
 	"strconv"
 	"strings"
@@ -43,7 +43,7 @@ func EmptyInput() *Input {
 	return &Input{
 		TestName:      NoteEmptyName,
 		Note:          NotePrintInput,
-		SelectDelayMS: 0,
+		SelectDelayMS: 1000,
 		VecSelect:     nil,
 		Stage: 		   "unknown",
 	}
@@ -66,13 +66,15 @@ func CreateInput(input *Input) {
 
 func StrOfInput(input *Input) (retStr string) {
 	retStr = ""
+
+	// The first line is a note. Could be empty.
 	if input.Note == NotePrintInput {
 		retStr += NotePrintInput + "\n"
 	} else {
 		retStr += "\n"
 	}
 
-	// The second line is how many seconds to wait
+	// The second line is how many milliseconds to wait
 	retStr += strconv.Itoa(input.SelectDelayMS) + "\n"
 
 	// From the third line, each line corresponds to a select

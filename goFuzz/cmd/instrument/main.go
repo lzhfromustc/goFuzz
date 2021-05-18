@@ -17,6 +17,7 @@ import (
 
 var needRuntime bool = false
 var additionalNode ast.Stmt
+var currentFSet *token.FileSet
 
 func main() {
 	//pProjectPath := flag.String("path","","Full path of the target project")
@@ -42,6 +43,8 @@ func main() {
 		fmt.Printf("error parsing %s: %s\n", filename, err.Error())
 		return
 	}
+
+	currentFSet = tokenFSet
 
 	newAST := astutil.Apply(oldAST, pre, nil)
 
@@ -92,7 +95,7 @@ func pre(c *astutil.Cursor) bool {
 	switch concrete := c.Node().(type) {
 
 	case *ast.SelectStmt:
-		break // temporarily disable the select reordering by AST rewriting
+		positionOriSelect := currentFSet.Position(concrete.Select)
 		// store the original select
 		oriSelect := SelectStruct{
 			StmtSelect:    concrete,
@@ -115,7 +118,20 @@ func pre(c *astutil.Cursor) bool {
 		newSwitch := &ast.SwitchStmt{
 			Switch: 0,
 			Init:   nil,
-			Tag:    NewArgCall("gooracle", "ReadSelect", nil),
+			Tag:    NewArgCall("gooracle", "ReadSelect", []ast.Expr{
+				&ast.BasicLit{ // first parameter: filename
+				ValuePos: 0,
+				Kind:     token.STRING,
+				Value:    "\"" + positionOriSelect.Filename + "\"",
+			}, &ast.BasicLit{ // second parameter: linenumber of original select
+				ValuePos: 0,
+				Kind:     token.INT,
+				Value:    strconv.Itoa(positionOriSelect.Line),
+			}, &ast.BasicLit{
+				ValuePos: 0,
+				Kind:     token.INT,
+				Value:    strconv.Itoa(len(oriSelect.VecCommClause)),
+			}}),
 			Body:   &ast.BlockStmt{
 				Lbrace: 0,
 				List:   nil,
@@ -152,7 +168,7 @@ func pre(c *astutil.Cursor) bool {
 			}
 			firstSelectCase := &ast.CommClause{
 				Case:  0,
-				Comm:  copyOp(oriSelect.VecOp[i]),
+				Comm:  oriSelect.VecOp[i],
 				Colon: 0,
 				Body:  copyStmtBody(oriSelect.VecBody[i]),
 			}
@@ -164,7 +180,19 @@ func pre(c *astutil.Cursor) bool {
 					X:     NewArgCall("gooracle", "SelectTimeout", nil),
 				}},
 				Colon: 0,
-				Body:  []ast.Stmt{copySelect(oriSelect.StmtSelect)},
+				Body:  []ast.Stmt{
+					// The first line is a call to gooracle.StoreLastMySwitchChoice(-1)
+					// The second line is a copy of original select
+					&ast.ExprStmt{X: NewArgCall("gooracle", "StoreLastMySwitchChoice", []ast.Expr{&ast.UnaryExpr{
+					OpPos: 0,
+					Op:    token.SUB,
+					X:     &ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.INT,
+						Value:    "1",
+					},
+				}})},
+				copySelect(oriSelect.StmtSelect)},
 			}
 			newSelect.Body.List = append(newSelect.Body.List, firstSelectCase, secondSelectCase)
 
@@ -179,7 +207,19 @@ func pre(c *astutil.Cursor) bool {
 			Case:  0,
 			List:  nil,
 			Colon: 0,
-			Body:  []ast.Stmt{copySelect(oriSelect.StmtSelect)},
+			Body:  []ast.Stmt{
+				// The first line is a call to gooracle.StoreLastMySwitchChoice(-1)
+				// The second line is a copy of original select
+				&ast.ExprStmt{X: NewArgCall("gooracle", "StoreLastMySwitchChoice", []ast.Expr{&ast.UnaryExpr{
+					OpPos: 0,
+					Op:    token.SUB,
+					X:     &ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.INT,
+						Value:    "1",
+					},
+				}})},
+				copySelect(oriSelect.StmtSelect)},
 		}
 		vecCaseClause = append(vecCaseClause, newCaseClauseDefault)
 
@@ -192,8 +232,9 @@ func pre(c *astutil.Cursor) bool {
 		c.Delete()
 
 
-	//case *ast.SwitchStmt:
-	//	print()
+	case *ast.SwitchStmt:
+		positionOriSelect := currentFSet.Position(concrete.Switch)
+		_ = positionOriSelect
 
 	case *ast.FuncDecl:
 		if strings.HasPrefix(concrete.Name.Name, "Test") {
@@ -226,10 +267,12 @@ type SwitchStruct struct {
 	VecBody [][]ast.Stmt // The content of cases
 }
 
+// Deprecated:
 func copyOp(stmtOp ast.Stmt) ast.Stmt {
 	var result ast.Stmt
 	// the stmtOp is either *ast.SendStmt or *ast.ExprStmt
 	switch concrete := stmtOp.(type) {
+	// TODO: could be "x := <-ch"
 	case *ast.SendStmt:
 		oriChanIdent, _ := concrete.Chan.(*ast.Ident)
 		newSend := &ast.SendStmt{

@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"goFuzz/config"
-	"goFuzz/fuzzer"
+	"goFuzz/goFuzz/config"
+	"goFuzz/goFuzz/fuzzer"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 	// Parse input
 	pProjectPath := flag.String("path","","Full path of the target project")
 	pProjectGOPATH := flag.String("GOPATH","","GOPATH of the target project")
-	//pTestName := flag.String("test","","Function name of the unit test")
+	pTestName := flag.String("test","","Function name of the unit test")
 	pOutputFullPath := flag.String("output","","Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
 	maxParallel := flag.Int("maxparallel", 1, "Specified the maximum subroutine number for fuzzing.")
@@ -47,10 +47,10 @@ func main() {
 	Right now, we are using an ad-hoc pre-defined slice pTestnameList for the DEMO purpose.
 	 */
 	var pTestNameList []string
-	pTestNameList = append(pTestNameList, "TestF1")
+	pTestNameList = append(pTestNameList, *pTestName)
 
 	/* Standard initialize the necessary data structure. */
-	var fuzzingQueue []fuzzer.FuzzQueryEntry
+	fuzzingQueue := []fuzzer.FuzzQueryEntry{}
 	var mainRecord = fuzzer.EmptyRecord()
 	allRecordHashMap := make(map[string]struct{})
 
@@ -87,7 +87,7 @@ func main() {
 						/* We don't need to care about the running stage here. It would always be "deter". */
 						retInputInDeter := retOutput.RetInput
 						retRecord := retOutput.RetRecord
-						fuzzer.HandleRunOutput(retInputInDeter, retRecord, retOutput.Stage, nil, mainRecord, fuzzingQueue, allRecordHashMap)
+						fuzzer.HandleRunOutput(retInputInDeter, retRecord, retOutput.Stage, nil, mainRecord, &fuzzingQueue, allRecordHashMap)
 				}
 			}
 		}
@@ -127,7 +127,7 @@ func main() {
 						fmt.Println("Calib or Rand: Reading outputs from the workers. ")
 						retInput := retOutput.RetInput
 						retRecord := retOutput.RetRecord
-						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, fuzzingQueue, allRecordHashMap)
+						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, &fuzzingQueue, allRecordHashMap)
 					}
 				}
 			}
@@ -153,7 +153,7 @@ func main() {
 						fmt.Println("Calib or Rand: Reading outputs from the workers. ")
 						retInput := retOutput.RetInput
 						retRecord := retOutput.RetRecord
-						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, fuzzingQueue, allRecordHashMap)
+						fuzzer.HandleRunOutput(retInput, retRecord, retOutput.Stage, &currentEntry, mainRecord, &fuzzingQueue, allRecordHashMap)
 					}
 				}
 			}

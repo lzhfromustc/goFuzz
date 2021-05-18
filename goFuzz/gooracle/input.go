@@ -9,18 +9,21 @@ import (
 	"strings"
 )
 
+var MapInput map[string]runtime.SelectInfo
+var SelectDelayMS int
+
 func FileNameOfInput() string {
 	return StrTestpath + "/" + InputFileName
 }
 
-func ParseInputStr(text []string) map[string]runtime.SelectInput {
-	result := make(map[string]runtime.SelectInput)
+func ParseInputStr(text []string) map[string]runtime.SelectInfo {
+	result := make(map[string]runtime.SelectInfo)
 
 	strDelayMS := text[1]
 	var err error
-	runtime.SelectDelayMS, err = strconv.Atoi(strDelayMS)
+	SelectDelayMS, err = strconv.Atoi(strDelayMS)
 	if err != nil {
-		fmt.Println("The first line of input is not a number:", strDelayMS)
+		fmt.Println("The second line of input is not a number:", strDelayMS)
 		return nil
 	}
 
@@ -31,7 +34,7 @@ func ParseInputStr(text []string) map[string]runtime.SelectInput {
 		if eachLine == "" {
 			continue
 		}
-		selectInput := runtime.SelectInput{}
+		selectInput := runtime.SelectInfo{}
 		// filename:linenum:totalCaseNum:chooseCaseNum
 		vecStr := strings.Split(eachLine, ":")
 		if len(vecStr) != 4 {
@@ -75,10 +78,10 @@ func CreateInput() {
 	str += NotePrintInput + "\n"
 
 	// The second line is how many seconds to wait
-	str += strconv.Itoa(runtime.SelectDelayMS) + "\n"
+	str += strconv.Itoa(SelectDelayMS) + "\n"
 
 	// Each line corresponds to a select
-	for _, selectInput := range runtime.MapFirstInput {
+	for _, selectInput := range runtime.MapSelectInfo {
 		// filename:linenum:totalCaseNum:chooseCaseNum
 		strFileName := selectInput.StrFileName
 		if indexEnter := strings.Index(strFileName, "\n"); indexEnter > -1 {

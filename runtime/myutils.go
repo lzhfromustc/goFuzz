@@ -4,6 +4,10 @@ import (
 	"internal/bytealg"
 )
 
+func GoID() int64 {
+	return getg().goid
+}
+
 func SleepMS(numMs int) {
 	durationMS := 1000
 	for i := 0; i < numMs; i++ {

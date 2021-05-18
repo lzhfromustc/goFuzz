@@ -25,7 +25,7 @@
 Note: goFuzz/runtime is based on the runtime of go-1.14.2
 Remember to have a backup of the original runtime.
 
-2. Build utilities
+3. Build utilities
 
 ```bash
 $ cd goFuzz
@@ -37,21 +37,40 @@ $ cd goFuzz
 $ make build
 ```
 
-4. Instrument target application
+4. Overwrite your runtime
+
 ```bash
+cd ./goFuzz/scripts
+sudo ./editRuntime.sh
+```
+
+5. Instrument target application
+```bash
+# Shihao's tool
 $ ./goFuzz/scripts/instrument.py [folder contains Golang source code]
+# Ziheng's way
+cd ./goFuzz/cmd/instrument
+go install
+cd $GOPATH/bin
+./instrument -file=/Full/Path/Of/The/File/You/Want/To/Instrument
 ```
     
-5. Run goFuzz/cmd/fuzz
+6. Run goFuzz/cmd/fuzz
     
 For example:
-`./goFuzz/bin/fuzz -path=/data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram -GOPATH=/data/ziheng/shared/gotest/gotest -test=TestF1 -globalTuple -output=/data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram/myoutput.txt`
+`./fuzz -path=/data/ziheng/shared/gotest/stubs/grpc/grpc-last/src/google.golang.org/grpc -GOPATH=/data/ziheng/shared/gotest/stubs/grpc/grpc-last -output=/data/ziheng/shared/gotest/stubs/grpc/grpc-last/src/google.golang.org/grpc/myoutput.txt -test=TestStateTransitions_MultipleAddrsEntersReady`
 
 This indicates: 
 
-run fuzzer on unit test "TestF1", 
-which is in "/data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram", 
-and its GOPATH is "/data/ziheng/shared/gotest/gotest".
-Print the output to "/data/ziheng/shared/gotest/gotest/src/goFuzz/testdata/toyprogram/myoutput.txt"
-. And use global tuple strategy
+run fuzzer on unit test "TestStateTransitions_MultipleAddrsEntersReady()", 
+
+which is in "/data/ziheng/shared/gotest/stubs/grpc/grpc-last/src/google.golang.org/grpc", 
+
+and its GOPATH is "/data/ziheng/shared/gotest/stubs/grpc/grpc-last".
+
+Print the output to "/data/ziheng/shared/gotest/stubs/grpc/grpc-last/src/google.golang.org/grpc/myoutput.txt". 
+
+And use global tuple strategy
+
+BTW, we need to remove "(s)" before "TestStateTransitions_MultipleAddrsEntersReady()" manually. This is a special problem with grpc
     

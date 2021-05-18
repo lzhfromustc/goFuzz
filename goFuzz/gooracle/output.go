@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 )
 
 func FileNameOfOutput() string {
@@ -69,18 +68,23 @@ func CreateRecordFile() {
 	str := ""
 	// tuple record
 	for xorLoc, count := range runtime.TupleRecord {
+		if count == 0 {
+			continue // no need to record tuple that doesn't show up at all
+		}
 		h := fnv.New32a()
-		h.Write([]byte(string(xorLoc)))
-		tupleUint16 := uint16(h.Sum32())
-		str += strconv.Itoa(int(tupleUint16)) + ":" + strconv.Itoa(int(count)) + "\n"
+		h.Write([]byte(strconv.Itoa(xorLoc)))
+		str += strconv.Itoa(xorLoc) + ":" + strconv.Itoa(int(count)) + "\n"
 	}
 	str += RecordSplitter + "\n"
 
 	// channel record
 	for _, chRecord := range runtime.ChRecord {
-		// chIDString:closedBit:notClosedBit:capBuf:peakBuf
+		if chRecord == nil {
+			continue
+		}
+		//chIDString:closedBit:notClosedBit:capBuf:peakBuf
 		uint32ChID := chRecord.ChID
-		str += string(uint32ChID) + ":"
+		str += strconv.Itoa(int(uint32ChID)) + ":"
 		if chRecord.Closed {
 			str += "1" + ":"
 		} else {

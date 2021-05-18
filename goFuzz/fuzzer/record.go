@@ -3,7 +3,7 @@ package fuzzer
 import (
 	"bufio"
 	"fmt"
-	"goFuzz/config"
+	"goFuzz/goFuzz/config"
 	"os"
 	"strconv"
 	"strings"
@@ -101,29 +101,29 @@ func ParseRecordFile() (retRecord *Record) {
 		if eachline == "" {
 			continue
 		}
-		// chID_Filename:chID_LineNumStr:closedBit:notClosedBit:capBuf:peakBuf
+		//chIDString:closedBit:notClosedBit:capBuf:peakBuf
 		vecStr := strings.Split(eachline, ":")
-		if len(vecStr) != 6 {
+		if len(vecStr) != 5 {
 			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
 			return
 		}
 		chRecord := ChanRecord{}
-		chRecord.ChID = vecStr[0] + vecStr[1]
-		if vecStr[2] == "0" {
+		chRecord.ChID = vecStr[0]
+		if vecStr[1] == "0" {
 			chRecord.Closed = false
 		} else {
 			chRecord.Closed = true
 		}
-		if vecStr[3] == "0" {
+		if vecStr[2] == "0" {
 			chRecord.NotClosed = false
 		} else {
 			chRecord.NotClosed = true
 		}
-		if chRecord.CapBuf, err = strconv.Atoi(vecStr[4]); err != nil {
+		if chRecord.CapBuf, err = strconv.Atoi(vecStr[3]); err != nil {
 			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
 			return
 		}
-		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[5]); err != nil {
+		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[4]); err != nil {
 			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
 			return
 		}
