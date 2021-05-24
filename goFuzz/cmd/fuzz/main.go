@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"goFuzz/goFuzz/config"
-	"goFuzz/goFuzz/fuzzer"
+	"goFuzz/config"
+	"goFuzz/fuzzer"
 )
 
 func main() {
@@ -12,10 +12,10 @@ func main() {
 	fuzzer.SetDeadline()
 
 	// Parse input
-	pProjectPath := flag.String("path","","Full path of the target project")
-	pProjectGOPATH := flag.String("GOPATH","","GOPATH of the target project")
-	pTestName := flag.String("test","","Function name of the unit test")
-	pOutputFullPath := flag.String("output","","Full path of the output file")
+	pProjectPath := flag.String("path", "", "Full path of the target project")
+	pProjectGOPATH := flag.String("GOPATH", "", "GOPATH of the target project")
+	pTestName := flag.String("test", "", "Function name of the unit test")
+	pOutputFullPath := flag.String("output", "", "Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
 	maxParallel := flag.Int("maxparallel", 1, "Specified the maximum subroutine number for fuzzing.")
 
@@ -29,7 +29,6 @@ func main() {
 
 	workerInputChan := make(chan *fuzzer.Input) // TODO: consider add buffer here
 	workerOutputChan := make(chan *fuzzer.RunOutput)
-
 
 	/* Begin running specific number of worker subroutines. Blocked before we send them inputs from the main routine. */
 	for i := 0; i < *maxParallel; i++ {
@@ -45,7 +44,7 @@ func main() {
 	/* TODO:: Not finished in this part!!!
 	In this part, we should implement an algorithm that can iterate all the possible unit test inside our target program.
 	Right now, we are using an ad-hoc pre-defined slice pTestnameList for the DEMO purpose.
-	 */
+	*/
 	var pTestNameList []string
 	pTestNameList = append(pTestNameList, *pTestName)
 
@@ -61,7 +60,7 @@ func main() {
 		emptyInput.TestName = pTestName
 		// Give one job to the worker. And receive results.
 		workerInputChan <- emptyInput
-		retOutput := <- workerOutputChan
+		retOutput := <-workerOutputChan
 
 		retInput := retOutput.RetInput
 
@@ -69,25 +68,25 @@ func main() {
 		deterInputSlice := fuzzer.Deterministic_enumerate_input(retInput)
 
 		/* Now we deterministically enumerate one select per time, iterating through all the pTestName and all selects */
-		for  _, deterInput := range deterInputSlice {
-			deterInput.Stage = "deter"  // The current stage of fuzzing is "deterministic fuzzing".
-			innerFor:
+		for _, deterInput := range deterInputSlice {
+			deterInput.Stage = "deter" // The current stage of fuzzing is "deterministic fuzzing".
+		innerFor:
 			for {
 				select {
-					case workerInputChan <- deterInput:
-						fmt.Println("Deter: Insert an input to the workers. ")
-						break innerFor
-					case retOutput := <- workerOutputChan:
-						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
-							// TODO:: I found some empty retInput again. Should I be worry?
-							fmt.Println("Error!!! Empty retInput!!!")
-							continue innerFor
-						}
-						fmt.Println("Deter: Reading outputs from the workers. ")
-						/* We don't need to care about the running stage here. It would always be "deter". */
-						retInputInDeter := retOutput.RetInput
-						retRecord := retOutput.RetRecord
-						fuzzer.HandleRunOutput(retInputInDeter, retRecord, retOutput.Stage, nil, mainRecord, &fuzzingQueue, allRecordHashMap)
+				case workerInputChan <- deterInput:
+					fmt.Println("Deter: Insert an input to the workers. ")
+					break innerFor
+				case retOutput := <-workerOutputChan:
+					if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
+						// TODO:: I found some empty retInput again. Should I be worry?
+						fmt.Println("Error!!! Empty retInput!!!")
+						continue innerFor
+					}
+					fmt.Println("Deter: Reading outputs from the workers. ")
+					/* We don't need to care about the running stage here. It would always be "deter". */
+					retInputInDeter := retOutput.RetInput
+					retRecord := retOutput.RetRecord
+					fuzzer.HandleRunOutput(retInputInDeter, retRecord, retOutput.Stage, nil, mainRecord, &fuzzingQueue, allRecordHashMap)
 				}
 			}
 		}
@@ -107,18 +106,18 @@ func main() {
 		for fuzzingIdx := 0; fuzzingIdx < fuzzingQueueLen; fuzzingIdx++ {
 			currentEntry := fuzzingQueue[fuzzingIdx]
 			/* Calibrate case. */
-			for i := 0; i < 1; i++ {   // TODO:: Maybe we can have multiple times of Calibrate case here. Since the retRecord might not be completely stable.
+			for i := 0; i < 1; i++ { // TODO:: Maybe we can have multiple times of Calibrate case here. Since the retRecord might not be completely stable.
 				// TODO:: If the seed case has already been calibrated, maybe we can skip the duplicated calibrate case.
 				// TODO:: There seems to be no way to get an error message from the Run func?
 				// TODO:: Set calibration_failed to the queue entry if calibration failed (fuzz.Run() failed)
 				currentEntry.CurrentInput.Stage = "calib"
-				innerLoop2:
+			innerLoop2:
 				for {
 					select {
 					case workerInputChan <- currentEntry.CurrentInput:
 						fmt.Println("Calib: Insert an input to the workers. ")
 						break innerLoop2
-					case retOutput := <- workerOutputChan:
+					case retOutput := <-workerOutputChan:
 						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
 							// TODO:: I found some empty retInput again. Should I be worry?
 							fmt.Println("Error!!! Empty retInput!!!")
@@ -138,13 +137,13 @@ func main() {
 			for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
 				currentMutatedInput := fuzzer.Random_Mutate_Input(currentEntry.CurrentInput)
 				currentMutatedInput.Stage = "rand"
-				innerLoop3:
+			innerLoop3:
 				for {
 					select {
 					case workerInputChan <- currentMutatedInput:
 						fmt.Println("Rand: Insert an input to the workers. ")
 						break innerLoop3
-					case retOutput := <- workerOutputChan:
+					case retOutput := <-workerOutputChan:
 						if retOutput == nil || retOutput.RetInput == nil || retOutput.RetRecord == nil {
 							// TODO:: I found some empty retInput again. Should I be worry?
 							fmt.Println("Error!!! Empty retInput!!!")
@@ -215,4 +214,3 @@ func main() {
 	return
 
 }
-
