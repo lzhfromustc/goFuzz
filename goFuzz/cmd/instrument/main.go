@@ -15,9 +15,10 @@ import (
 	"strings"
 )
 
-var needRuntime bool = false
+var boolNeedImport_gooracle bool = false
 var additionalNode ast.Stmt
 var currentFSet *token.FileSet
+var Uint16OpID uint16
 
 func main() {
 	//pProjectPath := flag.String("path","","Full path of the target project")
@@ -48,7 +49,7 @@ func main() {
 
 	newAST := astutil.Apply(oldAST, pre, nil)
 
-	if needRuntime {
+	if boolNeedImport_gooracle {
 		ok := astutil.AddNamedImport(tokenFSet, oldAST, "gooracle", "gooracle")
 		if !ok {
 			fmt.Printf("add import failed when parsing %s\n", filename)
@@ -75,8 +76,9 @@ func main() {
 
 func pre(c *astutil.Cursor) bool {
 	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recover in pre(): c.Name():", c.Name())
+		if r := recover(); r != nil { // This is allowed. If we insert node into nodes not in slice, we will meet a panic
+			// For example, we may identified a receive in select and wanted to insert a function call before it, then this function will panic
+			//fmt.Println("Recover in pre(): c.Name():", c.Name())
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
@@ -90,7 +92,6 @@ func pre(c *astutil.Cursor) bool {
 		}
 		c.InsertBefore(newDefer)
 		additionalNode = nil
-		needRuntime = true
 	}
 	switch concrete := c.Node().(type) {
 
@@ -231,6 +232,83 @@ func pre(c *astutil.Cursor) bool {
 		// Delete the original select
 		c.Delete()
 
+		boolNeedImport_gooracle = true // We need to import gooracle
+
+	case *ast.SendStmt: // This is a send operation
+		intID := int(Uint16OpID)
+		newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
+			ValuePos: 0,
+			Kind:     token.STRING,
+			Value:    "\"Send\"",
+		}, &ast.BasicLit{
+			ValuePos: 0,
+			Kind:     token.INT,
+			Value:    strconv.Itoa(intID),
+		}})
+		c.InsertBefore(newCall) // Insert the call to store this operation's type and ID into goroutine local storage
+		Uint16OpID++
+
+	case *ast.AssignStmt:
+		if len(concrete.Rhs) == 1 {
+			if callExpr, ok := concrete.Rhs[0].(*ast.CallExpr); ok {
+				if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
+					if funcIdent.Name == "make" {
+						if len(callExpr.Args) == 1 { // This is a make operation
+							if _, ok := callExpr.Args[0].(*ast.ChanType); ok {
+								intID := int(Uint16OpID)
+								newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
+									ValuePos: 0,
+									Kind:     token.STRING,
+									Value:    "\"ChMake\"",
+								}, &ast.BasicLit{
+									ValuePos: 0,
+									Kind:     token.INT,
+									Value:    strconv.Itoa(intID),
+								}})
+								c.InsertBefore(newCall)
+								Uint16OpID++
+							}
+						}
+					}
+				}
+			}
+		}
+
+	case *ast.ExprStmt:
+		if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {
+			if unaryExpr.Op == token.ARROW { // This is a receive operation
+				intID := int(Uint16OpID)
+				newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
+					ValuePos: 0,
+					Kind:     token.STRING,
+					Value:    "\"Recv\"",
+				}, &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     token.INT,
+					Value:    strconv.Itoa(intID),
+				}})
+				c.InsertBefore(newCall)
+				Uint16OpID++
+			}
+		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok {
+			if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
+				if funcIdent.Name == "close" { // This is a close operation
+					intID := int(Uint16OpID)
+					newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.STRING,
+						Value:    "\"Close\"",
+					}, &ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.INT,
+						Value:    strconv.Itoa(intID),
+					}})
+					c.InsertBefore(newCall)
+					Uint16OpID++
+				}
+			}
+		}
+
 
 	case *ast.SwitchStmt:
 		positionOriSelect := currentFSet.Position(concrete.Switch)
@@ -241,6 +319,7 @@ func pre(c *astutil.Cursor) bool {
 			if concrete.Body != nil && len(concrete.Body.List) != 0 {
 				firstStmt := concrete.Body.List[0]
 				additionalNode = firstStmt
+				boolNeedImport_gooracle = true // We need to import gooracle
 			}
 
 

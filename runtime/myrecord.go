@@ -78,17 +78,7 @@ func RecordChOp(c *hchan) {
 		c.chanRecord.NotClosed = false
 	}
 
-	const size = 64 << 10
-	buf := make([]byte, size)
-	buf = buf[:Stack(buf, false)]
-	strStack := string(buf)
-	stackSingleGo := ParseStackStr(strStack)
-	if len(stackSingleGo.VecFuncLine) < 2 {
-		return
-	}
-	strOpID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	uint32curLoc, _ := hashStr(strOpID) // TODO: important: how to have a uint16 hash of string
-	curLoc := uint16(uint32curLoc)
+	curLoc := getg().uint16ChOpID
 	var preLoc, xorLoc uint16
 	if BoolRecordPerCh {
 		preLoc = c.preLoc
@@ -100,4 +90,9 @@ func RecordChOp(c *hchan) {
 	xorLoc = XorUint16(curLoc, preLoc)
 
 	atomic.AddUint32(&TupleRecord[xorLoc], 1)
+}
+
+func StoreChOpInfo(strOpType string, uint16OpID uint16) {
+	getg().strChOpType = strOpType
+	getg().uint16ChOpID = uint16OpID
 }
