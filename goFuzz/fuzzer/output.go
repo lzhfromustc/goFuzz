@@ -2,7 +2,7 @@ package fuzzer
 
 import (
 	"bufio"
-	"goFuzz/goFuzz/config"
+	"goFuzz/config"
 	"os"
 )
 

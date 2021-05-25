@@ -4,38 +4,38 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"fmt"
-	"goFuzz/goFuzz/config"
+	"goFuzz/config"
 	"os"
 	"strconv"
 	"strings"
 )
 
 type Input struct {
-	Note string
-	TestName string
-	SelectDelayMS int // How many milliseconds a select will wait for the prioritized case
-	Stage string // "unknown", "deter", "calib" or "rand"
-	VecSelect []SelectInput
+	Note          string
+	TestName      string
+	SelectDelayMS int    // How many milliseconds a select will wait for the prioritized case
+	Stage         string // "unknown", "deter", "calib" or "rand"
+	VecSelect     []SelectInput
 }
 
 type SelectInput struct {
 	StrFileName string
-	IntLineNum int
-	IntNumCase int
+	IntLineNum  int
+	IntNumCase  int
 	IntPrioCase int
 }
 
 const (
 	NotePrintInput string = "PrintInput"
-	NoteEmptyName string = "Empty"
-	InputFileName string = "myinput.txt"
+	NoteEmptyName  string = "Empty"
+	InputFileName  string = "myinput.txt"
 )
 
 func EmptyRunOutput() *RunOutput {
 	return &RunOutput{
 		RetInput:  nil,
 		RetRecord: nil,
-		Stage: "Unknown",
+		Stage:     "Unknown",
 	}
 }
 
@@ -45,7 +45,7 @@ func EmptyInput() *Input {
 		Note:          NotePrintInput,
 		SelectDelayMS: 0,
 		VecSelect:     nil,
-		Stage: 		   "unknown",
+		Stage:         "unknown",
 	}
 }
 
@@ -96,7 +96,7 @@ func HashOfRecord(record *Record) string {
 }
 
 func FindRecordHashInSlice(recordHash string, recordHashSlice []string) bool {
-	for _, searchRecordHash := range recordHashSlice{
+	for _, searchRecordHash := range recordHashSlice {
 		if recordHash == searchRecordHash {
 			return true
 		}
@@ -250,14 +250,14 @@ func copySelectInput(sI SelectInput) SelectInput {
 }
 
 func copyInput(input *Input) *Input {
-	newInput :=  &Input{
+	newInput := &Input{
 		Note:          input.Note,
-		TestName:       input.TestName,
+		TestName:      input.TestName,
 		SelectDelayMS: input.SelectDelayMS,
 		VecSelect:     []SelectInput{},
 	}
 	for _, selectInput := range input.VecSelect {
-		newInput.VecSelect = append(newInput.VecSelect, copySelectInput(selectInput))  // TODO:: Here, the original is append(..., selectInput), not the copy of it. A bug?
+		newInput.VecSelect = append(newInput.VecSelect, copySelectInput(selectInput)) // TODO:: Here, the original is append(..., selectInput), not the copy of it. A bug?
 	}
 	return newInput
 }

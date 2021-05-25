@@ -487,6 +487,8 @@ type g struct {
 	// the original select corresponding to this switch. This variables records this line number so myselect.go can use it
 	lastMySwitchOriSelectNumCase int
 	lastMySwitchChoice int
+	strChOpType string // A local recording for the type of channel operation executed now
+	uint16ChOpID uint16 // A local recording for the uint16 ID of channel operation executed now
 }
 
 type m struct {
@@ -543,10 +545,13 @@ type m struct {
 	syscalltick   uint32
 	freelink      *m // on sched.freem
 
-	// mFixup is used to synchronize OS related m state (credentials etc)
-	// use mutex to access.
+	// mFixup is used to synchronize OS related m state
+	// (credentials etc) use mutex to access. To avoid deadlocks
+	// an atomic.Load() of used being zero in mDoFixupFn()
+	// guarantees fn is nil.
 	mFixup struct {
 		lock mutex
+		used uint32
 		fn   func(bool) bool
 	}
 

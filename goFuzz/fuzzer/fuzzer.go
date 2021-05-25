@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
-	"goFuzz/goFuzz/config"
+	"goFuzz/config"
 	"math/big"
 	"os"
 	"os/exec"
@@ -12,11 +12,9 @@ import (
 	"time"
 )
 
-
-
 type FuzzQueryEntry struct {
 	IsFavored              bool
-	BestScore			   int   // TODO:: I only save the BestScore for the CurrentInput, is that enough?
+	BestScore              int // TODO:: I only save the BestScore for the CurrentInput, is that enough?
 	ExecutionCount         int
 	IsCalibrateFail        bool
 	CurrentInput           *Input
@@ -45,7 +43,7 @@ func Get_Random_Int_With_Max(max int) int {
 	return int(mutateMethod.Int64())
 }
 
-func Random_Mutate_Input(input *Input) (reInput *Input){
+func Random_Mutate_Input(input *Input) (reInput *Input) {
 	/* TODO:: In the current stage, I am not mutating the delayMS number!!! */
 	reInput = copyInput(input)
 	reInput.SelectDelayMS += 500 // TODO:: we may need to tune the two numbers here
@@ -62,7 +60,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 
 	case 1:
 		/* Mutate two select per time */
-		for mutateIdx := 0; mutateIdx < 2; mutateIdx++{
+		for mutateIdx := 0; mutateIdx < 2; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
@@ -70,7 +68,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 
 	case 2:
 		/* Mutate three select per time */
-		for mutateIdx := 0; mutateIdx < 3; mutateIdx++{
+		for mutateIdx := 0; mutateIdx < 3; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
@@ -79,7 +77,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 	case 3:
 		/* Mutate random number of select. */ // TODO:: Not sure whether it is necessary. Just put it here now.
 		mutateChance := Get_Random_Int_With_Max(len(reInput.VecSelect))
-		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++{
+		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
@@ -91,7 +89,6 @@ func Random_Mutate_Input(input *Input) (reInput *Input){
 	}
 	return
 }
-
 
 func Run(input *Input) (retOutput *RunOutput) {
 	if input.TestName == "Empty" || input.TestName == "" {
@@ -131,7 +128,7 @@ func Run(input *Input) (retOutput *RunOutput) {
 		fmt.Println("The export of TestPath fails:", err)
 		return
 	}
-	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH + "/src/")
+	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH+"/src/")
 	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName) // TODO: Consider handling the case that strTestName isn't a unit test
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
@@ -152,7 +149,6 @@ func Run(input *Input) (retOutput *RunOutput) {
 		os.Exit(1)
 	}
 
-
 	// Read the newly printed input file if this is the first run
 	retInput := EmptyInput()
 	if boolFirstRun {
@@ -169,22 +165,22 @@ func Run(input *Input) (retOutput *RunOutput) {
 	retOutput.RetInput = retInput
 	retOutput.RetRecord = retRecord
 	/* Pass the stage information to the output, otherwise, when the main routine receive the output,
-			it does not know the context fo the executions. */
+	it does not know the context fo the executions. */
 	retOutput.Stage = input.Stage
 	return
 }
 
 func SetDeadline() {
-	go func(){
+	go func() {
 		time.Sleep(config.FuzzerDeadline)
-		fmt.Println("The checker has been running for",config.FuzzerDeadline,". Now force exit")
+		fmt.Println("The checker has been running for", config.FuzzerDeadline, ". Now force exit")
 		os.Exit(1)
 	}()
 }
 
 func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEntry *FuzzQueryEntry, mainRecord *Record, fuzzingQueue *[]FuzzQueryEntry, allRecordHashMap map[string]struct{}) {
 	if stage == "calib" {
-		if len(retInput.VecSelect) == 0 {   // TODO:: Should we ignore the output that contains no VecSelects entry?
+		if len(retInput.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
 			return
 		}
 		recordHash := HashOfRecord(retRecord)
@@ -198,7 +194,6 @@ func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEn
 		if curScore > currentEntry.BestScore {
 			currentEntry.BestScore = curScore
 		}
-
 
 	} else if stage == "deter" {
 		if len(retInput.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
@@ -221,21 +216,22 @@ func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEn
 			return
 		}
 
-
 	} else if stage == "rand" {
 		recordHash := HashOfRecord(retRecord)
-		if _, exist := allRecordHashMap[recordHash]; exist == false {   // Found a new input with unique record!!!
+		if _, exist := allRecordHashMap[recordHash]; exist == false { // Found a new input with unique record!!!
 			curScore := ComputeScore(mainRecord, retRecord)
 			currentFuzzEntry := FuzzQueryEntry{
 				IsFavored:              false,
 				ExecutionCount:         1,
 				BestScore:              curScore,
-				CurrentInput:           retInput,   // TODO:: Should we save ori_input or retInput???
+				CurrentInput:           retInput, // TODO:: Should we save ori_input or retInput???
 				CurrentRecordHashSlice: []string{recordHash},
 			}
 			*fuzzingQueue = append(*fuzzingQueue, currentFuzzEntry)
 			allRecordHashMap[recordHash] = struct{}{}
-		} else {return}  // This mutation does not create new record. Discarded.
+		} else {
+			return
+		} // This mutation does not create new record. Discarded.
 		currentEntry.ExecutionCount += 1
 	}
 }

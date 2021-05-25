@@ -79,3 +79,7 @@ func AfterRun() {
 	}
 	CloseOutputFile()
 }
+
+func StoreOpInfo(strOpType string, uint16OpID uint16) {
+	runtime.StoreChOpInfo(strOpType, uint16OpID)
+}

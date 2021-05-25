@@ -3,7 +3,7 @@ package fuzzer
 import (
 	"bufio"
 	"fmt"
-	"goFuzz/goFuzz/config"
+	"goFuzz/config"
 	"os"
 	"strconv"
 	"strings"
@@ -14,13 +14,12 @@ type Record struct {
 	MapChanRecord  map[string]ChanRecord
 }
 
-
 type ChanRecord struct {
-	ChID string
-	Closed bool
+	ChID      string
+	Closed    bool
 	NotClosed bool
-	CapBuf int
-	PeakBuf int
+	CapBuf    int
+	PeakBuf   int
 }
 
 const (
