@@ -34,9 +34,9 @@ func RecordChMake(capBuf int, c *hchan) {
 		return
 	}
 
-	const size = 64 << 10 // TODO: is 64<<10 too big?
+	const size = 64 << 10
 	buf := make([]byte, size)
-	buf = buf[:Stack(buf, false)] // TODO: important: is Stack() too heavy? How about replace it will Caller(N)?
+	buf = buf[:Stack(buf, false)]
 	strStack := string(buf)
 	stackSingleGo := ParseStackStr(strStack)
 	if len(stackSingleGo.VecFuncLine) < 2 { // if the channel is created in runtime, strStack won't contain enough
@@ -44,7 +44,7 @@ func RecordChMake(capBuf int, c *hchan) {
 		return
 	}
 	strChID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	c.id, _ = hashStr(strChID)  // TODO: important: how to have a uint16 hash of string
+	c.id, _ = hashStr(strChID)
 	c.id = uint32(uint16(c.id))
 
 	newChRecord := &ChanRecord{
