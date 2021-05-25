@@ -138,23 +138,59 @@ func TestF5(t *testing.T) {
 func TestTmp(t *testing.T) {
 	ch := make(chan int, 1)
 	ch2 := make(chan int, 1)
-	//ch <- 1
-	select {
-	case <- time.After( 1 * time.Second) :
-		fmt.Println("First case")
+	ch3 := make(chan int, 1)
+	ch4 := make(chan int, 1)
+	ch5 := make(chan int, 1)
+	ch6 := make(chan int, 1)
+	go func() {
+		for {
+			<-ch
+		}
+	}()
+	go func() {
+		for {
+			<-ch2
+		}
+	}()
+	go func() {
+		for {
+			ch3 <- 1
+		}
+	}()
+	go func() {
+		for {
+			ch4 <- 1
+		}
+	}()
+	go func() {
+		for {
+			ch5 <- 1
+		}
+	}()
+	go func() {
+		for {
+			ch6 <- 1
+		}
+	}()
 
-	case <- time.After( 3 * time.Second) :
-		fmt.Println("Second case")
-	case <- time.After( 4 * time.Second) :
-		fmt.Println("Third case")
-	case ch <- 1:
-		fmt.Println("Fifth case")
-	case ch2 <- 1:
-		fmt.Println("Sixth case")
-	case <- time.After( 7 * time.Second) :
-		fmt.Println("Fourth case")
-
-	default:
-		fmt.Println("Default case")
+	for {
+		select {
+		case <-ch3: //6
+			fmt.Println("First case")
+		case <-ch4: //5
+			fmt.Println("Second case")
+		case <-ch5: //4
+			fmt.Println("Third case")
+		case ch <- 1: //0
+			fmt.Println("Fourth case")
+		default: //-1
+			fmt.Println("Default case")
+		case ch2 <- 1:  //1
+			fmt.Println("Fifth case")
+		case <-ch6: //3
+			fmt.Println("Sixth case")
+		case ch <- 1: //2
+			fmt.Println("7th case")
+		}
 	}
 }

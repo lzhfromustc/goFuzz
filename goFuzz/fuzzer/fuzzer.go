@@ -30,6 +30,7 @@ func Deterministic_enumerate_input(input *Input) (reInputSlice []*Input) {
 		for i := 0; i < select_input.IntNumCase; i++ {
 			tmp_input = copyInput(input)
 			tmp_input.VecSelect[idx_vec_select].IntPrioCase = i
+			tmp_input.SelectDelayMS = 500 // TODO:: We may need to tune the number here
 			reInputSlice = append(reInputSlice, tmp_input)
 		}
 	}
@@ -47,6 +48,10 @@ func Get_Random_Int_With_Max(max int) int {
 func Random_Mutate_Input(input *Input) (reInput *Input){
 	/* TODO:: In the current stage, I am not mutating the delayMS number!!! */
 	reInput = copyInput(input)
+	reInput.SelectDelayMS += 500 // TODO:: we may need to tune the two numbers here
+	if reInput.SelectDelayMS > 5000 {
+		reInput.SelectDelayMS = 500
+	}
 	mutateMethod := Get_Random_Int_With_Max(4)
 	switch mutateMethod {
 	case 0:

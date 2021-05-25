@@ -43,7 +43,7 @@ func EmptyInput() *Input {
 	return &Input{
 		TestName:      NoteEmptyName,
 		Note:          NotePrintInput,
-		SelectDelayMS: 1000,
+		SelectDelayMS: 0,
 		VecSelect:     nil,
 		Stage: 		   "unknown",
 	}
