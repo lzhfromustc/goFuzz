@@ -1,3 +1,5 @@
+github.com/yourbasic/graph v0.0.0-20170921192928-40eb135c0b26 h1:4u7nCRnWizT8R6xOP7cGaq+Ov0oBGkKMsLWZKiwDFas=
+github.com/yourbasic/graph v0.0.0-20170921192928-40eb135c0b26/go.mod h1:Rfzr+sqaDreiCaoQbFCu3sTXxeFq/9kXRuyOoSlGQHE=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=

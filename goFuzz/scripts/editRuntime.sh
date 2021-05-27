@@ -1,6 +1,12 @@
+#!/bin/bash -e
+cd "$(dirname "$0")"
+
 echo "Copying files into /usr/local/go/src/runtime"
 echo "select.go, chan.go, runtime2.go will be overwritten. They are copied to *.backup"
-RUNTIME=/usr/local/go/src/runtime
+
+GOROOT=$(go env GOROOT)
+RUNTIME=$GOROOT/src/runtime
+
 cp ../../runtime/my* $RUNTIME
 mv $RUNTIME/select.go $RUNTIME/select.go.backup
 mv $RUNTIME/chan.go $RUNTIME/chan.go.backup
