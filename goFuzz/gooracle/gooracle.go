@@ -19,13 +19,13 @@ import (
 // ChanInfo is 1-to-1 with every channel. It tracks a list of goroutines that hold the reference to the channel
 type ChanInfo struct {
 	Chan            interface{} // Stores the channel. Can be used as ID of channel
-	intBuffer       int // The buffer capability of channel. 0 if channel is unbuffered
-	mapRefGoroutine sync.Map // Stores all goroutines that still hold reference to this channel
+	intBuffer       int         // The buffer capability of channel. 0 if channel is unbuffered
+	mapRefGoroutine sync.Map    // Stores all goroutines that still hold reference to this channel
 	strDebug        string
 	intFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
 }
 
-var MapChan2ChanInfo sync.Map // Help us retrieve ChanInfo with a given channel
+var MapChan2ChanInfo sync.Map  // Help us retrieve ChanInfo with a given channel
 var NotTracingChan interface{} // This is a fake channel. We use it in the place of channels that we are not interested in
 var NotTracingChanInfo = &ChanInfo{}
 var DefaultCaseChan interface{}
@@ -95,6 +95,7 @@ func RemoveRefGoroutine(chInfo *ChanInfo, goInfo *GoInfo) {
 	chInfo.mapRefGoroutine.Delete(goInfo)
 	goInfo.mapChanInfo.Delete(chInfo)
 }
+
 //func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
 //	RemoveRefGoroutine()
 //	chInfo.mapRefGoroutine.Delete(goInfo)
@@ -108,7 +109,7 @@ func (chInfo *ChanInfo) CheckBlockBug() {
 	}
 
 	if chInfo.intBuffer == 0 {
-		countRefGo := 0 // Number of goroutines that hold the reference to the channel
+		countRefGo := 0             // Number of goroutines that hold the reference to the channel
 		countBlockAtThisChanGo := 0 // Number of goroutines that are blocked at an operation of this channel
 		f := func(key interface{}, value interface{}) bool {
 			goInfo, _ := key.(*GoInfo)
@@ -125,7 +126,7 @@ func (chInfo *ChanInfo) CheckBlockBug() {
 		if countRefGo == countBlockAtThisChanGo {
 			if countRefGo == 0 {
 				// debug code
-				countRefGo2 := 0 // Number of goroutines that hold the reference to the channel
+				countRefGo2 := 0             // Number of goroutines that hold the reference to the channel
 				countBlockAtThisChanGo2 := 0 // Number of goroutines that are blocked at an operation of this channel
 				f := func(key interface{}, value interface{}) bool {
 					goInfo, _ := key.(*GoInfo)
@@ -203,7 +204,7 @@ func (chInfo *ChanInfo) CheckBlockBug() {
 	}
 }
 
-var PrintBug bool = true// This doesn't influnece whether we detect the bug
+var PrintBug bool = true // This doesn't influnece whether we detect the bug
 
 func ReportBug(chInfo *ChanInfo) {
 	countRefGo := 0
@@ -221,10 +222,6 @@ func ReportBug(chInfo *ChanInfo) {
 	}
 }
 
-
-
-
-
 //// Part 1.2: data struct for each goroutine
 
 // GoInfo is 1-to-1 with each goroutine.
@@ -234,42 +231,41 @@ func ReportBug(chInfo *ChanInfo) {
 // Currently we use a global atomic int64 to differentiate each goroutine, and a variable currentGo to represent each goroutine
 // This is not a good practice because the goroutine need to pass currentGo to its every callee
 type GoInfo struct {
-	ID          int64
+	ID int64
 	//BlockAtOp   *OpInfo // When the goroutine is about to be blocked at an operation, store the operation. Nil when normally running
 	BlockMap map[*ChanInfo]string // Nil when normally running. When blocked at an operation of ChanInfo, store
 	// one ChanInfo and the operation. When blocked at select, store multiple ChanInfo and
 	// operation. Default in select is also also stored in map, which is DefaultCaseChanInfo
 	mapChanInfo sync.Map // Stores all channels that this goroutine still hold reference to
 
-
-	Logger GoLogger
+	mapWgInfo sync.Map // Stores all WaitGroups that this goroutine still hold reference to
+	Logger    GoLogger
 }
 
 type GoLogger struct {
-	StrCreationSite string // Where the goroutine is created. Use filename+":"+strconv.Itoa(linenumber)
-	VecOp []LogOp // A list of executed operations with order
+	StrCreationSite string  // Where the goroutine is created. Use filename+":"+strconv.Itoa(linenumber)
+	VecOp           []LogOp // A list of executed operations with order
 }
-
 
 type LogOp interface {
 	Log() string
 }
 
 type LogSendRecvClose struct {
-	Ch string // Used to differentiate channels created at the same line in source code
+	Ch    string // Used to differentiate channels created at the same line in source code
 	StrOp string
 }
 
 // TODO: modify Log()
 func (l LogSendRecvClose) Log() string {
-	return "" + "_" +l.StrOp
+	return "" + "_" + l.StrOp
 }
 
 type LogSelect struct {
 	BoolHasDefault bool
-	VecCh []string // The order of this slice is the same as the order of select cases. Default is DefaultCaseChanInfo
-	VecOp []string
-	ChChosen interface{}
+	VecCh          []string // The order of this slice is the same as the order of select cases. Default is DefaultCaseChanInfo
+	VecOp          []string
+	ChChosen       interface{}
 }
 
 // TODO: modify Log()
@@ -285,7 +281,7 @@ func (l LogSelect) Log() string {
 
 type LogSleep struct {
 	StrSleepSite string // Where is the sleep. Use filename+":"+strconv.Itoa(linenumber)
-	SleepTime int64
+	SleepTime    int64
 }
 
 // TODO: modify Log()
@@ -307,7 +303,7 @@ func GoID() int64 {
 func NewGoroutine() *GoInfo {
 	id := GoID()
 	newGoInfo := &GoInfo{
-		ID:          id,
+		ID: id,
 		//BlockAtOp:   nil,
 		BlockMap:    nil,
 		mapChanInfo: sync.Map{},
@@ -365,7 +361,6 @@ func (goInfo *GoInfo) RemoveAllRef() {
 	}
 	goInfo.mapChanInfo.Range(f)
 }
-
 
 // SetBlockAt should be called before each channel operation, meaning the current goroutine is about to execute that operation
 // Note that we check bug in this function, because it's possible for the goroutine to be blocked forever if it execute that operation
@@ -445,11 +440,9 @@ func (goInfo *GoInfo) IsBlockAtGivenChan(chInfo *ChanInfo) (boolIsBlockAtGiven b
 	return
 }
 
-
-
 // Log file
 type Logger struct {
-	RunID int
+	RunID        int
 	MapGoID2Site map[int64]string
 	//MapChPtr2Site map[interface{}]string
 	VecGoLogger []GoLogger
@@ -461,11 +454,11 @@ var Log Logger
 
 func InitLogger(IDLast int) {
 	Log = Logger{
-		RunID:         IDLast + 1,
-		MapGoID2Site:  make(map[int64]string),
+		RunID:        IDLast + 1,
+		MapGoID2Site: make(map[int64]string),
 		//MapChPtr2Site: make(map[interface{}]string),
-		VecGoLogger:     nil,
-		mu:				sync.Mutex{},
+		VecGoLogger: nil,
+		mu:          sync.Mutex{},
 	}
 }
 
@@ -534,9 +527,6 @@ func (g *GoInfo) RecordSelectChosen(l LogSelect, intIndex int) {
 	g.Logger.VecOp = append(g.Logger.VecOp, l)
 }
 
-
-
-
 ////// Part 1.3: data struct for each operation
 //
 //// OpInfo is 1-to-1 mapped with an operation. It is also 1-to-1 mapped with the goroutine that will execute it
@@ -552,12 +542,13 @@ func (g *GoInfo) RecordSelectChosen(l LogSelect, intIndex int) {
 //}
 
 const (
-	Send = "Send"
-	Recv = "Recv"
-	Close = "Close"
-	BSelect = "BlockingSelect"
+	Send     = "Send"
+	Recv     = "Recv"
+	Close    = "Close"
+	BSelect  = "BlockingSelect"
 	NBSelect = "NonBlockingSelect"
 )
+
 //var NotTracingChanOp *OpInfo = &OpInfo{} // bonded with NotTracingChan. We use it in the place of operations that belong
 //// to channels we are not interested in
 //
@@ -599,7 +590,6 @@ const (
 //}
 //
 
-
 //// Part 2.1: Original Benchmark for Goroutine Leak
 
 // A benchmark that creates numCh channels, and numGoroutine child goroutines for each channel. numSyncGoroutine of the goroutines belong
@@ -639,8 +629,6 @@ func BenchGL(numCh int, numGoroutine int, numSyncGoroutine int, timeSleep, timeO
 		}
 	}
 
-
-
 	for j := 0; j < numCh; j++ {
 		for i := 0; i < numGoroutine; i++ {
 
@@ -653,7 +641,6 @@ func BenchGL(numCh int, numGoroutine int, numSyncGoroutine int, timeSleep, timeO
 	}
 }
 
-
 // Code to control time
 func SelectWaitTime() time.Duration {
 	return 30 * time.Second
@@ -665,18 +652,16 @@ func PriorityCaseIndex() int {
 	return 1
 }
 
-
-
 //// Part 2.2: Benchmark monitored by Oracle described in Part 1
 
 // Same as BenchGL, but we insert the Oracle code here to detect bug
 func BenchGLDetect(numCh int, numGoroutine int, numSyncGoroutine int, timeSleep, timeOut time.Duration) {
-	currentGo := NewGoroutine()		// initialize a GoInfo
+	currentGo := NewGoroutine() // initialize a GoInfo
 	//defer func() {
 	//	currentGo.PrintLog()
 	//}()
 	defer func() {
-		currentGo.RemoveAllRef()		// In this benchmark, we know that at the end of this function, the parent goroutine should lose
+		currentGo.RemoveAllRef() // In this benchmark, we know that at the end of this function, the parent goroutine should lose
 		// the reference to all the channels. We need further implemenation to decide where
 		// to call RemoveRef() for more general cases
 	}()
@@ -684,7 +669,7 @@ func BenchGLDetect(numCh int, numGoroutine int, numSyncGoroutine int, timeSleep,
 	vecCh := []chan bool{}
 	for j := 0; j < numCh; j++ {
 		newCh := make(chan bool)
-		newChInfo := NewChanInfo(newCh)			// After the creation of a channel we interested in, initialize a ChanInfo
+		newChInfo := NewChanInfo(newCh) // After the creation of a channel we interested in, initialize a ChanInfo
 		AddRefGoroutine(newChInfo, currentGo)
 
 		vecCh = append(vecCh, newCh)
@@ -692,35 +677,35 @@ func BenchGLDetect(numCh int, numGoroutine int, numSyncGoroutine int, timeSleep,
 
 	vecNonSyncCh := []chan int{}
 	for j := 0; j < numCh; j++ {
-		newCh := make(chan int)					// This is a channel we are not interested in, don't create ChanInfo
+		newCh := make(chan int) // This is a channel we are not interested in, don't create ChanInfo
 		vecNonSyncCh = append(vecNonSyncCh, newCh)
 	}
 
 	for j := 0; j < numCh; j++ {
 		for i := 0; i < numGoroutine; i++ {
 
-			if i < numSyncGoroutine {			// The first numSyncGoroutine goroutines are using channels we are interested in
+			if i < numSyncGoroutine { // The first numSyncGoroutine goroutines are using channels we are interested in
 				go func(j int) {
-					currentGo := NewGoroutine()		// Note that currentGo here is a local variable in this child goroutine
-					AddRefGoroutine(FindChanInfo(vecCh[j]), currentGo)		// This function should be called for every
+					currentGo := NewGoroutine()                        // Note that currentGo here is a local variable in this child goroutine
+					AddRefGoroutine(FindChanInfo(vecCh[j]), currentGo) // This function should be called for every
 					// channel this child goroutine holds reference to. In this benchmark, only vecCh[j]
 					//defer func() {
 					//	currentGo.PrintLog()
 					//}()
 					defer func() {
-						currentGo.RemoveAllRef()		// When this child goroutine ends, it will not longer hold the reference to any channels
+						currentGo.RemoveAllRef() // When this child goroutine ends, it will not longer hold the reference to any channels
 						// CheckBlockBug() is called inside
 					}()
 
 					time.Sleep(timeSleep)
 
 					// The original "vecCh[j] <- true" is now accompanied with 3 API calls
-					currentGo.SetBlockAt(vecCh[j], Send)			// CheckBlockBug() is called inside
+					currentGo.SetBlockAt(vecCh[j], Send) // CheckBlockBug() is called inside
 					vecCh[j] <- true
 					currentGo.WithdrawBlock()
-				}(j)		// remember to pass j, to avoid data race
+				}(j) // remember to pass j, to avoid data race
 
-			} else {							// The other goroutines are using channels we are not interested in
+			} else { // The other goroutines are using channels we are not interested in
 				go func(j int) {
 					time.Sleep(timeSleep)
 					vecNonSyncCh[j] <- 1
@@ -730,13 +715,11 @@ func BenchGLDetect(numCh int, numGoroutine int, numSyncGoroutine int, timeSleep,
 		}
 	}
 
-
-
 	for j := 0; j < numCh; j++ {
 		for i := 0; i < numGoroutine; i++ {
 
 			currentGo.SetBlockAt(vecCh[j], Recv)
-			currentGo.SetBlockAt(NotTracingChan, Recv)		// Use NotTracingChan to replace vecNonSyncCh[j], because we are not interested in it
+			currentGo.SetBlockAt(NotTracingChan, Recv) // Use NotTracingChan to replace vecNonSyncCh[j], because we are not interested in it
 			select {
 			case <-vecCh[j]:
 				currentGo.WithdrawBlock()
@@ -786,7 +769,7 @@ func BenchmarkCICS(numChan int, numGoroutine int, numSendGoroutine int, intBuffe
 			wg.Done()
 		}()
 
-		for j := 0; j < numGoroutine - 1; j++ {
+		for j := 0; j < numGoroutine-1; j++ {
 			if j < numSendGoroutine {
 				go func() {
 					vecMuCh[i] <- true
@@ -808,10 +791,6 @@ func BenchmarkCICS(numChan int, numGoroutine int, numSendGoroutine int, intBuffe
 	wg.Wait()
 }
 
-
-
-
-
 //// Part 2.5: main function with parameters
 //		Run with -help to see the description of each parameter
 //		Example:
@@ -823,12 +802,12 @@ func main() {
 	ptrNumGo := flag.Int("numGo", 10, "Number of child goroutines created for each channel")
 	ptrNumMonitorGo := flag.Int("numSyncGo", 5, "Number of child goroutines that we monitor created for each channel")
 	ptrMSSleep := flag.Int("sleep", 5000, "Time that monitored child goroutine sleeps before send")
-	ptrMSTimeOut := flag.Int("timeout", 10, "Time that parent goroutine waits for child goroutines in each loop." +
+	ptrMSTimeOut := flag.Int("timeout", 10, "Time that parent goroutine waits for child goroutines in each loop."+
 		" Bugs are more likely to be triggered if timeout is larger than sleep")
-	ptrMSWait := flag.Int("wait", 10000, "Time that parent goroutine waits after the lifetime of channels. " +
-		"This is necessary if you want to see all the bug reports, because the parent goroutine may choose the timeout case for many times and exit. " +
+	ptrMSWait := flag.Int("wait", 10000, "Time that parent goroutine waits after the lifetime of channels. "+
+		"This is necessary if you want to see all the bug reports, because the parent goroutine may choose the timeout case for many times and exit. "+
 		"Then the OS will kill all child goroutines, leaving some bugs not found.")
-	ptrPrintBug := flag.Bool("print", false, "Whether a bug is printed out. Default value is false." +
+	ptrPrintBug := flag.Bool("print", false, "Whether a bug is printed out. Default value is false."+
 		" Don't turn this on if we want to measure overhead")
 	ptrOrigin := flag.Bool("origin", false, "Whether to run the original benchmark. Default value is false.")
 
@@ -860,7 +839,6 @@ func main() {
 		}
 		PrintLogger()
 	}
-
 
 	time.Sleep(timeWait)
 }

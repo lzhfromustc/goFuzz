@@ -73,4 +73,6 @@ Print the output to "/data/ziheng/shared/gotest/stubs/grpc/grpc-last/src/google.
 And use global tuple strategy
 
 BTW, we need to remove "(s)" before "TestStateTransitions_MultipleAddrsEntersReady()" manually. This is a special problem with grpc
-    
+
+
+-path=/Users/xsh/code/goFuzz/goFuzz/example/simple1 -GOPATH=/Users/xsh/code/goFuzz/goFuzz/example -output=/Users/xsh/code/goFuzz/goFuzz/example/simple1/myoutput.txt -test=TestHello
