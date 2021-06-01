@@ -3413,6 +3413,10 @@ func goexit1() {
 	if trace.enabled {
 		traceGoEnd()
 	}
+
+	///MYCODE
+	CurrentGoInfo().RemoveAllRef()
+
 	mcall(goexit0)
 }
 
@@ -4022,6 +4026,7 @@ func newproc(siz int32, fn *funcval) {
 	systemstack(func() {
 		newg := newproc1(fn, argp, siz, gp, pc)
 
+
 		_p_ := getg().m.p.ptr()
 		runqput(_p_, newg, true)
 
@@ -4129,6 +4134,10 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		_p_.goidcacheend = _p_.goidcache + _GoidCacheBatch
 	}
 	newg.goid = int64(_p_.goidcache)
+
+	///MYCODE
+	newg.goInfo = NewGoInfo(newg)
+
 	_p_.goidcache++
 	if raceenabled {
 		newg.racectx = racegostart(callerpc)

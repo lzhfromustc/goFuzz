@@ -53,7 +53,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 	if FlagSkipTmpCode {
 		return
 	}
-	SleepMS(1000)
+	SleepMS(100)
 	lock(&muMap)
 	outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
@@ -86,7 +86,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 				continue
 			case Index(str, "/vendor/") >= 0 && Index(str, "Lock(") == -1:
 				continue
-			case Index(str, "=====") >= 0:
+			case Index(str, "k8s.io/klog:1169") >= 0:
 				continue
 			case Index(str, "=====") >= 0:
 				continue

@@ -135,6 +135,26 @@ func TestF5(t *testing.T) {
 
 }
 
+func TestTmp2(t *testing.T) {
+
+	ch := make(chan int)
+	go func() {
+		defer func() {
+			fmt.Println("Child 1 is exiting")
+		}()
+		ch <- 1
+	}()
+	go func() {
+		defer func() {
+			fmt.Println("Child 2 is exiting")
+		}()
+	}()
+
+	<-ch
+	time.Sleep(time.Second)
+	fmt.Println("Finished")
+}
+
 func TestTmp(t *testing.T) {
 	ch := make(chan int, 1)
 	ch2 := make(chan int, 1)

@@ -50,6 +50,9 @@ type hchan struct {
 	lock mutex
 
 	///MYCODE:
+	chInfo *ChanInfo
+
+	///MYCODE:
 	id uint32 // an uint32 assigned to the channel when it is made. Start from 0 and increase by 1 every time
 	preLoc uint16 // used when BoolRecordPerCh is true; stores the hash of last operation of this channel
 	chanRecord *ChanRecord // a data struct to record information of this channel
@@ -112,6 +115,10 @@ func makechan(t *chantype, size int) *hchan {
 	}
 	///MYCODE
 	RecordChMake(size, c)
+
+	///MYCODE
+	c.chInfo = NewChanInfo(c)
+	StoreLastChanInfo(c.chInfo)
 
 	c.elemsize = uint16(elem.size)
 	c.elemtype = elem
@@ -209,6 +216,13 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 
 	lock(&c.lock)
+
+	///MYCODE
+	currentGo := CurrentGoInfo()
+	AddRefGoroutine(c.chInfo, currentGo)
+	currentGo.SetBlockAt(c, Send)
+	c.chInfo.CheckBlockBug(nil)
+	defer currentGo.WithdrawBlock()
 
 	///MYCODE
 	RecordChOp(c)
@@ -528,6 +542,13 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	lock(&c.lock)
+
+	///MYCODE
+	currentGo := CurrentGoInfo()
+	AddRefGoroutine(c.chInfo, currentGo)
+	currentGo.SetBlockAt(c, Recv)
+	c.chInfo.CheckBlockBug(nil)
+	defer currentGo.WithdrawBlock()
 
 	///MYCODE
 	RecordChOp(c)

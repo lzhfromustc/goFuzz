@@ -98,7 +98,7 @@ func RemoveRefGoroutine(chInfo *ChanInfo, goInfo *GoInfo) {
 
 //func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
 //	RemoveRefGoroutine()
-//	chInfo.mapRefGoroutine.Delete(goInfo)
+//	chInfo.MapRefGoroutine.Delete(goInfo)
 //}
 
 // A blocking bug is detected, if all goroutines that hold the reference to a channel are blocked at an operation of the channel

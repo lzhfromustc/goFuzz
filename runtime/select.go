@@ -245,6 +245,11 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		nextp  **sudog
 	)
 
+	///MYCODE
+	var lastC *hchan
+	var currentGo *GoInfo
+	CS := []*ChanInfo{}
+
 	// pass 1 - look for something already waiting
 	var casi int
 	var cas *scase
@@ -289,6 +294,22 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		casi = -1
 		goto retc
 	}
+
+	///MYCODE
+	currentGo = CurrentGoInfo()
+	for _, o := range lockorder {
+		c0 := scases[o].c
+		if c0 != lastC {
+			lastC = c0
+			AddRefGoroutine(c.chInfo, currentGo)
+			currentGo.SetBlockAt(lastC, BSelect)
+			CS = append(CS, lastC.chInfo)
+		}
+	}
+	if lastC != nil {
+		lastC.chInfo.CheckBlockBug(CS)
+	}
+	defer currentGo.WithdrawBlock()
 
 	// pass 2 - enqueue on all chans
 	gp = getg()

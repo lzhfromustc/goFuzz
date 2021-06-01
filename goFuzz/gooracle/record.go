@@ -80,6 +80,35 @@ func AfterRun() {
 	CloseOutputFile()
 }
 
+func DumpInfo(){
+	runtime.TmpDumpBlockingInfo()
+}
+
 func StoreOpInfo(strOpType string, uint16OpID uint16) {
 	runtime.StoreChOpInfo(strOpType, uint16OpID)
+}
+
+func StoreChMakeInfo(ch interface{}, uint16OpID uint16) {
+	runtime.StoreChOpInfo("ChMake", uint16OpID)
+	runtime.LinkChToLastChanInfo(ch)
+}
+
+func CurrentGoAddPrime(ch interface{}) {
+	runtime.CurrentGoAddCh(ch)
+}
+
+func CurrentGoAddCh(ch interface{}) {
+	runtime.CurrentGoAddCh(ch)
+}
+
+func CurrentGoAddWaitgroup(wg interface{}) {
+	runtime.CurrentGoAddWaitgroup(wg)
+}
+
+func CurrentGoAddMutex(mu interface{}) {
+	runtime.CurrentGoAddMutex(mu)
+}
+
+func CurrentGoAddCond(cond interface{}) {
+	runtime.CurrentGoAddCond(cond)
 }

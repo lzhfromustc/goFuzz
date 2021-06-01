@@ -34,9 +34,9 @@ func RecordChMake(capBuf int, c *hchan) {
 		return
 	}
 
-	const size = 64 << 10
+	const size = 64 << 10 // TODO: is 64<<10 too big?
 	buf := make([]byte, size)
-	buf = buf[:Stack(buf, false)]
+	buf = buf[:Stack(buf, false)] // TODO: important: is Stack() too heavy? How about replace it will Caller(N)?
 	strStack := string(buf)
 	stackSingleGo := ParseStackStr(strStack)
 	if len(stackSingleGo.VecFuncLine) < 2 { // if the channel is created in runtime, strStack won't contain enough
@@ -44,7 +44,7 @@ func RecordChMake(capBuf int, c *hchan) {
 		return
 	}
 	strChID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	c.id, _ = hashStr(strChID)
+	c.id, _ = hashStr(strChID)  // TODO: important: how to have a uint16 hash of string
 	c.id = uint32(uint16(c.id))
 
 	newChRecord := &ChanRecord{
@@ -95,4 +95,36 @@ func RecordChOp(c *hchan) {
 func StoreChOpInfo(strOpType string, uint16OpID uint16) {
 	getg().strChOpType = strOpType
 	getg().uint16ChOpID = uint16OpID
+}
+
+func CurrentGoAddMutex(ch interface{}) {
+	lock(&MuMapChToChanInfo)
+	chInfo, exist := MapChToChanInfo[ch]
+	unlock(&MuMapChToChanInfo)
+	if !exist {
+		return
+	}
+	AddRefGoroutine(chInfo, CurrentGoInfo())
+}
+
+
+func CurrentGoAddCond(ch interface{}) {
+	lock(&MuMapChToChanInfo)
+	chInfo, exist := MapChToChanInfo[ch]
+	unlock(&MuMapChToChanInfo)
+	if !exist {
+		return
+	}
+	AddRefGoroutine(chInfo, CurrentGoInfo())
+}
+
+
+func CurrentGoAddWaitgroup(ch interface{}) {
+	lock(&MuMapChToChanInfo)
+	chInfo, exist := MapChToChanInfo[ch]
+	unlock(&MuMapChToChanInfo)
+	if !exist {
+		return
+	}
+	AddRefGoroutine(chInfo, CurrentGoInfo())
 }

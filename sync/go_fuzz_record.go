@@ -20,20 +20,23 @@ type CondRecord struct {
 
 type MutexRecord struct {
 	ID     string
+	PreLoc uint16
 	M *Mutex
 }
 
 type RWMutexRecord struct {
 	ID     string
+	PreLoc uint16
 	M *RWMutex
 }
 
 // RecordWgCreate expected to be instrumented at
 // WaitGroup creation.
-func RecordWgCreate(wg *WaitGroup, id: string, opId uint16) {
+func RecordWgCreate(wg *WaitGroup, id string, opId uint16) {
 	wg.Record = WgRecord{
 		ID: id,
-		PerLoc: opId,
+		PreLoc: opId,
+		Wg: wg,
 	}
 }
 
@@ -58,11 +61,11 @@ func RecordWgOp(wg *WaitGroup, opId uint16) {
 
 // RecordCondCreate expected to be instrumented at
 // Condition Variable creation.
-func RecordCondCreate(cond *Cond, id:string, opId uint16) {
+func RecordCondCreate(cond *Cond, id string, opId uint16) {
 	cond.Record = CondRecord{
 		Cond: cond,
 		ID: id,
-		PreLoc:opId
+		PreLoc:opId,
 	}
 
 }
@@ -86,11 +89,11 @@ func RecordCondOp(cond *Cond, opId uint16) {
 }
 
 
-func RecordMutexCreate(m *Mutex, id: string, opId uint16){
+func RecordMutexCreate(m *Mutex, id string, opId uint16){
 	m.Record = MutexRecord{
 		M: m,
 		ID: id,
-		PreLoc:opId
+		PreLoc:opId,
 	}
 }
 
@@ -111,11 +114,11 @@ func RecordMutexOp(m *Mutex, opId uint16){
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
 }
 
-func RecordRWMutexCreate(m *RWMutex, id: string, opId uint16){
+func RecordRWMutexCreate(m *RWMutex, id string, opId uint16){
 	m.Record = RWMutexRecord{
 		M: m,
 		ID: id,
-		PreLoc:opId
+		PreLoc:opId,
 	}
 }
 
