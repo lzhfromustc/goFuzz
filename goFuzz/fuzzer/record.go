@@ -1,10 +1,7 @@
 package fuzzer
 
 import (
-	"bufio"
 	"fmt"
-	"goFuzz/config"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -27,33 +24,14 @@ const (
 	RecordSplitter = "-----"
 )
 
-func FileNameOfRecord() string {
-	return config.StrTestPath + "/" + RecordFileName
-}
-
 func EmptyRecord() *Record {
 	return &Record{}
 }
 
-func ParseRecordFile() (retRecord *Record) {
+func ParseRecordFile(content string) (retRecord *Record) {
+	var err error
 	retRecord = EmptyRecord()
-	// The input being parsed shouldn't be empty
-	file, err := os.Open(FileNameOfRecord())
-	if err != nil {
-		fmt.Println("Failed to open record file:", FileNameOfRecord())
-		return
-	}
-	defer file.Close()
-
-	var text []string
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		text = append(text, scanner.Text())
-	}
-
+	text := strings.Split(content, "\n")
 	if len(text) == 0 {
 		fmt.Println("Record is empty:", FileNameOfInput())
 		return

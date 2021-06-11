@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"bufio"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"goFuzz/config"
 	"os"
@@ -11,11 +12,14 @@ import (
 )
 
 type Input struct {
-	Note          string
-	TestName      string
-	SelectDelayMS int    // How many milliseconds a select will wait for the prioritized case
-	Stage         string // "unknown", "deter", "calib" or "rand"
-	VecSelect     []SelectInput
+	Note           string
+	TestName       string
+	SelectDelayMS  int    // How many milliseconds a select will wait for the prioritized case
+	Stage          string // "unknown", "deter", "calib" or "rand"
+	VecSelect      []SelectInput
+	InputFilePath  string
+	RecordFilePath string
+	OutputFilePath string
 }
 
 type SelectInput struct {
@@ -49,11 +53,11 @@ func EmptyInput() *Input {
 	}
 }
 
-func CreateInput(input *Input) {
-	out, err := os.Create(FileNameOfInput())
+// SerializeInput dump input as string to file
+func SerializeInput(input *Input, dstFile string) error {
+	out, err := os.Create(dstFile)
 	if err != nil {
-		fmt.Println("Failed to create file:", FileNameOfInput())
-		return
+		return err
 	}
 	defer out.Close()
 
@@ -62,6 +66,7 @@ func CreateInput(input *Input) {
 
 	str := StrOfInput(input)
 	w.WriteString(str)
+	return nil
 }
 
 func StrOfInput(input *Input) (retStr string) {
@@ -108,76 +113,63 @@ func FileNameOfInput() string {
 	return config.StrTestPath + "/" + InputFileName
 }
 
-func ParseInputFile() (retInput *Input) {
-	retInput = EmptyInput()
+func ParseInputFile(content string) (*Input, error) {
+	var err error
 
-	// The input being parsed shouldn't be empty
-	file, err := os.Open(FileNameOfInput())
-	if err != nil {
-		fmt.Println("Failed to open input file:", FileNameOfInput())
-		return
-	}
-	defer file.Close()
-
-	var text []string
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		text = append(text, scanner.Text())
-	}
-
-	if len(text) < 2 {
-		fmt.Println("Input has less than 2 lines:", text)
-		return
+	lines := strings.Split(content, "\n")
+	if len(lines) < 2 {
+		return nil, errors.New("Input has less than 2 lines")
 	}
 
 	newInput := &Input{
-		Note:          strings.TrimSuffix(text[0], "\n"),
+		Note:          lines[0],
 		SelectDelayMS: 0,
 		VecSelect:     []SelectInput{},
 	}
 
-	strDelayMS := text[1]
+	strDelayMS := lines[1]
 	newInput.SelectDelayMS, err = strconv.Atoi(strDelayMS)
 	if err != nil {
-		fmt.Println("The first line of input is not a number:", strDelayMS)
-		return
+		return nil, err
 	}
 
-	for i, eachLine := range text {
-		if i < 2 {
-			continue
-		}
+	// Skip line 1 (PrintInput) and line 2 (select time out)
+	selectInfos := lines[2:]
+	for _, eachLine := range selectInfos {
 		if eachLine == "" {
 			continue
 		}
-		selectInput := SelectInput{}
-		// filename:linenum:totalCaseNum:chooseCaseNum
-		vecStr := strings.Split(eachLine, ":")
-		if len(vecStr) != 4 {
-			fmt.Println("One line in input has incorrect format:", eachLine, "\tLine:", i)
-			return
+		selectInput, err := ParseSelectInput(eachLine)
+		if err != nil {
+			return nil, err
 		}
-		selectInput.StrFileName = vecStr[0]
-		if selectInput.IntLineNum, err = strconv.Atoi(vecStr[1]); err != nil {
-			fmt.Println("One line in input has incorrect format:", vecStr, "\tLine:", i)
-			return
-		}
-		if selectInput.IntNumCase, err = strconv.Atoi(vecStr[2]); err != nil {
-			fmt.Println("One line in input has incorrect format:", vecStr, "\tLine:", i)
-			return
-		}
-		if selectInput.IntPrioCase, err = strconv.Atoi(vecStr[3]); err != nil {
-			fmt.Println("One line in input has incorrect format:", vecStr, "\tLine:", i)
-			return
-		}
-		newInput.VecSelect = append(newInput.VecSelect, selectInput)
+
+		newInput.VecSelect = append(newInput.VecSelect, *selectInput)
 	}
 
-	retInput = newInput
-	return
+	return newInput, nil
+}
+
+// ParseSelectInput parses the each select in input file
+// which has format filename:linenum:totalCaseNum:chooseCaseNum
+func ParseSelectInput(line string) (*SelectInput, error) {
+	var err error
+	selectInput := SelectInput{}
+	vecStr := strings.Split(line, ":")
+	if len(vecStr) != 4 {
+		return nil, fmt.Errorf("expect number of components: 4, actual: %d", len(vecStr))
+	}
+	selectInput.StrFileName = vecStr[0]
+	if selectInput.IntLineNum, err = strconv.Atoi(vecStr[1]); err != nil {
+		return nil, fmt.Errorf("incorrect format at line number")
+	}
+	if selectInput.IntNumCase, err = strconv.Atoi(vecStr[2]); err != nil {
+		return nil, fmt.Errorf("incorrect format at number of cases")
+	}
+	if selectInput.IntPrioCase, err = strconv.Atoi(vecStr[3]); err != nil {
+		return nil, fmt.Errorf("incorrect format at priority case")
+	}
+	return &selectInput, nil
 }
 
 //func GenInputs(input Input) []Input {

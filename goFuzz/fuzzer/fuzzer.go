@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"goFuzz/config"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"os/exec"
@@ -90,34 +91,27 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 	return
 }
 
-func Run(input *Input) (retOutput *RunOutput) {
+func Run(input *Input) (*RunOutput, error) {
 	if input.TestName == "Empty" || input.TestName == "" {
-		fmt.Println("The Run command in the fuzzer receive an input without input.TestName. ")
-		return
+		return nil, fmt.Errorf("the Run command in the fuzzer receive an input without input.TestName")
 	}
 	strTestName := input.TestName
 	boolFirstRun := input.Note == NotePrintInput
 	// Create the input file into disk
-	CreateInput(input)
-
-	// Load the output file before running the test
-	outputNumBugBefore := ParseOutputFile()
+	SerializeInput(input, input.InputFilePath)
 
 	// Run the test
 	err := os.Setenv("GOPATH", config.StrProjectGOPATH)
 	if err != nil {
-		fmt.Println("The export of GOPATH fails:", err)
-		return
+		return nil, fmt.Errorf("the export of GOPATH fails: %s", err)
 	}
 	err = os.Setenv("TestPath", config.StrTestPath)
 	if err != nil {
-		fmt.Println("The export of TestPath fails:", err)
-		return
+		return nil, fmt.Errorf("the export of TestPath fails: %s", err)
 	}
-	err = os.Setenv("OutputFullPath", config.StrOutputFullPath)
+	err = os.Setenv("OutputFullPath", input.OutputFilePath)
 	if err != nil {
-		fmt.Println("The export of OutputFullPath fails:", err)
-		return
+		return nil, fmt.Errorf("the export of OutputFullPath fails: %s", err)
 	}
 	if config.BoolGlobalTuple {
 		err = os.Setenv("BitGlobalTuple", "1")
@@ -125,8 +119,7 @@ func Run(input *Input) (retOutput *RunOutput) {
 		err = os.Setenv("BitGlobalTuple", "0")
 	}
 	if err != nil {
-		fmt.Println("The export of TestPath fails:", err)
-		return
+		return nil, fmt.Errorf("the export of TestPath fails: %s", err)
 	}
 	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH+"/src/")
 	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName) // TODO: Consider handling the case that strTestName isn't a unit test
@@ -137,14 +130,17 @@ func Run(input *Input) (retOutput *RunOutput) {
 	fmt.Println("Output of unit test:") // this output is meaningless. It just prints things to indicate whether the unit test passed or not. This has nothing to do with whether a bug is triggered
 	fmt.Println("test out:", outb.String(), "\ntest err:", errb.String())
 	if err != nil {
-		fmt.Println("The go test command fails:", err)
-		fmt.Println("Could have found a bug! Check stdout and myoutput.txt")
-		return
+		return nil, fmt.Errorf("go test command fails: %s", err)
 	}
 
 	// If the output file is longer, it means we found a new bug
-	outputNumBugAfter := ParseOutputFile()
-	if outputNumBugAfter > outputNumBugBefore {
+	bytes, err := ioutil.ReadFile(input.OutputFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	outputNumBug := ParseOutputFile(string(bytes))
+	if outputNumBug != 0 {
 		fmt.Println("Found a new bug. Now exit")
 		os.Exit(1)
 	}
@@ -152,22 +148,35 @@ func Run(input *Input) (retOutput *RunOutput) {
 	// Read the newly printed input file if this is the first run
 	retInput := EmptyInput()
 	if boolFirstRun {
-		retInput = ParseInputFile()
+		bytes, err := ioutil.ReadFile(input.InputFilePath)
+		if err != nil {
+			return nil, err
+		}
+
+		retInput, err = ParseInputFile(string(bytes))
+		if err != nil {
+			return nil, err
+		}
+
 	} else {
 		retInput = EmptyInput()
 	}
 	// Save the current TestName to the retInput.
 	retInput.TestName = strTestName
 	// Read the printed record file
-	retRecord := ParseRecordFile()
+	bytes, err = ioutil.ReadFile(input.RecordFilePath)
+	if err != nil {
+		return nil, err
+	}
+	retRecord := ParseRecordFile(string(bytes))
 
-	retOutput = EmptyRunOutput()
+	retOutput := EmptyRunOutput()
 	retOutput.RetInput = retInput
 	retOutput.RetRecord = retRecord
 	/* Pass the stage information to the output, otherwise, when the main routine receive the output,
 	it does not know the context fo the executions. */
 	retOutput.Stage = input.Stage
-	return
+	return retOutput, nil
 }
 
 func SetDeadline() {
