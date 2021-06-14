@@ -20,10 +20,10 @@ func init() {
 	//MapInput = make(map[string]SelectInput)
 }
 
-var FlagSkipTmpCode = false
+var BoolDebug = true
 
 func TmpBeforeBlock() {
-	if FlagSkipTmpCode {
+	if !BoolDebug {
 		return
 	}
 	gid := GoID()
@@ -38,7 +38,7 @@ func TmpBeforeBlock() {
 
 
 func TmpAfterBlock() {
-	if FlagSkipTmpCode {
+	if !BoolDebug {
 		return
 	}
 	gid := GoID()
@@ -50,10 +50,10 @@ func TmpAfterBlock() {
 func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 	retStr = ""
 	foundBug = false
-	if FlagSkipTmpCode {
+	if !BoolDebug {
 		return
 	}
-	SleepMS(100)
+	SleepMS(500)
 	lock(&muMap)
 	outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
@@ -160,7 +160,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 
 
 			retStr += "Bug Info:\n" + str + "\n"
-			print(str)
+			print(retStr)
 			foundBug = true
 
 		}

@@ -1,11 +1,18 @@
 package runtime
 
-import (
-	"sync/atomic"
-)
-
 func init() {
-	MapChToChanInfo = make(map[interface{}]*ChanInfo)
+	MapChToChanInfo = make(map[interface{}]PrimInfo)
+}
+
+var GlobalEnableOracle = false
+var BoolReportBug = false
+
+type PrimInfo interface {
+	Lock()
+	Unlock()
+	MapRef() map[*GoInfo]struct{}
+	AddGoroutine(*GoInfo)
+	RemoveGoroutine(*GoInfo)
 }
 
 //// Part 1.1: data struct for each channel
@@ -16,20 +23,26 @@ type ChanInfo struct {
 	IntBuffer       int             // The buffer capability of channel. 0 if channel is unbuffered
 	MapRefGoroutine map[*GoInfo]struct{} // Stores all goroutines that still hold reference to this channel
 	StrDebug        string
+	EnableOracle    bool // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
 }
 
-var MapChToChanInfo map[interface{}]*ChanInfo
+var MapChToChanInfo map[interface{}]PrimInfo
 var MuMapChToChanInfo mutex
 //var DefaultCaseChanInfo = &ChanInfo{}
 
+const strSDKPath string = "/usr/local/go/src/"
+
 // Initialize a new ChanInfo with a given channel
 func NewChanInfo(ch *hchan) *ChanInfo {
+	_, strFile, intLine, _ := Caller(2)
+	strLoc := strFile + ":" + Itoa(intLine)
 	newChInfo := &ChanInfo{
 		Chan:            ch,
 		IntBuffer:       int(ch.dataqsiz),
 		MapRefGoroutine: make(map[*GoInfo]struct{}),
-		StrDebug:        "",
+		StrDebug:        strLoc,
+		EnableOracle:    Index(strLoc, strSDKPath) < 0,
 		IntFlagFoundBug: 0,
 	}
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
@@ -37,64 +50,108 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 	return newChInfo
 }
 
+func (chInfo *ChanInfo) Lock() {
+	if chInfo == nil {
+		return
+	}
+	lock(&chInfo.Chan.lock)
+}
+
+func (chInfo *ChanInfo) Unlock() {
+	if chInfo == nil {
+		return
+	}
+	unlock(&chInfo.Chan.lock)
+}
+
+func (chInfo *ChanInfo) MapRef() map[*GoInfo]struct{} {
+	if chInfo == nil {
+		return make(map[*GoInfo]struct{})
+	}
+	return chInfo.MapRefGoroutine
+}
+
 // FindChanInfo can retrieve a initialized ChanInfo for a given channel
 func FindChanInfo(ch interface{}) *ChanInfo {
 	lock(&MuMapChToChanInfo)
 	chInfo := MapChToChanInfo[ch]
 	unlock(&MuMapChToChanInfo)
-	return chInfo
+	if chInfo == nil {
+		return nil
+	} else {
+		return chInfo.(*ChanInfo)
+	}
 }
 
 func LinkChToLastChanInfo(ch interface{}) {
 	lock(&MuMapChToChanInfo)
-	MapChToChanInfo[ch] = LoadLastChanInfo()
+	MapChToChanInfo[ch] = LoadLastPrimInfo()
 	unlock(&MuMapChToChanInfo)
 }
 
 // After the creation of a new channel, or at the head of a goroutine that holds a reference to a channel,
 // or whenever a goroutine obtains a reference to a channel, call this function
 // AddRefGoroutine links a channel with a goroutine, meaning the goroutine holds the reference to the channel
-func AddRefGoroutine(chInfo *ChanInfo, goInfo *GoInfo) {
+func AddRefGoroutine(chInfo PrimInfo, goInfo *GoInfo) {
+	if chInfo == nil || goInfo == nil {
+		return
+	}
 	chInfo.AddGoroutine(goInfo)
-	goInfo.AddChan(chInfo)
+	goInfo.AddPrime(chInfo)
 }
 
-func RemoveRefGoroutine(chInfo *ChanInfo, goInfo *GoInfo) {
+func RemoveRefGoroutine(chInfo PrimInfo, goInfo *GoInfo) {
+	if chInfo == nil || goInfo == nil {
+		return
+	}
 	chInfo.RemoveGoroutine(goInfo)
-	goInfo.RemoveChan(chInfo)
+	goInfo.RemovePrime(chInfo)
 }
 
 // This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
+// Must be called when chInfo.Chan.lock is held
 func (chInfo *ChanInfo) AddGoroutine(goInfo *GoInfo) {
+	if chInfo == nil {
+		return
+	}
 	chInfo.MapRefGoroutine[goInfo] = struct{}{}
 }
 
+// Must be called when chInfo.Chan.lock is held
 func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
+	if chInfo == nil {
+		return
+	}
 	delete(chInfo.MapRefGoroutine, goInfo)
 }
 
 // A blocking bug is detected, if all goroutines that hold the reference to a channel are blocked at an operation of the channel
 // Should be called with chInfo.Chan.lock is held
-func (chInfo *ChanInfo) CheckBlockBug(CS []*ChanInfo) {
-	mapCS := make(map[*ChanInfo]struct{})
+func CheckBlockBug(CS []PrimInfo) {
+	mapCS := make(map[PrimInfo]struct{})
 	mapGS := make(map[*GoInfo]struct{}) // all goroutines that hold reference to ch0
-	if CS == nil || len(CS) == 0 { // called from separate send or receive
-		mapCS[chInfo] = struct{}{}
-		if atomic.LoadInt32(&chInfo.IntFlagFoundBug) != 0 {
-			return
-		}
-	} else { // called from select
+	if len(CS) == 1 { // called from a single operation
+		mapCS[CS[0]] = struct{}{}
+		//if atomic.LoadInt32(CS[0].IntFlagFoundBug) != 0 {
+		//	return
+		//}
+	} else { // called from a select
 		for _, chI := range CS {
 			mapCS[chI] = struct{}{}
-			if atomic.LoadInt32(&chI.IntFlagFoundBug) != 0 {
-				return
-			}
 		}
 	}
 
 
 	for chI, _ := range mapCS {
-		for goInfo, _ := range chI.MapRefGoroutine {
+		if chI == (*ChanInfo)(nil) {
+			continue
+		}
+		if chanInfo, ok := chI.(*ChanInfo); ok {
+			if chanInfo.EnableOracle == false {
+				return
+			}
+		}
+		for goInfo, _ := range chI.MapRef() {
 			mapGS[goInfo] = struct{}{}
 		}
 	}
@@ -108,7 +165,7 @@ func (chInfo *ChanInfo) CheckBlockBug(CS []*ChanInfo) {
 		for chI, _ := range goInfo.BlockMap { // if op is select, op.Channels() returns multiple channels
 			if _, exist := mapCS[chI]; !exist {
 				mapCS[chI] = struct{}{} // update CS
-				for goInfo, _ := range chI.MapRefGoroutine { // update GS
+				for goInfo, _ := range chI.MapRef() { // update GS
 					mapGS[goInfo] = struct{}{}
 				}
 				goto loopGS // since mapGS is updated, we should run this loop once again
@@ -220,15 +277,27 @@ func (chInfo *ChanInfo) CheckBlockBug(CS []*ChanInfo) {
 //	}
 //}
 
-func ReportBug(mapCS map[*ChanInfo]struct{}) {
-	for chInfo, _ := range mapCS {
-		atomic.AddInt32(&chInfo.IntFlagFoundBug, 1)
+func ReportBug(mapCS map[PrimInfo]struct{}) {
+	//for chInfo, _ := range mapCS {
+	//	atomic.AddInt32(&chInfo.IntFlagFoundBug, 1)
+	//}
+	//return
+	if BoolReportBug == false {
+		return
 	}
 	print("======A blocking bug is found!======\n")
 	const size = 64 << 10
 	buf := make([]byte, size)
 	buf = buf[:Stack(buf, false)]
-	print(string(buf), "\n")
+	print("===Stack:\n", string(buf), "\n")
+	print("===Channel:\n")
+	for primInfo, _ := range mapCS {
+		if chInfo, ok := primInfo.(*ChanInfo); ok {
+			if chInfo != nil {
+				print(chInfo.StrDebug, "\n")
+			}
+		}
+	}
 }
 
 // Part 1.2 Data structure for waitgroup
@@ -237,46 +306,149 @@ func ReportBug(mapCS map[*ChanInfo]struct{}) {
 type WgInfo struct {
 	WgCounter       uint32
 	MapRefGoroutine map[*GoInfo]struct{}
+	StrDebug        string
+	EnableOracle    bool // Disable oracle for channels in SDK
+	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
+	Mu              mutex // Protects MapRefGoroutine
 }
 
 func NewWgInfo() *WgInfo {
-	return &WgInfo{MapRefGoroutine: make(map[*GoInfo]struct{})}
+	_, strFile, intLine, _ := Caller(2)
+	strLoc := strFile + ":" + Itoa(intLine)
+	wg := &WgInfo{
+		WgCounter:       0,
+		MapRefGoroutine: make(map[*GoInfo]struct{}),
+		StrDebug:        strLoc,
+		EnableOracle:    Index(strLoc, strSDKPath) < 0,
+		IntFlagFoundBug: 0,
+		Mu:              mutex{},
+	}
+	return wg
 }
 
-func AddRefGoroutineAndWg(w *WgInfo, goInfo *GoInfo) {
+// FindChanInfo can retrieve a initialized ChanInfo for a given channel
+func FindWgInfo(wg interface{}) *WgInfo {
+	lock(&MuMapChToChanInfo)
+	wgInfo := MapChToChanInfo[wg]
+	unlock(&MuMapChToChanInfo)
+	return wgInfo.(*WgInfo)
+}
+
+func LinkWgToLastWgInfo(wg interface{}) {
+	lock(&MuMapChToChanInfo)
+	MapChToChanInfo[wg] = LoadLastPrimInfo()
+	unlock(&MuMapChToChanInfo)
+}
+
+func (w *WgInfo) Lock() {
+	lock(&w.Mu)
+}
+
+func (w *WgInfo) Unlock() {
+	unlock(&w.Mu)
+}
+
+func (w *WgInfo) MapRef() map[*GoInfo]struct{} {
+	return w.MapRefGoroutine
+}
+
+// This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
+// Must be called when chInfo.Chan.lock is held
+func (w *WgInfo) AddGoroutine(goInfo *GoInfo) {
 	w.MapRefGoroutine[goInfo] = struct{}{}
-	goInfo.AddWg(w)
 }
 
-func RemoveRefGoroutineAndWg(w *WgInfo, goInfo *GoInfo) {
+// Must be called when chInfo.Chan.lock is held
+func (w *WgInfo) RemoveGoroutine(goInfo *GoInfo) {
 	delete(w.MapRefGoroutine, goInfo)
-	goInfo.RemoveWg(w)
 }
+
 
 func (w *WgInfo) IamBug() {
 
 }
 
-func (w *WgInfo) CheckBlockBug() {
-	// Wait will not be blocked if counter is 0
-	if w.WgCounter == 0 {
-		return
+//func (w *WgInfo) CheckBlockBug() {
+//	// Wait will not be blocked if counter is 0
+//	if w.WgCounter == 0 {
+//		return
+//	}
+//
+//	numOfBlockedGoroutines := 0
+//
+//	// Counting running Goroutine
+//	for goInfo, _ := range w.MapRefGoroutine {
+//		isBlock, _ := goInfo.IsBlock()
+//		if isBlock {
+//			numOfBlockedGoroutines += 1
+//		}
+//	}
+//
+//	if numOfBlockedGoroutines == 0 {
+//		w.IamBug()
+//	}
+//
+//}
+
+// Part 1.3 Data structure for mutex
+
+// MuInfo is 1-to-1 with every sync.Mutex.
+type MuInfo struct {
+	MapRefGoroutine map[*GoInfo]struct{}
+	StrDebug        string
+	EnableOracle    bool // Disable oracle for channels in SDK
+	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
+	Mu              mutex // Protects MapRefGoroutine
+}
+
+func NewMuInfo() *MuInfo {
+	_, strFile, intLine, _ := Caller(2)
+	strLoc := strFile + ":" + Itoa(intLine)
+	mu := &MuInfo{
+		MapRefGoroutine: make(map[*GoInfo]struct{}),
+		StrDebug:        strLoc,
+		EnableOracle:    Index(strLoc, strSDKPath) < 0,
+		IntFlagFoundBug: 0,
+		Mu:              mutex{},
 	}
+	return mu
+}
 
-	numOfBlockedGoroutines := 0
+// FindChanInfo can retrieve a initialized ChanInfo for a given channel
+func FindMuInfo(mu interface{}) *MuInfo {
+	lock(&MuMapChToChanInfo)
+	muInfo := MapChToChanInfo[mu]
+	unlock(&MuMapChToChanInfo)
+	return muInfo.(*MuInfo)
+}
 
-	// Counting running Goroutine
-	for goInfo, _ := range w.MapRefGoroutine {
-		isBlock, _ := goInfo.IsBlock()
-		if isBlock {
-			numOfBlockedGoroutines += 1
-		}
-	}
+func LinkMuToLastMuInfo(mu interface{}) {
+	lock(&MuMapChToChanInfo)
+	MapChToChanInfo[mu] = LoadLastPrimInfo()
+	unlock(&MuMapChToChanInfo)
+}
 
-	if numOfBlockedGoroutines == 0 {
-		w.IamBug()
-	}
+func (mu *MuInfo) Lock() {
+	lock(&mu.Mu)
+}
 
+func (mu *MuInfo) Unlock() {
+	unlock(&mu.Mu)
+}
+
+func (mu *MuInfo) MapRef() map[*GoInfo]struct{} {
+	return mu.MapRefGoroutine
+}
+
+// This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
+// Must be called when chInfo.Chan.lock is held
+func (mu *MuInfo) AddGoroutine(goInfo *GoInfo) {
+	mu.MapRefGoroutine[goInfo] = struct{}{}
+}
+
+// Must be called when chInfo.Chan.lock is held
+func (mu *MuInfo) RemoveGoroutine(goInfo *GoInfo) {
+	delete(mu.MapRefGoroutine, goInfo)
 }
 
 //// Part 2.1: data struct for each goroutine
@@ -289,11 +461,10 @@ func (w *WgInfo) CheckBlockBug() {
 // This is not a good practice because the goroutine need to pass currentGo to its every callee
 type GoInfo struct {
 	G *g
-	BlockMap map[*ChanInfo]string // Nil when normally running. When blocked at an operation of ChanInfo, store
+	BlockMap map[PrimInfo]string // Nil when normally running. When blocked at an operation of ChanInfo, store
 	// one ChanInfo and the operation. When blocked at select, store multiple ChanInfo and
 	// operation. Default in select is also also stored in map, which is DefaultCaseChanInfo
-	MapChanInfo map[*ChanInfo]struct{} // Stores all channels that this goroutine still hold reference to
-	MapWgInfo map[*WgInfo]struct{}
+	MapPrimeInfo map[PrimInfo]struct{} // Stores all channels that this goroutine still hold reference to
 }
 
 const (
@@ -316,9 +487,9 @@ const (
 // Initialize a GoInfo
 func NewGoInfo(goroutine *g) *GoInfo {
 	newGoInfo := &GoInfo{
-		G:          goroutine,
-		BlockMap:    nil,
-		MapChanInfo: make(map[*ChanInfo]struct{}),
+		G:            goroutine,
+		BlockMap:     nil,
+		MapPrimeInfo: make(map[PrimInfo]struct{}),
 	}
 	return newGoInfo
 }
@@ -327,40 +498,28 @@ func CurrentGoInfo() *GoInfo {
 	return getg().goInfo
 }
 
-func StoreLastChanInfo(chInfo *ChanInfo) {
-	getg().lastChanInfo = chInfo
+func StoreLastPrimInfo(chInfo PrimInfo) {
+	getg().lastPrimInfo = chInfo
 }
 
-func LoadLastChanInfo() *ChanInfo {
-	return getg().lastChanInfo
+func LoadLastPrimInfo() PrimInfo {
+	return getg().lastPrimInfo
 }
 
 // This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
-func (goInfo *GoInfo) AddChan(chInfo *ChanInfo) {
-	if goInfo.MapChanInfo == nil {
-		goInfo.MapChanInfo = make(map[*ChanInfo]struct{})
+func (goInfo *GoInfo) AddPrime(chInfo PrimInfo) {
+	if goInfo.MapPrimeInfo == nil {
+		goInfo.MapPrimeInfo = make(map[PrimInfo]struct{})
 	}
-	goInfo.MapChanInfo[chInfo] = struct{}{}
+	goInfo.MapPrimeInfo[chInfo] = struct{}{}
 }
 
-func (goInfo *GoInfo) RemoveChan(chInfo *ChanInfo) {
-	if goInfo.MapChanInfo != nil {
-		delete(goInfo.MapChanInfo, chInfo)
+func (goInfo *GoInfo) RemovePrime(chInfo PrimInfo) {
+	if goInfo.MapPrimeInfo != nil {
+		delete(goInfo.MapPrimeInfo, chInfo)
 	}
 }
 
-func (goInfo *GoInfo) AddWg(wgInfo *WgInfo) {
-	if goInfo.MapWgInfo == nil {
-		goInfo.MapWgInfo = make(map[*WgInfo]struct{})
-	}
-	goInfo.MapWgInfo[wgInfo] = struct{}{}
-}
-
-func (goInfo *GoInfo) RemoveWg(wgInfo *WgInfo) {
-	if goInfo.MapWgInfo != nil {
-		delete(goInfo.MapWgInfo, wgInfo)
-	}
-}
 
 func CurrentGoAddCh(ch interface{}) {
 	lock(&MuMapChToChanInfo)
@@ -376,15 +535,14 @@ func CurrentGoAddCh(ch interface{}) {
 // channel it holds the reference to
 func (goInfo *GoInfo) RemoveAllRef() {
 
-	if goInfo.MapChanInfo == nil {
+	if goInfo.MapPrimeInfo == nil {
 		return
 	}
-	for chInfo, _ := range goInfo.MapChanInfo {
+	for chInfo, _ := range goInfo.MapPrimeInfo {
+		chInfo.Lock()
 		RemoveRefGoroutine(chInfo, goInfo)
-
-		lock(&chInfo.Chan.lock)
-		chInfo.CheckBlockBug(nil)
-		unlock(&chInfo.Chan.lock)
+		CheckBlockBug([]PrimInfo{chInfo})
+		chInfo.Unlock()
 	}
 }
 
@@ -395,7 +553,7 @@ func (goInfo *GoInfo) RemoveAllRef() {
 //              Then now is our only chance to detect this bug, so we call CheckBlockBug()
 func (goInfo *GoInfo) SetBlockAt(hch *hchan, strOp string) {
 	if goInfo.BlockMap == nil {
-		goInfo.BlockMap = make(map[*ChanInfo]string)
+		goInfo.BlockMap = make(map[PrimInfo]string)
 	}
 	goInfo.BlockMap[hch.chInfo] = strOp
 }

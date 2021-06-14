@@ -271,15 +271,15 @@ func pre(c *astutil.Cursor) bool {
 				}
 			}
 		}
-		if len(concrete.Lhs) == 1 {
-			newValue := concrete.Lhs[0]
-			if _, ok := newValue.(*ast.Ident); ok {
-				newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
-					newValue,
-				})
-				c.InsertAfter(newCall)
-			}
-		}
+		//if len(concrete.Lhs) == 1 {
+		//	newValue := concrete.Lhs[0]
+		//	if _, ok := newValue.(*ast.Ident); ok {
+		//		newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
+		//			newValue,
+		//		})
+		//		c.InsertAfter(newCall)
+		//	}
+		//}
 
 	case *ast.ExprStmt:
 		if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {

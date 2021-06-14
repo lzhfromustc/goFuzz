@@ -3415,7 +3415,9 @@ func goexit1() {
 	}
 
 	///MYCODE
-	CurrentGoInfo().RemoveAllRef()
+	if GlobalEnableOracle {
+		CurrentGoInfo().RemoveAllRef()
+	}
 
 	mcall(goexit0)
 }

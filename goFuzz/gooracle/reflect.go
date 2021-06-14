@@ -5,6 +5,7 @@ import (
 	"runtime"
 )
 
+// TODO: shared struct updated in one goroutine;
 func CurrentGoAddValue(v interface{}) {
 	reflectValue := reflect.ValueOf(v)
 	reflectType := reflect.TypeOf(v)

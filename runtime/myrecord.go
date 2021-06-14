@@ -5,7 +5,7 @@ import "sync/atomic"
 const MaxRecordElem int = 65536 // 2^16
 
 // Settings:
-var BoolRecord bool = true
+var BoolRecord bool = false
 var BoolRecordPerCh bool = true
 
 // TODO: important: extend similar algorithm for mutex, conditional variable, waitgroup, etc
@@ -13,12 +13,12 @@ var BoolRecordPerCh bool = true
 // For the record of each channel:
 
 type ChanRecord struct {
-	ChID uint32
-	Closed bool
-	NotClosed bool
-	CapBuf uint16
-	PeakBuf uint16
-	Ch *hchan
+	StrCreation string // Example: "/data/ziheng/shared/gotest/stubs/toy/src/toy/main_test.go:34"
+	Closed      bool
+	NotClosed   bool
+	CapBuf      uint16
+	PeakBuf     uint16
+	Ch          *hchan
 }
 
 var ChRecord [MaxRecordElem]*ChanRecord
@@ -27,33 +27,21 @@ var ChRecord [MaxRecordElem]*ChanRecord
 
 var GlobalLastLoc uint32
 var TupleRecord [MaxRecordElem]uint32
+var ChCount uint16
 
 // When a channel is made, create new id, new ChanRecord
 func RecordChMake(capBuf int, c *hchan) {
-	if BoolRecord == false {
-		return
-	}
 
-	const size = 64 << 10 // TODO: is 64<<10 too big?
-	buf := make([]byte, size)
-	buf = buf[:Stack(buf, false)] // TODO: important: is Stack() too heavy? How about replace it will Caller(N)?
-	strStack := string(buf)
-	stackSingleGo := ParseStackStr(strStack)
-	if len(stackSingleGo.VecFuncLine) < 2 { // if the channel is created in runtime, strStack won't contain enough
-		// information about where the channel is created. We won't record anything for such channels.
-		return
-	}
-	strChID := stackSingleGo.VecFuncFile[1] + ":" + stackSingleGo.VecFuncLine[1]
-	c.id, _ = hashStr(strChID)  // TODO: important: how to have a uint16 hash of string
-	c.id = uint32(uint16(c.id))
+	c.id = ChCount
+	ChCount++
 
 	newChRecord := &ChanRecord{
-		ChID:      c.id,
-		Closed:    false,
-		NotClosed: true,
-		CapBuf:    uint16(capBuf),
-		PeakBuf:   0,
-		Ch:		   c,
+		StrCreation: c.chInfo.StrDebug,
+		Closed:      false,
+		NotClosed:   true,
+		CapBuf:      uint16(capBuf),
+		PeakBuf:     0,
+		Ch:          c,
 	}
 
 	ChRecord[c.id] = newChRecord
@@ -71,7 +59,7 @@ func RecordChOp(c *hchan) {
 	//print("qcount:",c.qcount, "dataqsiz", c.dataqsiz, "elemsize", c.elemsize, "\n")
 	if c.chanRecord.PeakBuf < uint16(c.qcount) { // TODO: only execute this when it is a send operation
 		c.chanRecord.PeakBuf = uint16(c.qcount)
-		//print("ch:", c.chanRecord.ChID, "\tpeakBuf:", c.chanRecord.PeakBuf, "\n")
+		//print("ch:", c.chanRecord.StrCreation, "\tpeakBuf:", c.chanRecord.PeakBuf, "\n")
 	}
 	c.chanRecord.Closed = c.closed == 1 // TODO: only execute this when it is a close operation
 	if c.chanRecord.Closed {

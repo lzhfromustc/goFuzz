@@ -484,7 +484,7 @@ type g struct {
 
 	///MYCODE
 	goInfo *GoInfo
-	lastChanInfo *ChanInfo
+	lastPrimInfo PrimInfo
 
 	///MYCODE
 	lastMySwitchLineNum string // Our inserted switch calls a function in gooracle, which records the line number of
