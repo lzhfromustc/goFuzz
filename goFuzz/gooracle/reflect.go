@@ -3,7 +3,13 @@ package gooracle
 import (
 	"reflect"
 	"runtime"
+	"time"
 )
+
+func DumpInfo() {
+	time.Sleep(3 * time.Second)
+	runtime.TmpDumpBlockingInfo()
+}
 
 // TODO: shared struct updated in one goroutine;
 func CurrentGoAddValue(v interface{}) {
@@ -46,5 +52,7 @@ func CurrentGoAddValue(v interface{}) {
 			elemValue := elem.Interface()
 			runtime.AddRefGoroutine(runtime.FindChanInfo(elemValue), runtime.CurrentGoInfo())
 		}
+	case reflect.Chan:
+		runtime.AddRefGoroutine(runtime.FindChanInfo(v), runtime.CurrentGoInfo())
 	}
 }
