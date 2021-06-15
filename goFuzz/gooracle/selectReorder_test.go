@@ -19,10 +19,10 @@ func TestGLDetection(t *testing.T) {
 	out, err := os.OpenFile(StrOutputFullPath,
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Failed to open file:", FileNameOfOutput())
+		//fmt.Println("Failed to open file:", FileNameOfOutput())
 		return
 	}
-	OutputFile = out
+	//OutputFile = out
 	os.Stdout = out
 
 	MapInput = make(map[string]runtime.SelectInfo)
@@ -88,6 +88,6 @@ func TestGLDetection(t *testing.T) {
 		fmt.Println("-----New Bug:")
 		fmt.Println(str)
 	}
-	CloseOutputFile()
+	//CloseOutputFile()
 
 }

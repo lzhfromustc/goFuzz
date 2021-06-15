@@ -2,9 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"goFuzz/config"
 	"goFuzz/fuzzer"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -20,32 +19,36 @@ var (
 )
 
 // init setups the log for the fuzzer
-func init() {
-	file, err := os.OpenFile("fuzzer.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+func parseFlag() {
+	file, err := os.OpenFile("fuzzer.log", os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	log.SetOutput(file)
+	w := io.MultiWriter(file, os.Stdout)
+	log.SetOutput(w)
 
 	// Parse input
-	pProjectPath := flag.String("path", "", "Full path of the target project")
-	pProjectGOPATH := flag.String("GOPATH", "", "GOPATH of the target project")
-	pTestName := flag.String("test", "", "Function name of the unit test")
-	pOutputFullPath := flag.String("output", "", "Full path of the output file")
+	pTargetGoModDir := flag.String("goModDir", "", "Directory contains Go Mod file")
+	pTargetTestFunc := flag.String("testFunc", "", "Optional, if you only want to test single function in unit test")
+	pOutputDir := flag.String("outputDir", "", "Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
-	maxParallel := flag.Int("maxparallel", 1, "Specified the maximum subroutine number for fuzzing.")
+	maxParallel := flag.Int("parallel", 1, "Specified the maximum subroutine number for fuzzing.")
 
 	flag.Parse()
 
-	config.StrTestPath = *pProjectPath
-	config.StrProjectGOPATH = *pProjectGOPATH
-	config.StrTestName = *pTestName
-	config.StrOutputFullPath = *pOutputFullPath
-	config.BoolGlobalTuple = *pModeGlobalTuple
-	config.MaxParallel = *maxParallel
+	fuzzer.TargetTestFunc = *pTargetTestFunc
+	fuzzer.OutputDir = *pOutputDir
+	fuzzer.TargetGoModDir = *pTargetGoModDir
+	fuzzer.GlobalTuple = *pModeGlobalTuple
+	fuzzer.MaxParallel = *maxParallel
 
-	workerInputChan = make(chan *fuzzer.Input)
+	if fuzzer.OutputDir == "" {
+		log.Fatal("-outputDir is required")
+	}
+
+	if fuzzer.TargetGoModDir == "" {
+		log.Fatal("-goModDir is required")
+	}
 }
 
 // startWorkers starts maxParallel workers working on workChan.
@@ -84,20 +87,27 @@ func startWorkers(maxParallel int, workChan chan *fuzzer.Input) {
 }
 
 func main() {
+	parseFlag()
 
+	var err error
 	fuzzer.SetDeadline()
 
 	/* Begin running specific number of worker subroutines. Blocked before we send them inputs from the main routine. */
-	go startWorkers(config.MaxParallel, workerInputChan)
+	go startWorkers(fuzzer.MaxParallel, workerInputChan)
 
-	/* TODO:: Not finished in this part!!!
-	In this part, we should implement an algorithm that can iterate all the possible unit test inside our target program.
-	Right now, we are using an ad-hoc pre-defined slice pTestnameList for the DEMO purpose.
-	*/
-	var pTestNameList []string
-	pTestNameList = append(pTestNameList, config.StrTestName)
+	var tests []string
+	if fuzzer.TargetTestFunc != "" {
+		tests = append(tests, fuzzer.TargetTestFunc)
+	} else {
+		tests, err = fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, "./...")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
-	for _, pTestName := range pTestNameList {
+	log.Printf("Tests going to be run: %s", tests)
+
+	for _, pTestName := range tests {
 		//  Run the instrumented program for one time,
 		//  generate original input and record
 		var emptyInput = fuzzer.EmptyInput()
@@ -109,9 +119,10 @@ func main() {
 	/* Infinite loop for the main fuzzing */
 	mainRandomLoopIdx := 0
 	for {
-		fmt.Println("Beginning main random fuzzing loop idx: ", mainRandomLoopIdx)
+		log.Println("Beginning main random fuzzing loop idx: ", mainRandomLoopIdx)
 		if len(fuzzingQueue) == 0 {
-			fmt.Println("Fuzzing Queue is nil (no components). Some error occurs. ")
+			log.Println("Fuzzing queue is empty, waiting 5 seconds")
+			time.Sleep(5 * time.Second)
 			continue
 		}
 		// TODO:: Maybe we should cull the queue first. (Or maybe after the calibration?)

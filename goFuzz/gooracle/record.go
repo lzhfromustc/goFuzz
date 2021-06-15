@@ -30,7 +30,7 @@ func BeforeRun() {
 	//StrTestpath ="/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram"
 
 	// Create an output file and bound os.Stdout to it
-	OpenOutputFile()
+	//OpenOutputFile()
 
 	// read input file
 	file, err := os.Open(FileNameOfInput())
@@ -59,8 +59,6 @@ func BeforeRun() {
 	}
 }
 
-
-
 func AfterRun() {
 
 	// if this is the first run, create input file using runtime's global variable
@@ -77,7 +75,7 @@ func AfterRun() {
 		fmt.Println("-----New Bug:")
 		fmt.Println(str)
 	}
-	CloseOutputFile()
+	//CloseOutputFile()
 }
 
 func StoreOpInfo(strOpType string, uint16OpID uint16) {

@@ -9,49 +9,49 @@ import (
 	"strconv"
 )
 
-func FileNameOfOutput() string {
-	return os.Getenv("OutputFullPath")
-}
-
-var OutputFile *os.File
-
-func OpenOutputFile() {
-	out, err := os.OpenFile(FileNameOfOutput(),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Failed to open file:", FileNameOfOutput())
-		return
-	}
-	OutputFile = out
-	os.Stdout = out
-}
-
-func CloseOutputFile() {
-	OutputFile.Close()
-}
-
-func FileNameOfErr() string {
-	return StrTestpath + "/" + ErrFileName
-}
-
-var ErrFile *os.File
-
-func CreateErrFile() {
-	out, err := os.Create(FileNameOfErr())
-	if err != nil {
-		fmt.Println("Failed to create file:", FileNameOfErr())
-		return
-	}
-	ErrFile = out
-	os.Stderr = out
-}
-
-func CloseErrFile() {
-	ErrFile.Close()
-}
+//func FileNameOfOutput() string {
+//	return os.Getenv("OutputFullPath")
+//}
+//
+//var OutputFile *os.File
+//
+//func OpenOutputFile() {
+//	out, err := os.OpenFile(FileNameOfOutput(),
+//		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+//	if err != nil {
+//		fmt.Println("Failed to open file:", FileNameOfOutput())
+//		return
+//	}
+//	OutputFile = out
+//	os.Stdout = out
+//}
+//
+//func CloseOutputFile() {
+//	OutputFile.Close()
+//}
+//
+//func FileNameOfErr() string {
+//	return StrTestpath + "/" + ErrFileName
+//}
+//
+//var ErrFile *os.File
+//
+//func CreateErrFile() {
+//	out, err := os.Create(FileNameOfErr())
+//	if err != nil {
+//		fmt.Println("Failed to create file:", FileNameOfErr())
+//		return
+//	}
+//	ErrFile = out
+//	os.Stderr = out
+//}
+//
+//func CloseErrFile() {
+//	ErrFile.Close()
+//}
 
 func FileNameOfRecord() string {
-	return StrTestpath + "/" + RecordFileName
+	return os.Getenv("GF_RECORD_FILE")
 }
 
 func CreateRecordFile() {

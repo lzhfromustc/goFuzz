@@ -1,15 +1,18 @@
 package fuzzer
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"fmt"
 	"goFuzz/config"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"os"
 	"os/exec"
-	"strings"
+	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -91,29 +94,74 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 	return
 }
 
+func getInputFilePath(outputDir string) (string, error) {
+	return filepath.Abs(path.Join(outputDir, "input"))
+}
+
+func getOutputFilePath(outputDir string) (string, error) {
+	return filepath.Abs(path.Join(outputDir, "stdout"))
+}
+
+func getRecordFilePath(outputDir string) (string, error) {
+	return filepath.Abs(path.Join(outputDir, "record"))
+}
+
+// createOutputDir create an folder to contain/record all information about each run
+func createOutputDir(input *Input, baseOutputDir string) (string, error) {
+	dir := path.Join(baseOutputDir, input.GetID())
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return dir, os.MkdirAll(dir, os.ModePerm)
+	} else {
+		// return any other error if occurs
+		return "", err
+	}
+}
+
 func Run(input *Input) (*RunOutput, error) {
+	var err error
 	if input.TestName == "Empty" || input.TestName == "" {
 		return nil, fmt.Errorf("the Run command in the fuzzer receive an input without input.TestName")
 	}
-	strTestName := input.TestName
+
+	curRunOutputDir, err := createOutputDir(input, OutputDir)
+
 	boolFirstRun := input.Note == NotePrintInput
+
+	gfInputFp, err := getInputFilePath(curRunOutputDir)
+	if err != nil {
+		return nil, err
+	}
+
+	gfOutputFp, err := getOutputFilePath(curRunOutputDir)
+	if err != nil {
+		return nil, err
+	}
+	gfRecordFp, err := getRecordFilePath(curRunOutputDir)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create the input file into disk
-	SerializeInput(input, input.InputFilePath)
+	SerializeInput(input, gfInputFp)
 
 	// Run the test
-	err := os.Setenv("GOPATH", config.StrProjectGOPATH)
+	//err := os.Setenv("GOPATH", config.StrProjectGOPATH)
+	//if err != nil {
+	//	return nil, fmt.Errorf("the export of GOPATH fails: %s", err)
+	//}
+
+	err = os.Setenv("GF_RECORD_FILE", gfRecordFp)
 	if err != nil {
-		return nil, fmt.Errorf("the export of GOPATH fails: %s", err)
+		return nil, fmt.Errorf("the export of GF_RECORD_FILE fails: %s", err)
 	}
-	err = os.Setenv("TestPath", config.StrTestPath)
+
+	err = os.Setenv("GF_INPUT_FILE", gfInputFp)
 	if err != nil {
-		return nil, fmt.Errorf("the export of TestPath fails: %s", err)
+		return nil, fmt.Errorf("the export of GF_INPUT_FILE fails: %s", err)
 	}
-	err = os.Setenv("OutputFullPath", input.OutputFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("the export of OutputFullPath fails: %s", err)
-	}
-	if config.BoolGlobalTuple {
+
+	if GlobalTuple {
 		err = os.Setenv("BitGlobalTuple", "1")
 	} else {
 		err = os.Setenv("BitGlobalTuple", "0")
@@ -121,34 +169,34 @@ func Run(input *Input) (*RunOutput, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the export of TestPath fails: %s", err)
 	}
-	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH+"/src/")
-	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName) // TODO: Consider handling the case that strTestName isn't a unit test
-	var outb, errb bytes.Buffer
-	cmd.Stdout = &outb
-	cmd.Stderr = &errb
+
+	cmd := exec.Command("go", "test", "-run", input.TestName, "./...")
+	cmd.Dir = TargetGoModDir
+	var errBuf, stdOutBuf bytes.Buffer
+	cmd.Stdout = &stdOutBuf
+	cmd.Stderr = &errBuf
 	err = cmd.Run()
-	fmt.Println("Output of unit test:") // this output is meaningless. It just prints things to indicate whether the unit test passed or not. This has nothing to do with whether a bug is triggered
-	fmt.Println("test out:", outb.String(), "\ntest err:", errb.String())
+
+	outputF, err := os.Create(gfOutputFp)
+	defer outputF.Close()
+	outputW := bufio.NewWriter(outputF)
+	outputW.Write(stdOutBuf.Bytes())
+	outputW.Flush()
+
 	if err != nil {
 		return nil, fmt.Errorf("go test command fails: %s", err)
 	}
 
-	// If the output file is longer, it means we found a new bug
-	bytes, err := ioutil.ReadFile(input.OutputFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	outputNumBug := ParseOutputFile(string(bytes))
+	outputNumBug := ParseOutputFile(stdOutBuf.String())
 	if outputNumBug != 0 {
-		fmt.Println("Found a new bug. Now exit")
+		log.Println("Found a new bug. Now exit")
 		os.Exit(1)
 	}
 
 	// Read the newly printed input file if this is the first run
-	retInput := EmptyInput()
+	var retInput *Input
 	if boolFirstRun {
-		bytes, err := ioutil.ReadFile(input.InputFilePath)
+		bytes, err := ioutil.ReadFile(gfInputFp)
 		if err != nil {
 			return nil, err
 		}
@@ -162,13 +210,17 @@ func Run(input *Input) (*RunOutput, error) {
 		retInput = EmptyInput()
 	}
 	// Save the current TestName to the retInput.
-	retInput.TestName = strTestName
+	retInput.TestName = input.TestName
 	// Read the printed record file
-	bytes, err = ioutil.ReadFile(input.RecordFilePath)
+	b, err := ioutil.ReadFile(gfRecordFp)
 	if err != nil {
 		return nil, err
 	}
-	retRecord := ParseRecordFile(string(bytes))
+	retRecord, err := ParseRecordFile(string(b))
+
+	if err != nil {
+		return nil, err
+	}
 
 	retOutput := EmptyRunOutput()
 	retOutput.RetInput = retInput

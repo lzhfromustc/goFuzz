@@ -13,7 +13,7 @@ var MapInput map[string]runtime.SelectInfo
 var SelectDelayMS int
 
 func FileNameOfInput() string {
-	return StrTestpath + "/" + InputFileName
+	return os.Getenv("GF_INPUT_FILE")
 }
 
 func ParseInputStr(text []string) map[string]runtime.SelectInfo {
@@ -56,7 +56,7 @@ func ParseInputStr(text []string) map[string]runtime.SelectInfo {
 			fmt.Println("One line in input has incorrect format:", vecStr, "\tLine:", i)
 			return nil
 		}
-		result[selectInput.StrFileName + ":" + selectInput.StrLineNum] = selectInput
+		result[selectInput.StrFileName+":"+selectInput.StrLineNum] = selectInput
 	}
 
 	return result

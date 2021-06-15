@@ -5,21 +5,18 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"goFuzz/config"
 	"os"
 	"strconv"
 	"strings"
 )
 
 type Input struct {
-	Note           string
-	TestName       string
-	SelectDelayMS  int    // How many milliseconds a select will wait for the prioritized case
-	Stage          string // "unknown", "deter", "calib" or "rand"
-	VecSelect      []SelectInput
-	InputFilePath  string
-	RecordFilePath string
-	OutputFilePath string
+	Note          string
+	TestName      string
+	SelectDelayMS int    // How many milliseconds a select will wait for the prioritized case
+	Stage         string // "unknown", "deter", "calib" or "rand"
+	VecSelect     []SelectInput
+	Index         int // index in the current stage
 }
 
 type SelectInput struct {
@@ -32,7 +29,6 @@ type SelectInput struct {
 const (
 	NotePrintInput string = "PrintInput"
 	NoteEmptyName  string = "Empty"
-	InputFileName  string = "myinput.txt"
 )
 
 func EmptyRunOutput() *RunOutput {
@@ -50,7 +46,12 @@ func EmptyInput() *Input {
 		SelectDelayMS: 0,
 		VecSelect:     nil,
 		Stage:         "unknown",
+		Index:         0,
 	}
+}
+
+func (i *Input) GetID() string {
+	return fmt.Sprintf("%s-%s-%d", i.TestName, i.Stage, i.Index)
 }
 
 // SerializeInput dump input as string to file
@@ -107,10 +108,6 @@ func FindRecordHashInSlice(recordHash string, recordHashSlice []string) bool {
 		}
 	}
 	return false
-}
-
-func FileNameOfInput() string {
-	return config.StrTestPath + "/" + InputFileName
 }
 
 func ParseInputFile(content string) (*Input, error) {
