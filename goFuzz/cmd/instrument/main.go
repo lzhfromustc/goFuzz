@@ -9,6 +9,7 @@ import (
 	"go/parser"
 	"go/token"
 	"golang.org/x/tools/go/ast/astutil"
+	"hash/fnv"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -31,6 +32,9 @@ func main() {
 	flag.Parse()
 
 	filename := *pFile
+	h := fnv.New32a()
+	h.Write([]byte(filename))
+	Uint16OpID = uint16(h.Sum32())
 
 	oldSource, err := ioutil.ReadFile(filename)
 	if err != nil {
