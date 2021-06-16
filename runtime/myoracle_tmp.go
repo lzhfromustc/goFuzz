@@ -159,7 +159,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 			}
 
 
-			retStr += "Bug Info:\n" + str + "\n"
+			retStr += "-----New Bug:\n" + str + "\n"
 			print(retStr)
 			foundBug = true
 

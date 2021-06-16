@@ -285,7 +285,7 @@ func ReportBug(mapCS map[PrimInfo]struct{}) {
 	if BoolReportBug == false {
 		return
 	}
-	print("======A blocking bug is found!======\n")
+	print("-----New Bug:\n")
 	const size = 64 << 10
 	buf := make([]byte, size)
 	buf = buf[:Stack(buf, false)]
