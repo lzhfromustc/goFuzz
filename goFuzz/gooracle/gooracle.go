@@ -1,12 +1,11 @@
 package gooracle
 
-
-
 import (
 	"bufio"
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 )
 
 const (
@@ -18,18 +17,36 @@ const (
 	RecordSplitter        = "-----"
 )
 
-var StrTestpath string
+var StrTestPath string
 var BoolFirstRun bool = true
+var StrTestMod string
+var StrTestName string
 
 func BeforeRun() {
+	StrTestMod = os.Getenv("TestMod")
+	switch StrTestMod {
+	case "TestOnce": // Run all unit tests once, and print a file containing each test's name, # of select visited
+		BeforeRunTestOnce()
+	default: // Normal fuzzing
+		BeforeRunFuzz()
+	}
+}
+
+func BeforeRunTestOnce() {
+	StrTestPath = os.Getenv("TestPath")
+	StrTestName = runtime.MyCaller()
+	runtime.BoolSelectCount = true
+}
+
+func BeforeRunFuzz() {
 	StrBitGlobalTuple := os.Getenv("BitGlobalTuple")
 	if StrBitGlobalTuple == "1" {
 		runtime.BoolRecordPerCh = false
 	} else {
 		runtime.BoolRecordPerCh = true
 	}
-	StrTestpath = os.Getenv("TestPath")
-	//StrTestpath ="/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram"
+	StrTestPath = os.Getenv("TestPath")
+	//StrTestPath ="/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram"
 
 	// Create an output file and bound os.Stdout to it
 	OpenOutputFile()
@@ -61,9 +78,35 @@ func BeforeRun() {
 	}
 }
 
+func AftterRun() {
+	switch StrTestMod {
+	case "TestOnce": // Run all unit tests once, and print a file containing each test's name, # of select visited
+		AfterRunTestOnce()
+	default: // Normal fuzzing
+		AfterRunFuzz()
+	}
+}
 
+func AfterRunTestOnce() {
+	strOutputPath := os.Getenv("OutputFullPath")
+	out, err := os.Create(strOutputPath)
+	if err != nil {
+		fmt.Println("Failed to create file:", strOutputPath)
+		return
+	}
+	defer out.Close()
 
-func AfterRun() {
+	w := bufio.NewWriter(out)
+	defer w.Flush()
+
+	w.WriteString(StrTestNameAndSelectCount())
+}
+
+func StrTestNameAndSelectCount() string {
+	return "\n" + StrTestName + ":" + strconv.Itoa(int(runtime.ReadSelectCount()))
+}
+
+func AfterRunFuzz() {
 
 	// if this is the first run, create input file using runtime's global variable
 	if BoolFirstRun {

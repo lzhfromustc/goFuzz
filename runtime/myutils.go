@@ -506,3 +506,35 @@ const smallsString = "00010203040506070809" +
 	"90919293949596979899"
 const host32bit = ^uint(0)>>32 == 0
 const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+
+
+// Following two functions comes from https://stackoverflow.com/questions/35212985/is-it-possible-get-information-about-caller-function-in-golang
+func getFrame(skipFrames int) Frame {
+	// We need the frame at index skipFrames+2, since we never want runtime.Callers and getFrame
+	targetFrameIndex := skipFrames + 2
+
+	// Set size to targetFrameIndex+2 to ensure we have room for one more caller than we need
+	programCounters := make([]uintptr, targetFrameIndex+2)
+	n := Callers(0, programCounters)
+
+	frame := Frame{Function: "unknown"}
+	if n > 0 {
+		frames := CallersFrames(programCounters[:n])
+		for more, frameIndex := true, 0; more && frameIndex <= targetFrameIndex; frameIndex++ {
+			var frameCandidate Frame
+			frameCandidate, more = frames.Next()
+			if frameIndex == targetFrameIndex {
+				frame = frameCandidate
+			}
+		}
+	}
+
+	return frame
+}
+
+// MyCaller returns the caller of the function that called it :)
+func MyCaller() string {
+	// Skip GetCallerFunctionName and the function to get the caller of
+	return getFrame(2).Function
+}
