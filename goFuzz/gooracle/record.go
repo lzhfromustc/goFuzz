@@ -51,6 +51,8 @@ func BeforeRun() {
 
 	if len(text) > 0 && text[0] == NotePrintInput {
 		runtime.RecordSelectChoice = true
+	} else {
+		BoolFirstRun = false
 	}
 
 	MapInput = ParseInputStr(text)

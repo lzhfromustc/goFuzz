@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"bytes"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -84,4 +85,15 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+// createDir create an folder (create folder if not exist)
+func createDir(dir string) error {
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return os.MkdirAll(dir, os.ModePerm)
+	} else {
+		// return any other error if occurs
+		return err
+	}
 }

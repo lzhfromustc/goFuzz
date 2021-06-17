@@ -10,13 +10,25 @@ import (
 	"strings"
 )
 
+// Input contains all information about
+// 1. need to be passed to fuzz target by environment variables
+// 2. how to trigger fuzz target
 type Input struct {
-	Note          string
-	TestName      string
-	SelectDelayMS int    // How many milliseconds a select will wait for the prioritized case
-	Stage         string // "unknown", "deter", "calib" or "rand"
-	VecSelect     []SelectInput
-	Index         int // index in the current stage
+	// First line of input file, string `PrintInput` for recording input (used by gooracle),
+	// otherwise it is just a placeholder for the first line of file to make sure file has correct format.
+	Note string
+
+	// If we are running fuzz target by go test command
+	TestName string
+
+	// If we are running fuzz target by custom command
+	CustomCmd string
+
+	// How many milliseconds a select will wait for the prioritized case
+	SelectDelayMS int
+
+	// Select choice need to be forced during runtime
+	VecSelect []SelectInput
 }
 
 type SelectInput struct {
@@ -28,31 +40,7 @@ type SelectInput struct {
 
 const (
 	NotePrintInput string = "PrintInput"
-	NoteEmptyName  string = "Empty"
 )
-
-func EmptyRunOutput() *RunOutput {
-	return &RunOutput{
-		RetInput:  nil,
-		RetRecord: nil,
-		Stage:     "Unknown",
-	}
-}
-
-func EmptyInput() *Input {
-	return &Input{
-		TestName:      NoteEmptyName,
-		Note:          NotePrintInput,
-		SelectDelayMS: 0,
-		VecSelect:     nil,
-		Stage:         "unknown",
-		Index:         0,
-	}
-}
-
-func (i *Input) GetID() string {
-	return fmt.Sprintf("%s-%s-%d", i.TestName, i.Stage, i.Index)
-}
 
 // SerializeInput dump input as string to file
 func SerializeInput(input *Input, dstFile string) error {
@@ -246,7 +234,7 @@ func copyInput(input *Input) *Input {
 		VecSelect:     []SelectInput{},
 	}
 	for _, selectInput := range input.VecSelect {
-		newInput.VecSelect = append(newInput.VecSelect, copySelectInput(selectInput)) // TODO:: Here, the original is append(..., selectInput), not the copy of it. A bug?
+		newInput.VecSelect = append(newInput.VecSelect, copySelectInput(selectInput))
 	}
 	return newInput
 }
