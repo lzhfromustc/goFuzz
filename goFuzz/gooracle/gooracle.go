@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -21,6 +22,7 @@ var StrTestPath string
 var BoolFirstRun bool = true
 var StrTestMod string
 var StrTestName string
+var StrTestFile string
 
 func BeforeRun() {
 	StrTestMod = os.Getenv("TestMod")
@@ -34,7 +36,11 @@ func BeforeRun() {
 
 func BeforeRunTestOnce() {
 	StrTestPath = os.Getenv("TestPath")
-	StrTestName = runtime.MyCaller()
+	StrTestName = runtime.MyCaller(1)
+	if indexDot := strings.Index(StrTestName, "."); indexDot > -1 {
+		StrTestName = StrTestName[indexDot + 1:]
+	}
+	_, StrTestFile, _, _ = runtime.Caller(2)
 	runtime.BoolSelectCount = true
 }
 
@@ -49,7 +55,7 @@ func BeforeRunFuzz() {
 	//StrTestPath ="/data/ziheng/shared/gotest/gotest/src/gotest/testdata/toyprogram"
 
 	// Create an output file and bound os.Stdout to it
-	OpenOutputFile()
+	//OpenOutputFile() // No need
 
 	// read input file
 	file, err := os.Open(FileNameOfInput())
@@ -70,6 +76,8 @@ func BeforeRunFuzz() {
 
 	if len(text) > 0 && text[0] == NotePrintInput {
 		runtime.RecordSelectChoice = true
+	} else {
+		BoolFirstRun = false
 	}
 
 	MapInput = ParseInputStr(text)
@@ -78,7 +86,7 @@ func BeforeRunFuzz() {
 	}
 }
 
-func AftterRun() {
+func AfterRun() {
 	switch StrTestMod {
 	case "TestOnce": // Run all unit tests once, and print a file containing each test's name, # of select visited
 		AfterRunTestOnce()
@@ -89,7 +97,7 @@ func AftterRun() {
 
 func AfterRunTestOnce() {
 	strOutputPath := os.Getenv("OutputFullPath")
-	out, err := os.Create(strOutputPath)
+	out, err := os.OpenFile(strOutputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Println("Failed to create file:", strOutputPath)
 		return
@@ -103,7 +111,7 @@ func AfterRunTestOnce() {
 }
 
 func StrTestNameAndSelectCount() string {
-	return "\n" + StrTestName + ":" + strconv.Itoa(int(runtime.ReadSelectCount()))
+	return "\n" + StrTestFile + ":" + StrTestName + ":" + strconv.Itoa(int(runtime.ReadSelectCount()))
 }
 
 func AfterRunFuzz() {
@@ -122,5 +130,4 @@ func AfterRunFuzz() {
 		fmt.Println("-----New Bug:")
 		fmt.Println(str)
 	}
-	CloseOutputFile()
 }

@@ -534,7 +534,7 @@ func getFrame(skipFrames int) Frame {
 }
 
 // MyCaller returns the caller of the function that called it :)
-func MyCaller() string {
+func MyCaller(skip int) string {
 	// Skip GetCallerFunctionName and the function to get the caller of
-	return getFrame(2).Function
+	return getFrame(skip + 2).Function
 }

@@ -1,4 +1,4 @@
-package ranktest
+package main
 
 import (
 	"flag"
