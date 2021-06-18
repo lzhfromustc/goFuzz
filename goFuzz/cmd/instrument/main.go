@@ -12,6 +12,7 @@ import (
 	"hash/fnv"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -100,6 +101,7 @@ func pre(c *astutil.Cursor) bool {
 
 	case *ast.SelectStmt:
 		positionOriSelect := currentFSet.Position(concrete.Select)
+		positionOriSelect.Filename, _ = filepath.Abs(positionOriSelect.Filename)
 		// store the original select
 		oriSelect := SelectStruct{
 			StmtSelect:    concrete,

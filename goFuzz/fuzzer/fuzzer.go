@@ -26,7 +26,7 @@ func Deterministic_enumerate_input(input *Input) (reInputSlice []*Input) {
 }
 
 func Get_Random_Int_With_Max(max int) int {
-	mutateMethod, err := rand.Int(rand.Reader, big.NewInt(1))
+	mutateMethod, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
 	if err != nil {
 		fmt.Println("Crypto/rand returned non-nil errors: ", err)
 	}
@@ -46,6 +46,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 		/* Mutate one select per time */
 		mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 		mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+
 		reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 
 	case 1:
@@ -53,6 +54,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 		for mutateIdx := 0; mutateIdx < 2; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
 
@@ -61,6 +63,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 		for mutateIdx := 0; mutateIdx < 3; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
 
@@ -70,6 +73,7 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
 			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
 
