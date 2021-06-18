@@ -93,7 +93,7 @@ func Run(task *RunTask) (*RunResult, error) {
 
 	var cmd *exec.Cmd
 	if task.input.TestName != "" {
-		cmd = exec.Command("go", "test", "-run", input.TestName, "./...")
+		cmd = exec.Command("go", "test", "-v", "-run", input.TestName, "./...")
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
 		cmd = exec.Command(cmds[0], cmds[1])

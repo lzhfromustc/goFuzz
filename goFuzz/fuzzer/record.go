@@ -72,28 +72,28 @@ func ParseRecordFile(content string) (*Record, error) {
 		if eachline == "" {
 			continue
 		}
-		//chIDString:closedBit:notClosedBit:capBuf:peakBuf
+		//filename:line:closedBit:notClosedBit:capBuf:peakBuf
 		vecStr := strings.Split(eachline, ":")
-		if len(vecStr) != 5 {
+		if len(vecStr) != 6 {
 			return nil, fmt.Errorf("channel in record has incorrect format: %s, at line %d", eachline, i)
 		}
 		chRecord := ChanRecord{}
-		chRecord.ChID = vecStr[0]
-		if vecStr[1] == "0" {
+		chRecord.ChID = vecStr[0] + ":" + vecStr[1]
+		if vecStr[2] == "0" {
 			chRecord.Closed = false
 		} else {
 			chRecord.Closed = true
 		}
-		if vecStr[2] == "0" {
+		if vecStr[3] == "0" {
 			chRecord.NotClosed = false
 		} else {
 			chRecord.NotClosed = true
 		}
-		if chRecord.CapBuf, err = strconv.Atoi(vecStr[3]); err != nil {
+		if chRecord.CapBuf, err = strconv.Atoi(vecStr[4]); err != nil {
 			return nil, fmt.Errorf("line of channel in record has incorrect format: %s, at line %d", eachline, i)
 
 		}
-		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[4]); err != nil {
+		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[5]); err != nil {
 			return nil, fmt.Errorf("line of channel in record has incorrect format: %s, at line %d", eachline, i)
 		}
 		newRecord.MapChanRecord[chRecord.ChID] = chRecord
