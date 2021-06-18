@@ -124,8 +124,16 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	///MYCODE
-	TmpBeforeBlock()
-	defer TmpAfterBlock()
+	if BoolSelectCount {
+		SelectCount()
+	}
+
+	///MYCODE
+	if BoolDebug {
+		TmpBeforeBlock()
+		defer TmpAfterBlock()
+	}
+
 	//Note: the return value casei doesn't represent the order of cases in original select. Need experiments
 
 	// NOTE: In order to maintain a lean stack size, the number of scases
@@ -245,6 +253,11 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		nextp  **sudog
 	)
 
+	///MYCODE
+	var lastC *hchan
+	var currentGo *GoInfo
+	CS := []PrimInfo{}
+
 	// pass 1 - look for something already waiting
 	var casi int
 	var cas *scase
@@ -289,6 +302,29 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		casi = -1
 		goto retc
 	}
+
+	///MYCODE
+	if GlobalEnableOracle {
+		currentGo = CurrentGoInfo()
+		for _, o := range lockorder {
+			c0 := scases[o].c
+			if c0 != lastC {
+				lastC = c0
+				if lastC.chInfo.EnableOracle == false {
+					goto outOfOracle
+				}
+				AddRefGoroutine(c.chInfo, currentGo)
+				currentGo.SetBlockAt(lastC, BSelect)
+				CS = append(CS, lastC.chInfo)
+			}
+		}
+		if lastC != nil {
+			CheckBlockBug(CS)
+		}
+		defer currentGo.WithdrawBlock()
+	}
+	outOfOracle:
+
 
 	// pass 2 - enqueue on all chans
 	gp = getg()

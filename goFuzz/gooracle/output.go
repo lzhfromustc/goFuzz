@@ -83,8 +83,8 @@ func CreateRecordFile() {
 			continue
 		}
 		//chIDString:closedBit:notClosedBit:capBuf:peakBuf
-		uint32ChID := chRecord.ChID
-		str += strconv.Itoa(int(uint32ChID)) + ":"
+		strChID := chRecord.StrCreation
+		str += strChID + ":"
 		if chRecord.Closed {
 			str += "1" + ":"
 		} else {

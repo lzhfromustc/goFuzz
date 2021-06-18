@@ -9,6 +9,7 @@ import (
 	"go/parser"
 	"go/token"
 	"golang.org/x/tools/go/ast/astutil"
+	"hash/fnv"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -31,6 +32,9 @@ func main() {
 	flag.Parse()
 
 	filename := *pFile
+	h := fnv.New32a()
+	h.Write([]byte(filename))
+	Uint16OpID = uint16(h.Sum32())
 
 	oldSource, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -57,7 +61,6 @@ func main() {
 		}
 	}
 
-
 	buf := &bytes.Buffer{}
 	err = format.Node(buf, tokenFSet, newAST)
 	if err != nil {
@@ -78,7 +81,7 @@ func pre(c *astutil.Cursor) bool {
 	defer func() {
 		if r := recover(); r != nil { // This is allowed. If we insert node into nodes not in slice, we will meet a panic
 			// For example, we may identified a receive in select and wanted to insert a function call before it, then this function will panic
-			//fmt.Println("Recover in pre(): c.Name():", c.Name())
+			fmt.Println("Recover in pre(): c.Name():", c.Name())
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
@@ -119,21 +122,21 @@ func pre(c *astutil.Cursor) bool {
 		newSwitch := &ast.SwitchStmt{
 			Switch: 0,
 			Init:   nil,
-			Tag:    NewArgCall("gooracle", "ReadSelect", []ast.Expr{
+			Tag: NewArgCall("gooracle", "ReadSelect", []ast.Expr{
 				&ast.BasicLit{ // first parameter: filename
-				ValuePos: 0,
-				Kind:     token.STRING,
-				Value:    "\"" + positionOriSelect.Filename + "\"",
-			}, &ast.BasicLit{ // second parameter: linenumber of original select
-				ValuePos: 0,
-				Kind:     token.INT,
-				Value:    strconv.Itoa(positionOriSelect.Line),
-			}, &ast.BasicLit{
-				ValuePos: 0,
-				Kind:     token.INT,
-				Value:    strconv.Itoa(len(oriSelect.VecCommClause)),
-			}}),
-			Body:   &ast.BlockStmt{
+					ValuePos: 0,
+					Kind:     token.STRING,
+					Value:    "\"" + positionOriSelect.Filename + "\"",
+				}, &ast.BasicLit{ // second parameter: linenumber of original select
+					ValuePos: 0,
+					Kind:     token.INT,
+					Value:    strconv.Itoa(positionOriSelect.Line),
+				}, &ast.BasicLit{
+					ValuePos: 0,
+					Kind:     token.INT,
+					Value:    strconv.Itoa(len(oriSelect.VecCommClause)),
+				}}),
+			Body: &ast.BlockStmt{
 				Lbrace: 0,
 				List:   nil,
 				Rbrace: 0,
@@ -174,26 +177,26 @@ func pre(c *astutil.Cursor) bool {
 				Body:  copyStmtBody(oriSelect.VecBody[i]),
 			}
 			secondSelectCase := &ast.CommClause{
-				Case:  0,
-				Comm:  &ast.ExprStmt{X: &ast.UnaryExpr{
+				Case: 0,
+				Comm: &ast.ExprStmt{X: &ast.UnaryExpr{
 					OpPos: 0,
 					Op:    token.ARROW,
 					X:     NewArgCall("gooracle", "SelectTimeout", nil),
 				}},
 				Colon: 0,
-				Body:  []ast.Stmt{
+				Body: []ast.Stmt{
 					// The first line is a call to gooracle.StoreLastMySwitchChoice(-1)
 					// The second line is a copy of original select
 					&ast.ExprStmt{X: NewArgCall("gooracle", "StoreLastMySwitchChoice", []ast.Expr{&ast.UnaryExpr{
-					OpPos: 0,
-					Op:    token.SUB,
-					X:     &ast.BasicLit{
-						ValuePos: 0,
-						Kind:     token.INT,
-						Value:    "1",
-					},
-				}})},
-				copySelect(oriSelect.StmtSelect)},
+						OpPos: 0,
+						Op:    token.SUB,
+						X: &ast.BasicLit{
+							ValuePos: 0,
+							Kind:     token.INT,
+							Value:    "1",
+						},
+					}})},
+					copySelect(oriSelect.StmtSelect)},
 			}
 			newSelect.Body.List = append(newSelect.Body.List, firstSelectCase, secondSelectCase)
 
@@ -208,13 +211,13 @@ func pre(c *astutil.Cursor) bool {
 			Case:  0,
 			List:  nil,
 			Colon: 0,
-			Body:  []ast.Stmt{
+			Body: []ast.Stmt{
 				// The first line is a call to gooracle.StoreLastMySwitchChoice(-1)
 				// The second line is a copy of original select
 				&ast.ExprStmt{X: NewArgCall("gooracle", "StoreLastMySwitchChoice", []ast.Expr{&ast.UnaryExpr{
 					OpPos: 0,
 					Op:    token.SUB,
-					X:     &ast.BasicLit{
+					X: &ast.BasicLit{
 						ValuePos: 0,
 						Kind:     token.INT,
 						Value:    "1",
@@ -256,16 +259,14 @@ func pre(c *astutil.Cursor) bool {
 						if len(callExpr.Args) == 1 { // This is a make operation
 							if _, ok := callExpr.Args[0].(*ast.ChanType); ok {
 								intID := int(Uint16OpID)
-								newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
-									ValuePos: 0,
-									Kind:     token.STRING,
-									Value:    "\"ChMake\"",
-								}, &ast.BasicLit{
-									ValuePos: 0,
-									Kind:     token.INT,
-									Value:    strconv.Itoa(intID),
-								}})
-								c.InsertBefore(newCall)
+								newCall := NewArgCallExpr("gooracle", "StoreChMakeInfo", []ast.Expr{
+									concrete.Lhs[0],
+									&ast.BasicLit{
+										ValuePos: 0,
+										Kind:     token.INT,
+										Value:    strconv.Itoa(intID),
+									}})
+								c.InsertAfter(newCall)
 								Uint16OpID++
 							}
 						}
@@ -273,6 +274,15 @@ func pre(c *astutil.Cursor) bool {
 				}
 			}
 		}
+		//if len(concrete.Lhs) == 1 {
+		//	newValue := concrete.Lhs[0]
+		//	if _, ok := newValue.(*ast.Ident); ok {
+		//		newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
+		//			newValue,
+		//		})
+		//		c.InsertAfter(newCall)
+		//	}
+		//}
 
 	case *ast.ExprStmt:
 		if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {
@@ -309,10 +319,9 @@ func pre(c *astutil.Cursor) bool {
 			}
 		}
 
-
-	case *ast.SwitchStmt:
-		positionOriSelect := currentFSet.Position(concrete.Switch)
-		_ = positionOriSelect
+	//case *ast.SwitchStmt:
+	//	positionOriSelect := currentFSet.Position(concrete.Switch)
+	//	_ = positionOriSelect
 
 	case *ast.FuncDecl:
 		if strings.HasPrefix(concrete.Name.Name, "Test") {
@@ -321,7 +330,6 @@ func pre(c *astutil.Cursor) bool {
 				additionalNode = firstStmt
 				boolNeedImport_gooracle = true // We need to import gooracle
 			}
-
 
 		}
 
@@ -332,18 +340,18 @@ func pre(c *astutil.Cursor) bool {
 }
 
 type SelectStruct struct {
-	StmtSelect *ast.SelectStmt // StmtSelect.Body.List is a vec of CommClause
+	StmtSelect    *ast.SelectStmt   // StmtSelect.Body.List is a vec of CommClause
 	VecCommClause []*ast.CommClause // a CommClause is a case and its content in select
-	VecOp []ast.Stmt // The operations of cases. Nil is default
-	VecBody [][]ast.Stmt // The content of cases
+	VecOp         []ast.Stmt        // The operations of cases. Nil is default
+	VecBody       [][]ast.Stmt      // The content of cases
 }
 
 type SwitchStruct struct {
-	StmtSwitch *ast.SwitchStmt // StmtSwitch.Body.List is a vector of CaseClause
-	Tag ast.Expr
+	StmtSwitch    *ast.SwitchStmt // StmtSwitch.Body.List is a vector of CaseClause
+	Tag           ast.Expr
 	VecCaseClause []*ast.CaseClause // a CaseClause is a case and its content in switch.
-	VecVecExpr [][]ast.Expr // The expressions of each case.
-	VecBody [][]ast.Stmt // The content of cases
+	VecVecExpr    [][]ast.Expr      // The expressions of each case.
+	VecBody       [][]ast.Stmt      // The content of cases
 }
 
 // Deprecated:
@@ -355,7 +363,7 @@ func copyOp(stmtOp ast.Stmt) ast.Stmt {
 	case *ast.SendStmt:
 		oriChanIdent, _ := concrete.Chan.(*ast.Ident)
 		newSend := &ast.SendStmt{
-			Chan:  &ast.Ident{
+			Chan: &ast.Ident{
 				NamePos: 0,
 				Name:    oriChanIdent.Name,
 				Obj:     oriChanIdent.Obj,
@@ -423,7 +431,6 @@ func importPath(s *ast.ImportSpec) string {
 	}
 	return t
 }
-
 
 func NewArgCall(strPkg, strCallee string, vecExprArg []ast.Expr) *ast.CallExpr {
 	newIdentPkg := &ast.Ident{
