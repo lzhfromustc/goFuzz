@@ -1,32 +1,22 @@
 package fuzzer
 
 import (
-	"bytes"
 	"crypto/rand"
 	"fmt"
 	"goFuzz/config"
+	"log"
 	"math/big"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 )
 
-type FuzzQueryEntry struct {
-	IsFavored              bool
-	BestScore              int // TODO:: I only save the BestScore for the CurrentInput, is that enough?
-	ExecutionCount         int
-	IsCalibrateFail        bool
-	CurrentInput           *Input
-	CurrentRecordHashSlice []string
-	/* Add more features to the queue if necessary. */
-}
-
 func Deterministic_enumerate_input(input *Input) (reInputSlice []*Input) {
-	var tmp_input *Input
+
 	for idx_vec_select, select_input := range input.VecSelect {
 		for i := 0; i < select_input.IntNumCase; i++ {
+			var tmp_input *Input
 			tmp_input = copyInput(input)
+			tmp_input.Note = ""
 			tmp_input.VecSelect[idx_vec_select].IntPrioCase = i
 			tmp_input.SelectDelayMS = 500 // TODO:: We may need to tune the number here
 			reInputSlice = append(reInputSlice, tmp_input)
@@ -90,86 +80,6 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 	return
 }
 
-func Run(input *Input) (retOutput *RunOutput) {
-	if input.TestName == "Empty" || input.TestName == "" {
-		fmt.Println("The Run command in the fuzzer receive an input without input.TestName. ")
-		return
-	}
-	strTestName := input.TestName
-	boolFirstRun := input.Note == NotePrintInput
-	// Create the input file into disk
-	CreateInput(input)
-
-	// Load the output file before running the test
-	outputNumBugBefore := ParseOutputFile()
-
-	// Run the test
-	err := os.Setenv("GOPATH", config.StrProjectGOPATH)
-	if err != nil {
-		fmt.Println("The export of GOPATH fails:", err)
-		return
-	}
-	err = os.Setenv("TestPath", config.StrTestPath)
-	if err != nil {
-		fmt.Println("The export of TestPath fails:", err)
-		return
-	}
-	err = os.Setenv("OutputFullPath", config.StrOutputFullPath)
-	if err != nil {
-		fmt.Println("The export of OutputFullPath fails:", err)
-		return
-	}
-	if config.BoolGlobalTuple {
-		err = os.Setenv("BitGlobalTuple", "1")
-	} else {
-		err = os.Setenv("BitGlobalTuple", "0")
-	}
-	if err != nil {
-		fmt.Println("The export of TestPath fails:", err)
-		return
-	}
-	strRelativePath := strings.TrimPrefix(config.StrTestPath, config.StrProjectGOPATH+"/src/")
-	cmd := exec.Command("go", "test", strRelativePath, "-run", strTestName) // TODO: Consider handling the case that strTestName isn't a unit test
-	var outb, errb bytes.Buffer
-	cmd.Stdout = &outb
-	cmd.Stderr = &errb
-	err = cmd.Run()
-	fmt.Println("Output of unit test:") // this output is meaningless. It just prints things to indicate whether the unit test passed or not. This has nothing to do with whether a bug is triggered
-	fmt.Println("test out:", outb.String(), "\ntest err:", errb.String())
-	if err != nil {
-		fmt.Println("The go test command fails:", err)
-		fmt.Println("Could have found a bug! Check stdout and myoutput.txt")
-		return
-	}
-
-	// If the output file is longer, it means we found a new bug
-	outputNumBugAfter := ParseOutputFile()
-	if outputNumBugAfter > outputNumBugBefore {
-		fmt.Println("Found a new bug. Now exit")
-		os.Exit(1)
-	}
-
-	// Read the newly printed input file if this is the first run
-	retInput := EmptyInput()
-	if boolFirstRun {
-		retInput = ParseInputFile()
-	} else {
-		retInput = EmptyInput()
-	}
-	// Save the current TestName to the retInput.
-	retInput.TestName = strTestName
-	// Read the printed record file
-	retRecord := ParseRecordFile()
-
-	retOutput = EmptyRunOutput()
-	retOutput.RetInput = retInput
-	retOutput.RetRecord = retRecord
-	/* Pass the stage information to the output, otherwise, when the main routine receive the output,
-	it does not know the context fo the executions. */
-	retOutput.Stage = input.Stage
-	return
-}
-
 func SetDeadline() {
 	go func() {
 		time.Sleep(config.FuzzerDeadline)
@@ -178,71 +88,39 @@ func SetDeadline() {
 	}()
 }
 
-func HandleRunOutput(retInput *Input, retRecord *Record, stage string, currentEntry *FuzzQueryEntry, mainRecord *Record, fuzzingQueue *[]FuzzQueryEntry, allRecordHashMap map[string]struct{}) {
-	if stage == "calib" {
-		if len(retInput.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
-			return
-		}
-		recordHash := HashOfRecord(retRecord)
-		if FindRecordHashInSlice(recordHash, currentEntry.CurrentRecordHashSlice) == false {
-			currentEntry.CurrentRecordHashSlice = append(currentEntry.CurrentRecordHashSlice, recordHash)
-		}
-		if _, exist := allRecordHashMap[recordHash]; exist == false {
-			allRecordHashMap[recordHash] = struct{}{}
-		}
-		curScore := ComputeScore(mainRecord, retRecord)
-		if curScore > currentEntry.BestScore {
-			currentEntry.BestScore = curScore
-		}
+// Fuzz is the main entry for fuzzing
+func Fuzz(tests []string, customCmds []string, numOfWorkers int) {
 
-	} else if stage == "deter" {
-		if len(retInput.VecSelect) == 0 { // TODO:: Should we ignore the output that contains no VecSelects entry?
-			return
-		}
-		recordHash := HashOfRecord(retRecord)
-		/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
-		if _, exist := allRecordHashMap[recordHash]; exist == false {
-			curScore := ComputeScore(mainRecord, retRecord)
-			currentFuzzEntry := FuzzQueryEntry{
-				IsFavored:              false,
-				ExecutionCount:         1,
-				BestScore:              curScore,
-				CurrentInput:           retInput,
-				CurrentRecordHashSlice: []string{recordHash},
-			}
-			*fuzzingQueue = append(*fuzzingQueue, currentFuzzEntry)
-			allRecordHashMap[recordHash] = struct{}{}
-		} else {
-			return
-		}
+	log.Printf("Tests going to be run: %s", tests)
+	log.Printf("Custom Commands going to be run: %s", customCmds)
+	log.Printf("Number of workers: %d", numOfWorkers)
+	InitWorkers(numOfWorkers, fuzzerContext)
 
-	} else if stage == "rand" {
-		recordHash := HashOfRecord(retRecord)
-		if _, exist := allRecordHashMap[recordHash]; exist == false { // Found a new input with unique record!!!
-			curScore := ComputeScore(mainRecord, retRecord)
-			currentFuzzEntry := FuzzQueryEntry{
-				IsFavored:              false,
-				ExecutionCount:         1,
-				BestScore:              curScore,
-				CurrentInput:           retInput, // TODO:: Should we save ori_input or retInput???
-				CurrentRecordHashSlice: []string{recordHash},
-			}
-			*fuzzingQueue = append(*fuzzingQueue, currentFuzzEntry)
-			allRecordHashMap[recordHash] = struct{}{}
-		} else {
-			return
-		} // This mutation does not create new record. Discarded.
-		currentEntry.ExecutionCount += 1
+	for _, test := range tests {
+		e := NewInitStageFuzzQueryEntryWithTestname(test)
+		fuzzerContext.EnqueueQueryEntry(e)
+	}
+
+	for _, cmd := range customCmds {
+		e := NewInitStageFuzzQueryEntryWithCustomCmd(cmd)
+		fuzzerContext.EnqueueQueryEntry(e)
+	}
+
+	for {
+		e, err := fuzzerContext.DequeueQueryEntry()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if e == nil {
+			log.Println("Fuzzing queue is empty, waiting 5 seconds")
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		err = HandleFuzzQueryEntry(e, fuzzerContext)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 	}
 }
-
-//func PopWorklist(workList *[]Input) (result Input, numFile int) {
-//	result = (*workList)[0]
-//	if len(*workList) == 1 {
-//		*workList = nil
-//		return result, 0
-//	} else {
-//		(*workList) = (*workList)[1:]
-//		return result, len(*workList)
-//	}
-//}

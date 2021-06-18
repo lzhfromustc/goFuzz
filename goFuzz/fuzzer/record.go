@@ -1,10 +1,8 @@
 package fuzzer
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
-	"goFuzz/config"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -23,40 +21,18 @@ type ChanRecord struct {
 }
 
 const (
-	RecordFileName = "myrecord.txt"
 	RecordSplitter = "-----"
 )
-
-func FileNameOfRecord() string {
-	return config.StrTestPath + "/" + RecordFileName
-}
 
 func EmptyRecord() *Record {
 	return &Record{}
 }
 
-func ParseRecordFile() (retRecord *Record) {
-	retRecord = EmptyRecord()
-	// The input being parsed shouldn't be empty
-	file, err := os.Open(FileNameOfRecord())
-	if err != nil {
-		fmt.Println("Failed to open record file:", FileNameOfRecord())
-		return
-	}
-	defer file.Close()
-
-	var text []string
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		text = append(text, scanner.Text())
-	}
-
+func ParseRecordFile(content string) (*Record, error) {
+	var err error
+	text := strings.Split(content, "\n")
 	if len(text) == 0 {
-		fmt.Println("Record is empty:", FileNameOfInput())
-		return
+		return nil, errors.New("Record is empty")
 	}
 
 	newRecord := &Record{
@@ -75,24 +51,20 @@ func ParseRecordFile() (retRecord *Record) {
 		}
 		vecStr := strings.Split(eachline, ":")
 		if len(vecStr) != 2 {
-			fmt.Println("One line of tuple in record has incorrect format:", eachline, "\tLine:", i)
-			return
+			return nil, fmt.Errorf("tuple in record has incorrect format: %s, at line %d", eachline, i)
 		}
 		var tuple, count int
 		if tuple, err = strconv.Atoi(vecStr[0]); err != nil {
-			fmt.Println("One line of tuple in record has incorrect format:", vecStr, "\tLine:", i)
-			return
+			return nil, fmt.Errorf("tuple in record has incorrect format: %s, at line %d", vecStr, i)
 		}
 		if count, err = strconv.Atoi(vecStr[1]); err != nil {
-			fmt.Println("One line of tuple in record has incorrect format:", vecStr, "\tLine:", i)
-			return
+			return nil, fmt.Errorf("tuple in record has incorrect format: %s, at line %d", vecStr, i)
 		}
 		newRecord.MapTupleRecord[tuple] = count
 	}
 
 	if indexSplitter == -1 {
-		fmt.Println("Doesn't find RecordSplitter in record. Full text:", text)
-		return
+		return nil, fmt.Errorf("doesn't find RecordSplitter in record. Full text: %s", text)
 	}
 
 	for i := indexSplitter + 1; i < len(text); i++ {
@@ -103,8 +75,7 @@ func ParseRecordFile() (retRecord *Record) {
 		//chIDString:closedBit:notClosedBit:capBuf:peakBuf
 		vecStr := strings.Split(eachline, ":")
 		if len(vecStr) != 5 {
-			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
-			return
+			return nil, fmt.Errorf("channel in record has incorrect format: %s, at line %d", eachline, i)
 		}
 		chRecord := ChanRecord{}
 		chRecord.ChID = vecStr[0]
@@ -119,17 +90,15 @@ func ParseRecordFile() (retRecord *Record) {
 			chRecord.NotClosed = true
 		}
 		if chRecord.CapBuf, err = strconv.Atoi(vecStr[3]); err != nil {
-			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
-			return
+			return nil, fmt.Errorf("line of channel in record has incorrect format: %s, at line %d", eachline, i)
+
 		}
 		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[4]); err != nil {
-			fmt.Println("One line of channel in record has incorrect format:", eachline, "\tLine:", i)
-			return
+			return nil, fmt.Errorf("line of channel in record has incorrect format: %s, at line %d", eachline, i)
 		}
 		newRecord.MapChanRecord[chRecord.ChID] = chRecord
 	}
-	retRecord = newRecord
-	return
+	return newRecord, nil
 }
 
 func UpdateMainRecord(mainRecord, curRecord Record) Record {

@@ -37,10 +37,9 @@ func main() {
 
 	cmd := exec.Command("go", "test", strTestPath+"/...")
 	err = cmd.Run()
-		if err != nil {
+	if err != nil {
 		fmt.Println("The go test command fails:", err)
 		return
 	}
-
 
 }

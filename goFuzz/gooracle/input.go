@@ -56,7 +56,7 @@ func ParseInputStr(text []string) map[string]runtime.SelectInfo {
 			fmt.Println("One line in input has incorrect format:", vecStr, "\tLine:", i)
 			return nil
 		}
-		result[selectInput.StrFileName + ":" + selectInput.StrLineNum] = selectInput
+		result[selectInput.StrFileName+":"+selectInput.StrLineNum] = selectInput
 	}
 
 	return result

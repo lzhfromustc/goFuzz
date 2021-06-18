@@ -38,7 +38,7 @@ func BeforeRunTestOnce() {
 	StrTestPath = os.Getenv("TestPath")
 	StrTestName = runtime.MyCaller(1)
 	if indexDot := strings.Index(StrTestName, "."); indexDot > -1 {
-		StrTestName = StrTestName[indexDot + 1:]
+		StrTestName = StrTestName[indexDot+1:]
 	}
 	_, StrTestFile, _, _ = runtime.Caller(2)
 	runtime.BoolSelectCount = true
