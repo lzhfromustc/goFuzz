@@ -20,10 +20,10 @@ func init() {
 	//MapInput = make(map[string]SelectInput)
 }
 
-var FlagSkipTmpCode = false
+var BoolDebug = true
 
 func TmpBeforeBlock() {
-	if FlagSkipTmpCode {
+	if !BoolDebug {
 		return
 	}
 	gid := GoID()
@@ -38,7 +38,7 @@ func TmpBeforeBlock() {
 
 
 func TmpAfterBlock() {
-	if FlagSkipTmpCode {
+	if !BoolDebug {
 		return
 	}
 	gid := GoID()
@@ -50,10 +50,10 @@ func TmpAfterBlock() {
 func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 	retStr = ""
 	foundBug = false
-	if FlagSkipTmpCode {
+	if !BoolDebug {
 		return
 	}
-	SleepMS(1000)
+	SleepMS(500)
 	lock(&muMap)
 	outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
@@ -86,7 +86,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 				continue
 			case Index(str, "/vendor/") >= 0 && Index(str, "Lock(") == -1:
 				continue
-			case Index(str, "=====") >= 0:
+			case Index(str, "k8s.io/klog:1169") >= 0:
 				continue
 			case Index(str, "=====") >= 0:
 				continue
@@ -159,8 +159,8 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 			}
 
 
-			retStr += "Bug Info:\n" + str + "\n"
-			print(str)
+			retStr += "-----New Bug:\n" + str + "\n"
+			print(retStr)
 			foundBug = true
 
 		}

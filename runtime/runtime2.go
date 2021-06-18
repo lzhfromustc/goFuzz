@@ -483,6 +483,10 @@ type g struct {
 	gcAssistBytes int64
 
 	///MYCODE
+	goInfo *GoInfo
+	lastPrimInfo PrimInfo
+
+	///MYCODE
 	lastMySwitchLineNum string // Our inserted switch calls a function in gooracle, which records the line number of
 	// the original select corresponding to this switch. This variables records this line number so myselect.go can use it
 	lastMySwitchOriSelectNumCase int

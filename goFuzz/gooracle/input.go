@@ -13,7 +13,7 @@ var MapInput map[string]runtime.SelectInfo
 var SelectDelayMS int
 
 func FileNameOfInput() string {
-	return StrTestpath + "/" + InputFileName
+	return os.Getenv("GF_INPUT_FILE")
 }
 
 func ParseInputStr(text []string) map[string]runtime.SelectInfo {

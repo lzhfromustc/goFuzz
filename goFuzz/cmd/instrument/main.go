@@ -9,6 +9,7 @@ import (
 	"go/parser"
 	"go/token"
 	"golang.org/x/tools/go/ast/astutil"
+	"hash/fnv"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -31,6 +32,9 @@ func main() {
 	flag.Parse()
 
 	filename := *pFile
+	h := fnv.New32a()
+	h.Write([]byte(filename))
+	Uint16OpID = uint16(h.Sum32())
 
 	oldSource, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -78,7 +82,7 @@ func pre(c *astutil.Cursor) bool {
 	defer func() {
 		if r := recover(); r != nil { // This is allowed. If we insert node into nodes not in slice, we will meet a panic
 			// For example, we may identified a receive in select and wanted to insert a function call before it, then this function will panic
-			//fmt.Println("Recover in pre(): c.Name():", c.Name())
+			fmt.Println("Recover in pre(): c.Name():", c.Name())
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
@@ -256,16 +260,14 @@ func pre(c *astutil.Cursor) bool {
 						if len(callExpr.Args) == 1 { // This is a make operation
 							if _, ok := callExpr.Args[0].(*ast.ChanType); ok {
 								intID := int(Uint16OpID)
-								newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
-									ValuePos: 0,
-									Kind:     token.STRING,
-									Value:    "\"ChMake\"",
-								}, &ast.BasicLit{
+								newCall := NewArgCallExpr("gooracle", "StoreChMakeInfo", []ast.Expr{
+									concrete.Lhs[0],
+									&ast.BasicLit{
 									ValuePos: 0,
 									Kind:     token.INT,
 									Value:    strconv.Itoa(intID),
 								}})
-								c.InsertBefore(newCall)
+								c.InsertAfter(newCall)
 								Uint16OpID++
 							}
 						}
@@ -273,6 +275,15 @@ func pre(c *astutil.Cursor) bool {
 				}
 			}
 		}
+		//if len(concrete.Lhs) == 1 {
+		//	newValue := concrete.Lhs[0]
+		//	if _, ok := newValue.(*ast.Ident); ok {
+		//		newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
+		//			newValue,
+		//		})
+		//		c.InsertAfter(newCall)
+		//	}
+		//}
 
 	case *ast.ExprStmt:
 		if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {
@@ -310,9 +321,10 @@ func pre(c *astutil.Cursor) bool {
 		}
 
 
-	case *ast.SwitchStmt:
-		positionOriSelect := currentFSet.Position(concrete.Switch)
-		_ = positionOriSelect
+
+	//case *ast.SwitchStmt:
+	//	positionOriSelect := currentFSet.Position(concrete.Switch)
+	//	_ = positionOriSelect
 
 	case *ast.FuncDecl:
 		if strings.HasPrefix(concrete.Name.Name, "Test") {

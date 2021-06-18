@@ -50,7 +50,10 @@ type hchan struct {
 	lock mutex
 
 	///MYCODE:
-	id uint32 // an uint32 assigned to the channel when it is made. Start from 0 and increase by 1 every time
+	chInfo *ChanInfo
+
+	///MYCODE:
+	id uint16 // an uint32 assigned to the channel when it is made. Start from 0 and increase by 1 every time
 	preLoc uint16 // used when BoolRecordPerCh is true; stores the hash of last operation of this channel
 	chanRecord *ChanRecord // a data struct to record information of this channel
 }
@@ -110,8 +113,16 @@ func makechan(t *chantype, size int) *hchan {
 		c = new(hchan)
 		c.buf = mallocgc(mem, elem, true)
 	}
+
+
 	///MYCODE
-	RecordChMake(size, c)
+	c.chInfo = NewChanInfo(c)
+	StoreLastPrimInfo(c.chInfo)
+
+	///MYCODE
+	if BoolRecord == false {
+		RecordChMake(size, c)
+	}
 
 	c.elemsize = uint16(elem.size)
 	c.elemtype = elem
@@ -211,7 +222,20 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	lock(&c.lock)
 
 	///MYCODE
-	RecordChOp(c)
+	if GlobalEnableOracle && c.chInfo.EnableOracle {
+		currentGo := CurrentGoInfo()
+		AddRefGoroutine(c.chInfo, currentGo)
+		currentGo.SetBlockAt(c, Send)
+		CheckBlockBug([]PrimInfo{c.chInfo})
+		defer currentGo.WithdrawBlock()
+	}
+
+	///MYCODE
+
+	if BoolRecord {
+		RecordChOp(c)
+	}
+
 
 	if c.closed != 0 {
 		unlock(&c.lock)
@@ -374,7 +398,10 @@ func closechan(c *hchan) {
 	lock(&c.lock)
 
 	///MYCODE
-	RecordChOp(c)
+	if BoolRecord {
+		RecordChOp(c)
+	}
+
 
 	if c.closed != 0 {
 		unlock(&c.lock)
@@ -486,8 +513,11 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	///MYCODE
-	TmpBeforeBlock()
-	defer TmpAfterBlock()
+	if BoolDebug {
+		TmpBeforeBlock()
+		defer TmpAfterBlock()
+	}
+
 
 	// Fast path: check for failed non-blocking operation without acquiring the lock.
 	if !block && empty(c) {
@@ -530,7 +560,19 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	lock(&c.lock)
 
 	///MYCODE
-	RecordChOp(c)
+	if GlobalEnableOracle && c.chInfo.EnableOracle {
+		currentGo := CurrentGoInfo()
+		AddRefGoroutine(c.chInfo, currentGo)
+		currentGo.SetBlockAt(c, Recv)
+		CheckBlockBug([]PrimInfo{c.chInfo})
+		defer currentGo.WithdrawBlock()
+	}
+
+
+	///MYCODE
+	if BoolRecord {
+		RecordChOp(c)
+	}
 
 	if c.closed != 0 && c.qcount == 0 {
 		if raceenabled {
