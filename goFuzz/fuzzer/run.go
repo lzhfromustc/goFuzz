@@ -28,6 +28,10 @@ func getOutputFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "stdout"))
 }
 
+func getErrFilePath(outputDir string) (string, error) {
+	return filepath.Abs(path.Join(outputDir, "stderr"))
+}
+
 func getRecordFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "record"))
 }
@@ -70,6 +74,10 @@ func Run(task *RunTask) (*RunResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	gfErrFp, err := getErrFilePath(runOutputDir)
+	if err != nil {
+		return nil, err
+	}
 
 	boolFirstRun := input.Note == NotePrintInput
 
@@ -102,19 +110,32 @@ func Run(task *RunTask) (*RunResult, error) {
 	cmd.Env = env
 
 	// setting up redirection
-	var errBuf, stdOutBuf bytes.Buffer
+	var stdErrBuf, stdOutBuf bytes.Buffer
 	cmd.Stdout = &stdOutBuf
-	cmd.Stderr = &errBuf
-	err = cmd.Run()
+	cmd.Stderr = &stdErrBuf
+	runErr := cmd.Run()
 
 	// Save output to the file
 	outputF, err := os.Create(gfOutputFp)
+	if err != nil {
+		return nil, fmt.Errorf("create stdout: %s", err)
+	}
 	defer outputF.Close()
 	outputW := bufio.NewWriter(outputF)
 	outputW.Write(stdOutBuf.Bytes())
 	outputW.Flush()
 
+	// Save error to the file
+	errF, err := os.Create(gfErrFp)
 	if err != nil {
+		return nil, fmt.Errorf("create stdout: %s", err)
+	}
+	defer errF.Close()
+	errW := bufio.NewWriter(errF)
+	errW.Write(stdErrBuf.Bytes())
+	errW.Flush()
+
+	if runErr != nil {
 		return nil, fmt.Errorf("go test command fails: %s", err)
 	}
 
