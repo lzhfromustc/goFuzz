@@ -239,6 +239,10 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 
 	if c.closed != 0 {
 		unlock(&c.lock)
+
+		///MYCODE
+		ReportNonBlockingBug()
+
 		panic(plainError("send on closed channel"))
 	}
 
