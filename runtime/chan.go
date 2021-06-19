@@ -316,6 +316,9 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		if c.closed == 0 {
 			throw("chansend: spurious wakeup")
 		}
+		///MYCODE
+		ReportNonBlockingBug()
+
 		panic(plainError("send on closed channel"))
 	}
 	return true
@@ -392,6 +395,9 @@ func recvDirect(t *_type, sg *sudog, dst unsafe.Pointer) {
 
 func closechan(c *hchan) {
 	if c == nil {
+		///MYCODE
+		ReportNonBlockingBug()
+
 		panic(plainError("close of nil channel"))
 	}
 
@@ -405,6 +411,9 @@ func closechan(c *hchan) {
 
 	if c.closed != 0 {
 		unlock(&c.lock)
+		///MYCODE
+		ReportNonBlockingBug()
+
 		panic(plainError("close of closed channel"))
 	}
 
