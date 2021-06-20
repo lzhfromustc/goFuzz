@@ -44,17 +44,25 @@ func parseFlag() {
 func main() {
 	parseFlag()
 
-	var tests []string
-	var err error
+	var testsToFuzz []string
 	if fuzzer.TargetTestFunc != "" {
-		tests = append(tests, fuzzer.TargetTestFunc)
+		testsToFuzz = append(testsToFuzz, fuzzer.TargetTestFunc)
 	} else {
-		tests, err = fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, "./...")
+		// Find all tests in all packages
+		packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir)
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		for _, pkg := range packages {
+			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
+			if err != nil {
+				log.Fatal(err)
+			}
+			testsToFuzz = append(testsToFuzz, testsInPkg...)
 		}
 	}
 
 	// Main entry for fuzzing
-	fuzzer.Fuzz(tests, nil, fuzzer.MaxParallel)
+	fuzzer.Fuzz(testsToFuzz, nil, fuzzer.MaxParallel)
 }

@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"log"
 	"sync"
+	"sync/atomic"
 )
 
 // fuzzerContext is a global context during whole fuzzing process.
@@ -32,6 +33,10 @@ type FuzzContext struct {
 	fqLock           sync.RWMutex // lock for fuzzingQueue
 	mainRecord       *Record
 	allRecordHashMap map[string]struct{}
+
+	// Metrics
+	numOfBugsFound uint32
+	numOfRuns      uint32
 }
 
 // NewFuzzContext returns a new FuzzerContext
@@ -65,4 +70,12 @@ func (c *FuzzContext) EnqueueQueryEntry(e *FuzzQueryEntry) error {
 	c.fqLock.Unlock()
 	log.Printf("enqueued entry: %+v", *e)
 	return nil
+}
+
+func (c *FuzzContext) IncNumOfRun() {
+	atomic.AddUint32(&c.numOfRuns, 1)
+}
+
+func (c *FuzzContext) IncNumOfBugsFound(num uint32) {
+	atomic.AddUint32(&c.numOfBugsFound, num)
 }

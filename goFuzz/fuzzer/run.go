@@ -46,7 +46,7 @@ func NewRunTask(input *Input, stage FuzzStage, idx int, entry *FuzzQueryEntry) *
 	return task
 }
 
-func Run(task *RunTask) (*RunResult, error) {
+func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	var err error
 	input := task.input
 	if input.TestName == "Empty" || input.TestName == "" {
@@ -141,8 +141,8 @@ func Run(task *RunTask) (*RunResult, error) {
 
 	outputNumBug := CheckBugFromStdout(stdOutBuf.String())
 	if outputNumBug != 0 {
-		log.Println("Found a new bug. Now exit")
-		os.Exit(1)
+		fuzzCtx.IncNumOfBugsFound(uint32(outputNumBug))
+		log.Printf("Found %d bug(s).", outputNumBug)
 	}
 
 	// Read the newly printed input file if this is the first run
@@ -182,5 +182,7 @@ func Run(task *RunTask) (*RunResult, error) {
 	retOutput.RetInput = retInput
 	retOutput.RetRecord = retRecord
 
+	// Increment number of runs after a successfully run
+	fuzzCtx.IncNumOfRun()
 	return retOutput, nil
 }

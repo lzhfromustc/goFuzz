@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	gooracle "goFuzz/gooracle"
+	gooracle "gooracle"
 	"testing"
 	"time"
 )
@@ -10,14 +10,15 @@ import (
 func TestHello(t *testing.T) {
 	gooracle.BeforeRun()
 	defer gooracle.AfterRun()
-	gooracle.StoreOpInfo("ChMake", 0)
+
 	ch := make(chan int)
+	gooracle.StoreChMakeInfo(ch, 33314)
 
 	go func() {
-		gooracle.StoreOpInfo("Send", 1)
+		gooracle.StoreOpInfo("Send", 33315)
 		ch <- 1
 	}()
-	switch gooracle.ReadSelect("example/simple1/main_test.go", 16, 2) {
+	switch gooracle.ReadSelect("/Users/xsh/code/goFuzz/goFuzz/example/simple1/main_test.go", 17, 2) {
 	case 0:
 		select {
 		case <-ch:
@@ -53,4 +54,5 @@ func TestHello(t *testing.T) {
 			fmt.Println("Should be buggy")
 		}
 	}
+
 }

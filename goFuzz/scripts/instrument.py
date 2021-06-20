@@ -19,7 +19,9 @@ def find_gotest_in_folder(folder: str) -> List[str]:
     """
     if folder.endswith("/"):
         folder = folder[:-1]
-    return glob.glob(f"{folder}/**/*_test.go")
+    glob_path = os.path.join(folder, '**', '*.go')
+    print(f"using glob {glob_path}")
+    return glob.glob(glob_path, recursive=True)
 
 def instrument_gotest(file: str):
     """Instrument Golang test file by bin/instrument
@@ -44,7 +46,8 @@ def main():
         files = find_gotest_in_folder(dir)
 
         for f in files:
-            instrument_gotest(f)
+            abs_f = os.path.abspath(f)
+            instrument_gotest(abs_f)
 
 
 

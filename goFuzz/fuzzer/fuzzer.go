@@ -41,6 +41,8 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 		reInput.SelectDelayMS = 500
 	}
 	mutateMethod := Get_Random_Int_With_Max(4)
+
+	// keep 0, 3
 	switch mutateMethod {
 	case 0:
 		/* Mutate one select per time */

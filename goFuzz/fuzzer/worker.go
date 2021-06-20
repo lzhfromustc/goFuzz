@@ -23,7 +23,7 @@ func InitWorkers(maxParallel int, fuzzCtx *FuzzContext) {
 					// Receive input
 					case task := <-fuzzCtx.runTaskCh:
 						log.Printf("[Worker %d] Working on %s\n", i, task.id)
-						result, err := Run(task)
+						result, err := Run(fuzzCtx, task)
 						if err != nil {
 							log.Printf("[Worker %d] [Task %s] Error: %s\n", i, task.id, err)
 							continue
