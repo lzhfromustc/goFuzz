@@ -45,6 +45,7 @@ func NewInitStageFuzzQueryEntryWithCustomCmd(customCmd string) *FuzzQueryEntry {
 // Notes:
 //   1. e is expected to be dequeue from fuzzCtx's fuzzingQueue
 func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
+	// TODO: better way to print FuzzQueryEntry, maybe ID or string of input?
 	log.Printf("handle entry: %+v\n", *e)
 
 	var runTasks []*RunTask
@@ -72,13 +73,18 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 	} else if e.Stage == RandStage {
 		randNum := rand.Int31n(101)
 		if e.BestScore < int(randNum) {
-			log.Println("Randomly skipped")
+			log.Printf("[%+v] randomly skipped", *e)
 			return nil
 		}
 		currentFuzzingEnergy := e.BestScore
 		execCount := e.ExecutionCount
+		log.Printf("[%+v] randomly mutate with energy %d", *e, currentFuzzingEnergy)
 		for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
-			currentMutatedInput := Random_Mutate_Input(e.CurrInput)
+			currentMutatedInput, err := RandomMutateInput(e.CurrInput)
+			if err != nil {
+				log.Printf("[%+v] randomly mutate input fail: %s, continue", *e, err)
+				continue
+			}
 			t, err := NewRunTask(currentMutatedInput, e.Stage, e.Idx, execCount, e)
 			if err != nil {
 				return err

@@ -2,6 +2,7 @@ package fuzzer
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"goFuzz/config"
 	"log"
@@ -33,9 +34,15 @@ func Get_Random_Int_With_Max(max int) int {
 	return int(mutateMethod.Int64())
 }
 
-func Random_Mutate_Input(input *Input) (reInput *Input) {
-	/* TODO:: In the current stage, I am not mutating the delayMS number!!! */
-	reInput = copyInput(input)
+// RandomMutateInput generates a new input by randomly mutating select choices within given input
+// Notes:
+//   RandomMutateInput will fail if input's VecSelect is empty
+func RandomMutateInput(input *Input) (*Input, error) {
+	numOfSelects := len(input.VecSelect)
+	if numOfSelects == 0 {
+		return nil, errors.New("cannot randomly mutate an input with empty VecSelect")
+	}
+	reInput := copyInput(input)
 	reInput.SelectDelayMS += 500 // TODO:: we may need to tune the two numbers here
 	if reInput.SelectDelayMS > 5000 {
 		reInput.SelectDelayMS = 500
@@ -45,25 +52,32 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 	switch mutateMethod {
 	case 0:
 		/* Mutate one select per time */
-		mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
-		mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+		mutateWhichSelect := Get_Random_Int_With_Max(numOfSelects)
+		numOfSelectCases := reInput.VecSelect[mutateWhichSelect].IntNumCase
+		if numOfSelectCases == 0 {
+			return nil, fmt.Errorf("cannot randomly mutate an input with zero number of cases in select %d", mutateWhichSelect)
+		}
+		mutateToWhatValue := Get_Random_Int_With_Max(numOfSelectCases)
 
 		reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 	case 1:
 		/* Mutate random number of select. */
-		mutateChance := Get_Random_Int_With_Max(len(reInput.VecSelect))
+		mutateChance := Get_Random_Int_With_Max(numOfSelects)
 		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++ {
-			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
-			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
+			mutateWhichSelect := Get_Random_Int_With_Max(numOfSelects)
+			numOfSelectCases := reInput.VecSelect[mutateWhichSelect].IntNumCase
+			if numOfSelectCases == 0 {
+				return nil, fmt.Errorf("cannot randomly mutate an input with zero number of cases in select %d", mutateWhichSelect)
+			}
+			mutateToWhatValue := Get_Random_Int_With_Max(numOfSelectCases)
 
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
 
 	default:
-		/* ??? ERROR ??? */
-		fmt.Println("Random Mutate Input is not mutating.")
+		return nil, fmt.Errorf("cannot randomly mutate an input with non-exist mutate method %d", mutateMethod)
 	}
-	return
+	return reInput, nil
 }
 
 func SetDeadline() {
