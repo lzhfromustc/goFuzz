@@ -42,7 +42,7 @@ func parseGoCmdListOutput(output string) ([]string, error) {
 
 // ListTestsInPackage lists all tests in the given package
 // pkg can be ./... to search in all packages
-func ListTestsInPackage(goModRootPath string, pkg string) ([]string, error) {
+func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	if pkg == "" {
 		pkg = "./..."
 	}
@@ -59,7 +59,19 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]string, error) {
 		log.Fatal(err)
 	}
 
-	return parseGoCmdListOutput(out.String())
+	testFuncs, err := parseGoCmdTestListOutput(out.String())
+	if err != nil {
+		return nil, err
+	}
+
+	goTests := make([]*GoTest, 0, len(testFuncs))
+	for _, testFunc := range testFuncs {
+		goTests = append(goTests, &GoTest{
+			Func:    testFunc,
+			Package: pkg,
+		})
+	}
+	return goTests, nil
 }
 
 func parseGoCmdTestListOutput(output string) ([]string, error) {
@@ -71,7 +83,8 @@ func parseGoCmdTestListOutput(output string) ([]string, error) {
 		// ok      goFuzz/example/simple1  0.218s
 		// Only keep output like:
 		// TestParseInputFileHappy
-		if line != "" && strings.HasPrefix(line, "Test") {
+
+		if line != "" && strings.HasPrefix(line, "Test") && line != "Test" && strings.Index(line, " ") == -1 {
 			filtered = append(filtered, line)
 		}
 	}

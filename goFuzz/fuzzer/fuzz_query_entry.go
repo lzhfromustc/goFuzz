@@ -18,14 +18,15 @@ type FuzzQueryEntry struct {
 	IsCalibrateFail     bool
 	CurrInput           *Input
 	CurrRecordHashSlice []string
+	Idx                 int
 }
 
-func NewInitStageFuzzQueryEntryWithTestname(testName string) *FuzzQueryEntry {
+func NewInitStageFuzzQueryEntryWithGoTest(test *GoTest) *FuzzQueryEntry {
 	return &FuzzQueryEntry{
 		Stage: InitStage,
 		CurrInput: &Input{
-			Note:     NotePrintInput,
-			TestName: testName,
+			Note:      NotePrintInput,
+			GoTestCmd: test,
 		},
 	}
 }
@@ -50,12 +51,24 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 
 	if e.Stage == InitStage {
 		// If stage is InitStage, input's note will be PrintInput and gooracle will record select choices
-		runTasks = append(runTasks, NewRunTask(e.CurrInput, e.Stage, e.ExecutionCount, e))
+		t, err := NewRunTask(e.CurrInput, e.Stage, e.Idx, e.ExecutionCount, e)
+		if err != nil {
+			return err
+		}
+		runTasks = append(runTasks, t)
 	} else if e.Stage == DeterStage {
 		// If stage is InitStage, input's note will be not PrintInput and expect to have some select choice enforcement
-		runTasks = append(runTasks, NewRunTask(e.CurrInput, e.Stage, e.ExecutionCount, e))
+		t, err := NewRunTask(e.CurrInput, e.Stage, e.Idx, e.ExecutionCount, e)
+		if err != nil {
+			return err
+		}
+		runTasks = append(runTasks, t)
 	} else if e.Stage == CalibStage {
-		runTasks = append(runTasks, NewRunTask(e.CurrInput, e.Stage, e.ExecutionCount, e))
+		t, err := NewRunTask(e.CurrInput, e.Stage, e.Idx, e.ExecutionCount, e)
+		if err != nil {
+			return err
+		}
+		runTasks = append(runTasks, t)
 	} else if e.Stage == RandStage {
 		randNum := rand.Int31n(101)
 		if e.BestScore < int(randNum) {
@@ -63,11 +76,15 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 			return nil
 		}
 		currentFuzzingEnergy := e.BestScore
-		idx := e.ExecutionCount
+		execCount := e.ExecutionCount
 		for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
 			currentMutatedInput := Random_Mutate_Input(e.CurrInput)
-			runTasks = append(runTasks, NewRunTask(currentMutatedInput, e.Stage, idx, e))
-			idx += 1
+			t, err := NewRunTask(currentMutatedInput, e.Stage, e.Idx, execCount, e)
+			if err != nil {
+				return err
+			}
+			runTasks = append(runTasks, t)
+			execCount += 1
 		}
 	} else {
 		return fmt.Errorf("incorrect stage found: %s", e.Stage)

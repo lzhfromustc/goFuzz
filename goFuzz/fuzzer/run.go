@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -36,22 +37,35 @@ func getRecordFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "record"))
 }
 
-func NewRunTask(input *Input, stage FuzzStage, idx int, entry *FuzzQueryEntry) *RunTask {
+func NewRunTask(input *Input, stage FuzzStage, idx int, execCount int, entry *FuzzQueryEntry) (*RunTask, error) {
+	var mainName string
+
+	if input.GoTestCmd != nil {
+		if input.GoTestCmd.Package != "" {
+			// Whole package URL might be too long for filesystem, so only use last component of the package URL.
+			basePkg := path.Base(input.GoTestCmd.Package)
+			mainName = fmt.Sprintf("%s-%s", basePkg, input.GoTestCmd)
+		} else {
+			mainName = input.GoTestCmd.Func
+		}
+	} else if input.CustomCmd != "" {
+		mainName = input.CustomCmd
+	} else {
+		return nil, errors.New("malformed input, either GoTestCmd or CustomCmd is required")
+	}
+
 	task := &RunTask{
 		input: input,
 		entry: entry,
 		stage: stage,
-		id:    fmt.Sprintf("%s-%s-%d", input.TestName, stage, idx),
+		id:    fmt.Sprintf("%s-%s-%d-%d", mainName, stage, idx, execCount),
 	}
-	return task
+	return task, nil
 }
 
 func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	var err error
 	input := task.input
-	if input.TestName == "Empty" || input.TestName == "" {
-		return nil, fmt.Errorf("the Run command in the fuzzer receive an input without input.TestName")
-	}
 
 	// Setting up related file paths
 
@@ -82,7 +96,10 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	boolFirstRun := input.Note == NotePrintInput
 
 	// Create the input file into disk
-	SerializeInput(input, gfInputFp)
+	err = SerializeInput(input, gfInputFp)
+	if err != nil {
+		return nil, err
+	}
 
 	var globalTuple string
 	if GlobalTuple {
@@ -92,8 +109,12 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 
 	var cmd *exec.Cmd
-	if task.input.TestName != "" {
-		cmd = exec.Command("go", "test", "-v", "-run", input.TestName, "./...")
+	if task.input.GoTestCmd != nil {
+		var pkg = input.GoTestCmd.Package
+		if pkg == "" {
+			pkg = "./..."
+		}
+		cmd = exec.Command("go", "test", "-v", "-run", input.GoTestCmd.Func, pkg)
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
 		cmd = exec.Command(cmds[0], cmds[1])
@@ -136,19 +157,20 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	errW.Flush()
 
 	if runErr != nil {
-		return nil, fmt.Errorf("go test command fails: %s", err)
+		// Go test failed might be intentional
+		log.Printf("[Task %s][ignored] go test command failed: %v", task.id, err)
 	}
 
 	outputNumBug := CheckBugFromStdout(stdOutBuf.String())
 	if outputNumBug != 0 {
 		fuzzCtx.IncNumOfBugsFound(uint32(outputNumBug))
-		log.Printf("Found %d bug(s).", outputNumBug)
+		log.Printf("[Task %s] found %d bug(s)", task.id, outputNumBug)
 	}
 
 	// Read the newly printed input file if this is the first run
 	var retInput *Input
 	if boolFirstRun {
-		log.Printf("[Task %s] First run, reading input file %s", task.id, gfInputFp)
+		log.Printf("[Task %s] first run, reading input file %s", task.id, gfInputFp)
 		bytes, err := ioutil.ReadFile(gfInputFp)
 		if err != nil {
 			return nil, err
@@ -160,7 +182,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		}
 
 		// assign missing parts in input file
-		retInput.TestName = task.input.TestName
+		retInput.GoTestCmd = task.input.GoTestCmd
 		retInput.CustomCmd = task.input.CustomCmd
 
 	} else {

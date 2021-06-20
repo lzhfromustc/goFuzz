@@ -19,7 +19,7 @@ type Input struct {
 	Note string
 
 	// If we are running fuzz target by go test command
-	TestName string
+	GoTestCmd *GoTest
 
 	// If we are running fuzz target by custom command
 	CustomCmd string
@@ -29,6 +29,14 @@ type Input struct {
 
 	// Select choice need to be forced during runtime
 	VecSelect []SelectInput
+}
+
+type GoTest struct {
+	// Test function name
+	Func string
+
+	// Which package the test function located
+	Package string
 }
 
 type SelectInput struct {
@@ -157,66 +165,6 @@ func ParseSelectInput(line string) (*SelectInput, error) {
 	return &selectInput, nil
 }
 
-//func GenInputs(input Input) []Input {
-//	// for each select in input, generate a different file where other selects remain the same,
-//	// but one select prioritize the next case
-//	// Then for each different file, copy it multiple times, where SelectDelayMS are different
-//	vecInputs := []Input{}
-//	for i, selectInput := range input.VecSelect {
-//		for _, delayMS := range config.FuzzerSelectDelayVector {
-//			newInput := copyInput(input)
-//			newInput.SelectDelayMS = delayMS
-//			newSelectInput := copySelectInput(selectInput)
-//			if newSelectInput.IntPrioCase < newSelectInput.IntNumCase - 1 {
-//				newSelectInput.IntPrioCase += 1
-//			} else { // if this is the last case, go back to zero
-//				newSelectInput.IntPrioCase = 0
-//			}
-//			newInput.VecSelect[i] = newSelectInput
-//
-//			vecInputs = append(vecInputs, newInput)
-//		}
-//	}
-//
-//	return vecInputs
-//}
-//
-//func InsertWorklist(newInputs, workList []Input, indexInsertAfter int) []Input {
-//	result := []Input{}
-//	if indexInsertAfter == -1 {
-//		for _, newInput := range newInputs {
-//			result = append(result, newInput)
-//		}
-//	}
-//	for i, oldInput := range workList {
-//		result = append(result, oldInput)
-//		if i == indexInsertAfter {
-//			for _, newInput := range newInputs {
-//				result = append(result, newInput)
-//			}
-//		}
-//	}
-//	return result
-//}
-//
-//func InsertWorklistScore(curScore int, numNewInputs int, workListScore []int, indexInsertAfter int) []int {
-//	result := []int{}
-//	if indexInsertAfter == -1 {
-//		for i := 0; i < numNewInputs; i++ {
-//			result = append(result, curScore)
-//		}
-//	}
-//	for i, oldScore := range workListScore {
-//		result = append(result, oldScore)
-//		if i == indexInsertAfter {
-//			for i := 0; i < numNewInputs; i++ {
-//				result = append(result, curScore)
-//			}
-//		}
-//	}
-//	return result
-//}
-//
 func copySelectInput(sI SelectInput) SelectInput {
 	return SelectInput{
 		StrFileName: sI.StrFileName,
@@ -226,10 +174,23 @@ func copySelectInput(sI SelectInput) SelectInput {
 	}
 }
 
+func copyGoTest(gt *GoTest) *GoTest {
+	if gt == nil {
+		return nil
+	}
+
+	return &GoTest{
+		Func:    gt.Func,
+		Package: gt.Package,
+	}
+
+}
+
 func copyInput(input *Input) *Input {
 	newInput := &Input{
 		Note:          input.Note,
-		TestName:      input.TestName,
+		GoTestCmd:     copyGoTest(input.GoTestCmd),
+		CustomCmd:     input.CustomCmd,
 		SelectDelayMS: input.SelectDelayMS,
 		VecSelect:     []SelectInput{},
 	}

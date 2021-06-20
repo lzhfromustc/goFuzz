@@ -40,9 +40,8 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 	if reInput.SelectDelayMS > 5000 {
 		reInput.SelectDelayMS = 500
 	}
-	mutateMethod := Get_Random_Int_With_Max(4)
+	mutateMethod := Get_Random_Int_With_Max(2)
 
-	// keep 0, 3
 	switch mutateMethod {
 	case 0:
 		/* Mutate one select per time */
@@ -50,27 +49,8 @@ func Random_Mutate_Input(input *Input) (reInput *Input) {
 		mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
 
 		reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
-
 	case 1:
-		/* Mutate two select per time */
-		for mutateIdx := 0; mutateIdx < 2; mutateIdx++ {
-			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
-			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
-
-			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
-		}
-
-	case 2:
-		/* Mutate three select per time */
-		for mutateIdx := 0; mutateIdx < 3; mutateIdx++ {
-			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
-			mutateToWhatValue := Get_Random_Int_With_Max(reInput.VecSelect[mutateWhichSelect].IntNumCase)
-
-			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
-		}
-
-	case 3:
-		/* Mutate random number of select. */ // TODO:: Not sure whether it is necessary. Just put it here now.
+		/* Mutate random number of select. */
 		mutateChance := Get_Random_Int_With_Max(len(reInput.VecSelect))
 		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++ {
 			mutateWhichSelect := Get_Random_Int_With_Max(len(reInput.VecSelect))
@@ -95,15 +75,15 @@ func SetDeadline() {
 }
 
 // Fuzz is the main entry for fuzzing
-func Fuzz(tests []string, customCmds []string, numOfWorkers int) {
+func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 
-	log.Printf("Tests going to be run: %s", tests)
+	log.Printf("Tests going to be run: %v", tests)
 	log.Printf("Custom Commands going to be run: %s", customCmds)
 	log.Printf("Number of workers: %d", numOfWorkers)
 	InitWorkers(numOfWorkers, fuzzerContext)
 
 	for _, test := range tests {
-		e := NewInitStageFuzzQueryEntryWithTestname(test)
+		e := NewInitStageFuzzQueryEntryWithGoTest(test)
 		fuzzerContext.EnqueueQueryEntry(e)
 	}
 

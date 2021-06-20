@@ -10,7 +10,7 @@ import (
 
 // parseFlag init logger and settings for the fuzzer
 func parseFlag() {
-	file, err := os.OpenFile("fuzzer.log", os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.OpenFile("fuzzer.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,10 +44,13 @@ func parseFlag() {
 func main() {
 	parseFlag()
 
-	var testsToFuzz []string
+	var testsToFuzz []*fuzzer.GoTest
 	if fuzzer.TargetTestFunc != "" {
-		testsToFuzz = append(testsToFuzz, fuzzer.TargetTestFunc)
+		testsToFuzz = append(testsToFuzz, &fuzzer.GoTest{
+			Func: fuzzer.TargetTestFunc,
+		})
 	} else {
+		log.Printf("finding all tests under module %s", fuzzer.TargetGoModDir)
 		// Find all tests in all packages
 		packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir)
 		if err != nil {
@@ -59,6 +62,11 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			for _, t := range testsInPkg {
+				log.Printf("found %+v", *t)
+			}
+
 			testsToFuzz = append(testsToFuzz, testsInPkg...)
 		}
 	}
