@@ -115,6 +115,7 @@ func StrTestNameAndSelectCount() string {
 }
 
 func AfterRunFuzz() {
+	PrintNumTimeoutSelect()
 
 	// if this is the first run, create input file using runtime's global variable
 	if BoolFirstRun {

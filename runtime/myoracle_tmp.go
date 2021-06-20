@@ -55,7 +55,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 	}
 	SleepMS(500)
 	lock(&muMap)
-	outer:
+outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
 		if gid != 1 { // No need to print the main goroutine
 			str := string(sliceByte)
@@ -138,6 +138,9 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 						continue outer
 					} else {
 						ReportedPlace[nextFuncFile + nextFuncLine] = struct{}{}
+					}
+					if indexSDK := Index(nextFuncFile, "/usr/local/go/src"); indexSDK > -1 { // In SDK, don't report
+						continue outer
 					}
 				} else {
 					// case 2: from Lock op

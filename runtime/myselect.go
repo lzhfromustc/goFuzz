@@ -16,11 +16,13 @@ type SelectInfo struct {
 	IntPrioCase int
 }
 
-func StoreSelectInput(intNumCase, intPrioCase int) {
-	lock(&MuFirstInput)
-	newSelectInput := NewSelectInputFromRuntime(intNumCase, intPrioCase, 3)
-	MapSelectInfo[newSelectInput.StrFileName + ":" + newSelectInput.StrLineNum] = newSelectInput
-	unlock(&MuFirstInput)
+func StoreSelectInput(intNumCase, intChosenCase int) {
+	newSelectInput := NewSelectInputFromRuntime(intNumCase, intChosenCase, 3)
+	if newSelectInput.IntNumCase != 0 { // IntNumCase would be 0 if this select is not instrumented (e.g., in SDK) and we can't mutate it
+		lock(&MuFirstInput)
+		MapSelectInfo[newSelectInput.StrFileName + ":" + newSelectInput.StrLineNum] = newSelectInput
+		unlock(&MuFirstInput)
+	}
 }
 
 func NewSelectInputFromRuntime(intNumCase, intPrioCase int, intLayerCallee int) SelectInfo {
