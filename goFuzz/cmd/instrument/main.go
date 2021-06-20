@@ -82,7 +82,7 @@ func pre(c *astutil.Cursor) bool {
 	defer func() {
 		if r := recover(); r != nil { // This is allowed. If we insert node into nodes not in slice, we will meet a panic
 			// For example, we may identified a receive in select and wanted to insert a function call before it, then this function will panic
-			fmt.Println("Recover in pre(): c.Name():", c.Name())
+			//fmt.Println("Recover in pre(): c.Name():", c.Name())
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
@@ -253,6 +253,8 @@ func pre(c *astutil.Cursor) bool {
 		c.InsertBefore(newCall) // Insert the call to store this operation's type and ID into goroutine local storage
 		Uint16OpID++
 
+		boolNeedImport_gooracle = true // We need to import gooracle
+
 	case *ast.AssignStmt:
 		if len(concrete.Rhs) == 1 {
 			if callExpr, ok := concrete.Rhs[0].(*ast.CallExpr); ok {
@@ -269,6 +271,7 @@ func pre(c *astutil.Cursor) bool {
 										Value:    strconv.Itoa(intID),
 									}})
 								c.InsertAfter(newCall)
+								boolNeedImport_gooracle = true // We need to import gooracle
 								Uint16OpID++
 							}
 						}
@@ -300,6 +303,7 @@ func pre(c *astutil.Cursor) bool {
 					Value:    strconv.Itoa(intID),
 				}})
 				c.InsertBefore(newCall)
+				boolNeedImport_gooracle = true // We need to import gooracle
 				Uint16OpID++
 			}
 		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok {
@@ -316,6 +320,7 @@ func pre(c *astutil.Cursor) bool {
 						Value:    strconv.Itoa(intID),
 					}})
 					c.InsertBefore(newCall)
+					boolNeedImport_gooracle = true // We need to import gooracle
 					Uint16OpID++
 				}
 			}

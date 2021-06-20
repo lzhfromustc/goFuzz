@@ -129,7 +129,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	///MYCODE
-	if BoolDebug {
+	if BoolDebug && LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
 		TmpBeforeBlock()
 		defer TmpAfterBlock()
 	}
@@ -304,7 +304,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	///MYCODE
-	if GlobalEnableOracle {
+	if GlobalEnableOracle && LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
 		currentGo = CurrentGoInfo()
 		for _, o := range lockorder {
 			c0 := scases[o].c
@@ -323,7 +323,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		}
 		defer currentGo.WithdrawBlock()
 	}
-	outOfOracle:
+outOfOracle:
 
 
 	// pass 2 - enqueue on all chans
@@ -542,6 +542,10 @@ retc:
 sclose:
 	// send on closed channel
 	selunlock(scases, lockorder)
+
+	///MYCODE
+	ReportNonBlockingBug()
+
 	panic(plainError("send on closed channel"))
 }
 

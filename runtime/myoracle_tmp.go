@@ -157,7 +157,15 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 			} else {
 				retStr += "Warning in TmpDumpBlockingInfo: the first func is not TmpBeforeBlock\n"
 			}
-
+			// delete the BeforeBlock function
+			for {
+				indexTBB := Index(str, "runtime.TmpBeforeBlock()\n\t/usr/local/go/src/runtime/myoracle_tmp.go:")
+				if indexTBB == -1 {
+					break
+				} else {
+					str = str[:indexTBB] + str[indexTBB + 77:]
+				}
+			}
 
 			retStr += "-----New Bug:\n" + str + "\n"
 			print(retStr)

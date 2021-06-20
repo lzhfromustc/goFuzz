@@ -156,7 +156,7 @@ func CheckBlockBug(CS []PrimInfo) {
 		}
 	}
 
-	loopGS:
+loopGS:
 	for goInfo, _ := range mapGS {
 		if goInfo.BlockMap == nil { // The goroutine is executing non-blocking operations
 			return
@@ -298,6 +298,15 @@ func ReportBug(mapCS map[PrimInfo]struct{}) {
 			}
 		}
 	}
+}
+
+func ReportNonBlockingBug() {
+	print("-----New Bug:\n")
+	print("Non blocking bug!\n")
+	const size = 64 << 10
+	buf := make([]byte, size)
+	buf = buf[:Stack(buf, false)]
+	print("===Stack:\n", string(buf), "\n")
 }
 
 // Part 1.2 Data structure for waitgroup
@@ -449,6 +458,128 @@ func (mu *MuInfo) AddGoroutine(goInfo *GoInfo) {
 // Must be called when chInfo.Chan.lock is held
 func (mu *MuInfo) RemoveGoroutine(goInfo *GoInfo) {
 	delete(mu.MapRefGoroutine, goInfo)
+}
+
+// Part 1.4 Data structure for rwmutex
+
+// RWMuInfo is 1-to-1 with every sync.RWMutex.
+type RWMuInfo struct {
+	MapRefGoroutine map[*GoInfo]struct{}
+	StrDebug        string
+	EnableOracle    bool // Disable oracle for channels in SDK
+	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
+	Mu              mutex // Protects MapRefGoroutine
+}
+
+func NewRWMuInfo() *RWMuInfo {
+	_, strFile, intLine, _ := Caller(2)
+	strLoc := strFile + ":" + Itoa(intLine)
+	mu := &RWMuInfo{
+		MapRefGoroutine: make(map[*GoInfo]struct{}),
+		StrDebug:        strLoc,
+		EnableOracle:    Index(strLoc, strSDKPath) < 0,
+		IntFlagFoundBug: 0,
+		Mu:              mutex{},
+	}
+	return mu
+}
+
+// FindChanInfo can retrieve a initialized ChanInfo for a given channel
+func FindRWMuInfo(rwmu interface{}) *RWMuInfo {
+	lock(&MuMapChToChanInfo)
+	muInfo := MapChToChanInfo[rwmu]
+	unlock(&MuMapChToChanInfo)
+	return muInfo.(*RWMuInfo)
+}
+
+func LinkRWMuToLastRWMuInfo(rwmu interface{}) {
+	lock(&MuMapChToChanInfo)
+	MapChToChanInfo[rwmu] = LoadLastPrimInfo()
+	unlock(&MuMapChToChanInfo)
+}
+
+func (mu *RWMuInfo) Lock() {
+	lock(&mu.Mu)
+}
+
+func (mu *RWMuInfo) Unlock() {
+	unlock(&mu.Mu)
+}
+
+func (mu *RWMuInfo) MapRef() map[*GoInfo]struct{} {
+	return mu.MapRefGoroutine
+}
+
+// This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
+// Must be called when chInfo.Chan.lock is held
+func (mu *RWMuInfo) AddGoroutine(goInfo *GoInfo) {
+	mu.MapRefGoroutine[goInfo] = struct{}{}
+}
+
+// Must be called when chInfo.Chan.lock is held
+func (mu *RWMuInfo) RemoveGoroutine(goInfo *GoInfo) {
+	delete(mu.MapRefGoroutine, goInfo)
+}
+
+// Part 1.5 Data structure for conditional variable
+
+// CondInfo is 1-to-1 with every sync.Cond.
+type CondInfo struct {
+	MapRefGoroutine map[*GoInfo]struct{}
+	StrDebug        string
+	EnableOracle    bool // Disable oracle for channels in SDK
+	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
+	Mu              mutex // Protects MapRefGoroutine
+}
+
+func NewCondInfo() *CondInfo {
+	_, strFile, intLine, _ := Caller(2)
+	strLoc := strFile + ":" + Itoa(intLine)
+	cond := &CondInfo{
+		MapRefGoroutine: make(map[*GoInfo]struct{}),
+		StrDebug:        strLoc,
+		EnableOracle:    Index(strLoc, strSDKPath) < 0,
+		IntFlagFoundBug: 0,
+		Mu:              mutex{},
+	}
+	return cond
+}
+
+// FindChanInfo can retrieve a initialized ChanInfo for a given channel
+func FindCondInfo(cond interface{}) *CondInfo {
+	lock(&MuMapChToChanInfo)
+	condInfo := MapChToChanInfo[cond]
+	unlock(&MuMapChToChanInfo)
+	return condInfo.(*CondInfo)
+}
+
+func LinkCondToLastCondInfo(cond interface{}) {
+	lock(&MuMapChToChanInfo)
+	MapChToChanInfo[cond] = LoadLastPrimInfo()
+	unlock(&MuMapChToChanInfo)
+}
+
+func (cond *CondInfo) Lock() {
+	lock(&cond.Mu)
+}
+
+func (cond *CondInfo) Unlock() {
+	unlock(&cond.Mu)
+}
+
+func (cond *CondInfo) MapRef() map[*GoInfo]struct{} {
+	return cond.MapRefGoroutine
+}
+
+// This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
+// Must be called when chInfo.Chan.lock is held
+func (cond *CondInfo) AddGoroutine(goInfo *GoInfo) {
+	cond.MapRefGoroutine[goInfo] = struct{}{}
+}
+
+// Must be called when chInfo.Chan.lock is held
+func (cond *CondInfo) RemoveGoroutine(goInfo *GoInfo) {
+	delete(cond.MapRefGoroutine, goInfo)
 }
 
 //// Part 2.1: data struct for each goroutine

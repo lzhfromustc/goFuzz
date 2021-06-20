@@ -10,15 +10,14 @@ import (
 func TestHello(t *testing.T) {
 	gooracle.BeforeRun()
 	defer gooracle.AfterRun()
-
 	ch := make(chan int)
-	gooracle.StoreChMakeInfo(ch, 33314)
+	gooracle.StoreChMakeInfo(ch, 28421)
 
 	go func() {
-		gooracle.StoreOpInfo("Send", 33315)
+		gooracle.StoreOpInfo("Send", 28422)
 		ch <- 1
 	}()
-	switch gooracle.ReadSelect("/Users/xsh/code/goFuzz/goFuzz/example/simple1/main_test.go", 17, 2) {
+	switch gooracle.ReadSelect("/data/ziheng/shared/gotest/gotest/src/goFuzz/goFuzz/example/simple1/main_test.go", 15, 2) {
 	case 0:
 		select {
 		case <-ch:
@@ -54,5 +53,4 @@ func TestHello(t *testing.T) {
 			fmt.Println("Should be buggy")
 		}
 	}
-
 }
