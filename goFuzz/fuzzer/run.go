@@ -37,7 +37,7 @@ func getRecordFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "record"))
 }
 
-func NewRunTask(input *Input, stage FuzzStage, idx int, execCount int, entry *FuzzQueryEntry) (*RunTask, error) {
+func NewRunTask(input *Input, stage FuzzStage, entryIdx uint64, execCount int, entry *FuzzQueryEntry) (*RunTask, error) {
 	var mainName string
 
 	if input.GoTestCmd != nil {
@@ -58,7 +58,7 @@ func NewRunTask(input *Input, stage FuzzStage, idx int, execCount int, entry *Fu
 		input: input,
 		entry: entry,
 		stage: stage,
-		id:    fmt.Sprintf("%s-%s-%d-%d", mainName, stage, idx, execCount),
+		id:    fmt.Sprintf("%s-%s-%d-%d", mainName, stage, entryIdx, execCount),
 	}
 	return task, nil
 }
@@ -163,7 +163,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 
 	outputNumBug := CheckBugFromStdout(stdOutBuf.String())
 	if outputNumBug != 0 {
-		fuzzCtx.IncNumOfBugsFound(uint32(outputNumBug))
+		fuzzCtx.IncNumOfBugsFound(uint64(outputNumBug))
 		log.Printf("[Task %s] found %d bug(s)", task.id, outputNumBug)
 	}
 

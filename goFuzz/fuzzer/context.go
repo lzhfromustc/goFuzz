@@ -35,8 +35,9 @@ type FuzzContext struct {
 	allRecordHashMap map[string]struct{}
 
 	// Metrics
-	numOfBugsFound uint32
-	numOfRuns      uint32
+	numOfBugsFound      uint64
+	numOfRuns           uint64
+	numOfFuzzQueryEntry uint64
 }
 
 // NewFuzzContext returns a new FuzzerContext
@@ -73,9 +74,13 @@ func (c *FuzzContext) EnqueueQueryEntry(e *FuzzQueryEntry) error {
 }
 
 func (c *FuzzContext) IncNumOfRun() {
-	atomic.AddUint32(&c.numOfRuns, 1)
+	atomic.AddUint64(&c.numOfRuns, 1)
 }
 
-func (c *FuzzContext) IncNumOfBugsFound(num uint32) {
-	atomic.AddUint32(&c.numOfBugsFound, num)
+func (c *FuzzContext) IncNumOfBugsFound(num uint64) {
+	atomic.AddUint64(&c.numOfBugsFound, num)
+}
+
+func (c *FuzzContext) NewFuzzQueryEntryIndex() uint64 {
+	return atomic.AddUint64(&c.numOfFuzzQueryEntry, 1)
 }

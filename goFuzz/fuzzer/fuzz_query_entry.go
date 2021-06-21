@@ -11,6 +11,7 @@ import (
 //   1. An input can be run multiple times
 //   2. An input will be randomly mutated to run
 type FuzzQueryEntry struct {
+	Idx                 uint64
 	Stage               FuzzStage
 	IsFavored           bool
 	BestScore           int
@@ -18,7 +19,6 @@ type FuzzQueryEntry struct {
 	IsCalibrateFail     bool
 	CurrInput           *Input
 	CurrRecordHashSlice []string
-	Idx                 int
 }
 
 func NewInitStageFuzzQueryEntryWithGoTest(test *GoTest) *FuzzQueryEntry {
@@ -92,6 +92,8 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 			runTasks = append(runTasks, t)
 			execCount += 1
 		}
+		e.ExecutionCount = execCount
+		fuzzCtx.EnqueueQueryEntry(e)
 	} else {
 		return fmt.Errorf("incorrect stage found: %s", e.Stage)
 	}

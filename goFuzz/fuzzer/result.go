@@ -47,13 +47,13 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		deterInputs := Deterministic_enumerate_input(result.RetInput)
 		log.Printf("[Task %s] generated %d inputs by deterministic enumeration", runTask.id, len(deterInputs))
 
-		for idx, deterInput := range deterInputs {
+		for _, deterInput := range deterInputs {
 
 			// Create multiple entries based on deterministic enumeration
 			err := fuzzCtx.EnqueueQueryEntry(&FuzzQueryEntry{
 				Stage:     DeterStage,
 				CurrInput: deterInput,
-				Idx:       idx,
+				Idx:       fuzzCtx.NewFuzzQueryEntryIndex(),
 			})
 			if err != nil {
 				log.Panicln(err)
@@ -109,7 +109,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 				CurrInput:           runTask.input,
 				CurrRecordHashSlice: []string{recordHash},
 				Stage:               RandStage,
-				Idx:                 0,
+				Idx:                 fuzzCtx.NewFuzzQueryEntryIndex(),
 			}
 			fuzzCtx.EnqueueQueryEntry(newEntry)
 			fuzzerContext.allRecordHashMap[recordHash] = struct{}{}

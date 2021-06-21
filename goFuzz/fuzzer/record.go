@@ -91,7 +91,6 @@ func ParseRecordFile(content string) (*Record, error) {
 		}
 		if chRecord.CapBuf, err = strconv.Atoi(vecStr[4]); err != nil {
 			return nil, fmt.Errorf("line of channel in record has incorrect format: %s, at line %d", eachline, i)
-
 		}
 		if chRecord.PeakBuf, err = strconv.Atoi(vecStr[5]); err != nil {
 			return nil, fmt.Errorf("line of channel in record has incorrect format: %s, at line %d", eachline, i)
