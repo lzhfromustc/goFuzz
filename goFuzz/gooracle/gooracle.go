@@ -147,7 +147,6 @@ func AfterRunFuzz() {
 	// print bug info
 	str, foundBug := runtime.TmpDumpBlockingInfo()
 	if foundBug {
-		fmt.Println("-----New Bug:")
 		fmt.Println(str)
 	}
 }

@@ -26,9 +26,9 @@ type ChanInfo struct {
 	IntBuffer       int             // The buffer capability of channel. 0 if channel is unbuffered
 	MapRefGoroutine map[*GoInfo]struct{} // Stores all goroutines that still hold reference to this channel
 	StrDebug        string
-	EnableOracle    bool // Disable oracle for channels in SDK
+	BoolMakeInSDK   bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
-	Mu mutex
+	Mu              mutex
 }
 
 var MapChToChanInfo map[interface{}]PrimInfo
@@ -46,7 +46,7 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 		IntBuffer:       int(ch.dataqsiz),
 		MapRefGoroutine: make(map[*GoInfo]struct{}),
 		StrDebug:        strLoc,
-		EnableOracle:    Index(strLoc, strSDKPath) < 0,
+		BoolMakeInSDK:   Index(strLoc, strSDKPath) < 0,
 		IntFlagFoundBug: 0,
 	}
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
@@ -175,7 +175,7 @@ func CheckBlockBug(CS []PrimInfo) {
 			continue
 		}
 		if chanInfo, ok := chI.(*ChanInfo); ok {
-			if chanInfo.EnableOracle == false {
+			if chanInfo.BoolMakeInSDK == false {
 				return
 			}
 		}
