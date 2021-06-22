@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -83,6 +85,23 @@ func BeforeRunFuzz() {
 	MapInput = ParseInputStr(text)
 	if MapInput == nil {
 		fmt.Println("Error when parsing input during text start: MapInput is nil")
+	}
+
+	if runtime.BoolDeferCheck {
+		go CheckBugClient()
+	}
+}
+
+// An endless loop that checks bug
+func CheckBugClient() {
+	for {
+		time.Sleep(2 * time.Second)
+		for len(runtime.VecCheckEntry) > 0 {
+			checkEntry := runtime.DequeueCheckEntry()
+			if atomic.LoadUint32(&checkEntry.Uint32NeedCheck) == 1 {
+				runtime.CheckBlockBug(checkEntry.CS)
+			}
+		}
 	}
 }
 

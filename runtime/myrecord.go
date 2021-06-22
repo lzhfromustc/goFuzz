@@ -5,8 +5,9 @@ import "sync/atomic"
 const MaxRecordElem int = 65536 // 2^16
 
 // Settings:
-var BoolRecord bool = false
+var BoolRecord bool = true
 var BoolRecordPerCh bool = true
+var BoolRecordSDK bool = true
 
 // TODO: important: extend similar algorithm for mutex, conditional variable, waitgroup, etc
 
@@ -32,6 +33,12 @@ var ChCount uint16
 // When a channel is made, create new id, new ChanRecord
 func RecordChMake(capBuf int, c *hchan) {
 
+	if BoolRecordSDK == false {
+		if c.chInfo.EnableOracle == false {
+			return
+		}
+	}
+
 	c.id = ChCount
 	ChCount++
 
@@ -51,8 +58,14 @@ func RecordChMake(capBuf int, c *hchan) {
 // When a channel operation is executed, update ChanRecord, and update the tuple counter (curLoc XOR prevLoc)
 func RecordChOp(c *hchan) {
 
-	if c.chanRecord == nil { // As mentioned above, we don't record channels created in runtime
+	// As mentioned above, we don't record channels created in runtime
+	if c.chanRecord == nil {
 		return
+	}
+	if BoolRecordSDK {
+		if c.chInfo.EnableOracle == false {
+			return
+		}
 	}
 
 	// Update ChanRecord

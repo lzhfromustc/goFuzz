@@ -120,7 +120,7 @@ func makechan(t *chantype, size int) *hchan {
 	StoreLastPrimInfo(c.chInfo)
 
 	///MYCODE
-	if BoolRecord == false {
+	if BoolRecord {
 		RecordChMake(size, c)
 	}
 
@@ -225,9 +225,15 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if GlobalEnableOracle && c.chInfo.EnableOracle {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
-		currentGo.SetBlockAt(c, Send)
-		CheckBlockBug([]PrimInfo{c.chInfo})
-		defer currentGo.WithdrawBlock()
+		currentGo.SetBlockAt(c.chInfo, Send)
+		CS := []PrimInfo{c.chInfo}
+		var checkEntry *CheckEntry
+		if BoolDeferCheck {
+			checkEntry = EnqueueCheckEntry(CS)
+		} else {
+			CheckBlockBug(CS)
+		}
+		defer currentGo.WithdrawBlock(checkEntry)
 	}
 
 	///MYCODE
@@ -239,10 +245,6 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 
 	if c.closed != 0 {
 		unlock(&c.lock)
-
-		///MYCODE
-		ReportNonBlockingBug()
-
 		panic(plainError("send on closed channel"))
 	}
 
@@ -576,9 +578,15 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	if GlobalEnableOracle && c.chInfo.EnableOracle {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
-		currentGo.SetBlockAt(c, Recv)
-		CheckBlockBug([]PrimInfo{c.chInfo})
-		defer currentGo.WithdrawBlock()
+		currentGo.SetBlockAt(c.chInfo, Recv)
+		CS := []PrimInfo{c.chInfo}
+		var checkEntry *CheckEntry
+		if BoolDeferCheck {
+			checkEntry = EnqueueCheckEntry(CS)
+		} else {
+			CheckBlockBug(CS)
+		}
+		defer currentGo.WithdrawBlock(checkEntry)
 	}
 
 

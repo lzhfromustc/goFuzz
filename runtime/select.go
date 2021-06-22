@@ -314,14 +314,21 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 					goto outOfOracle
 				}
 				AddRefGoroutine(c.chInfo, currentGo)
-				currentGo.SetBlockAt(lastC, BSelect)
+				currentGo.SetBlockAt(lastC.chInfo, BSelect)
 				CS = append(CS, lastC.chInfo)
 			}
 		}
+		var checkEntry *CheckEntry
 		if lastC != nil {
+			CS := []PrimInfo{lastC.chInfo}
+			if BoolDeferCheck {
+				checkEntry = EnqueueCheckEntry(CS)
+			} else {
+				CheckBlockBug(CS)
+			}
 			CheckBlockBug(CS)
 		}
-		defer currentGo.WithdrawBlock()
+		defer currentGo.WithdrawBlock(checkEntry)
 	}
 outOfOracle:
 
