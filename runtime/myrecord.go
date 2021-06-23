@@ -34,7 +34,7 @@ var ChCount uint16
 func RecordChMake(capBuf int, c *hchan) {
 
 	if BoolRecordSDK == false {
-		if c.chInfo.EnableOracle == false {
+		if c.chInfo.BoolMakeInSDK == false {
 			return
 		}
 	}
@@ -63,7 +63,7 @@ func RecordChOp(c *hchan) {
 		return
 	}
 	if BoolRecordSDK {
-		if c.chInfo.EnableOracle == false {
+		if c.chInfo.BoolMakeInSDK == false {
 			return
 		}
 	}
