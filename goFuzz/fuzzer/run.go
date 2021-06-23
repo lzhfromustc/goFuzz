@@ -44,7 +44,7 @@ func NewRunTask(input *Input, stage FuzzStage, entryIdx uint64, execCount int, e
 		if input.GoTestCmd.Package != "" {
 			// Whole package URL might be too long for filesystem, so only use last component of the package URL.
 			basePkg := path.Base(input.GoTestCmd.Package)
-			mainName = fmt.Sprintf("%s-%s", basePkg, input.GoTestCmd)
+			mainName = fmt.Sprintf("%s-%s", basePkg, input.GoTestCmd.Func)
 		} else {
 			mainName = input.GoTestCmd.Func
 		}
@@ -161,12 +161,6 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		log.Printf("[Task %s][ignored] go test command failed: %v", task.id, err)
 	}
 
-	outputNumBug := CheckBugFromStdout(stdOutBuf.String())
-	if outputNumBug != 0 {
-		fuzzCtx.IncNumOfBugsFound(uint64(outputNumBug))
-		log.Printf("[Task %s] found %d bug(s)", task.id, outputNumBug)
-	}
-
 	// Read the newly printed input file if this is the first run
 	var retInput *Input
 	if boolFirstRun {
@@ -200,7 +194,17 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		return nil, err
 	}
 
-	retOutput := NewRunResult()
+	bugIds, err := GetListOfBugIDFromStdoutContent(stdOutBuf.String())
+	if err != nil {
+		return nil, err
+	}
+
+	retOutput := &RunResult{
+		RetInput:       retInput,
+		RetRecord:      retRecord,
+		BugIds:         bugIds,
+		StdoutFilepath: gfOutputFp,
+	}
 	retOutput.RetInput = retInput
 	retOutput.RetRecord = retRecord
 

@@ -6,16 +6,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 // parseFlag init logger and settings for the fuzzer
 func parseFlag() {
-	file, err := os.OpenFile("fuzzer.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := io.MultiWriter(file, os.Stdout)
-	log.SetOutput(w)
 
 	// Parse input
 	pTargetGoModDir := flag.String("goModDir", "", "Directory contains Go Mod file")
@@ -36,14 +31,37 @@ func parseFlag() {
 		log.Fatal("-outputDir is required")
 	}
 
+	if _, err := os.Stat(fuzzer.OutputDir); os.IsNotExist(err) {
+		err := os.Mkdir(fuzzer.OutputDir, os.ModePerm)
+		if err != nil {
+			log.Printf("create output folder failed: %v", err)
+		}
+	}
+
 	if fuzzer.TargetGoModDir == "" {
 		log.Fatal("-goModDir is required")
 	}
 }
 
+func setupLogger(logFile string) {
+
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w := io.MultiWriter(file, os.Stdout)
+	log.SetOutput(w)
+}
+
 func main() {
+
+	// parse command line flags
 	parseFlag()
 
+	// setup logger
+	setupLogger(filepath.Join(fuzzer.OutputDir, "fuzzer.log"))
+
+	// find out which tests we need during this fuzzing
 	var testsToFuzz []*fuzzer.GoTest
 	if fuzzer.TargetTestFunc != "" {
 		testsToFuzz = append(testsToFuzz, &fuzzer.GoTest{
@@ -70,6 +88,9 @@ func main() {
 			testsToFuzz = append(testsToFuzz, testsInPkg...)
 		}
 	}
+
+	// Setup metrics streaming
+	fuzzer.StreamMetrics(filepath.Join(fuzzer.OutputDir, "fuzzer-metrics.json"), 5)
 
 	// Main entry for fuzzing
 	fuzzer.Fuzz(testsToFuzz, nil, fuzzer.MaxParallel)

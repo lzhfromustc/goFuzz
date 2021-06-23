@@ -90,9 +90,11 @@ func SetDeadline() {
 
 // Fuzz is the main entry for fuzzing
 func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
-
-	log.Printf("Tests going to be run: %v", tests)
-	log.Printf("Custom Commands going to be run: %s", customCmds)
+	log.Printf("Go Fuzzer Version: %s", Version)
+	for _, test := range tests {
+		log.Printf("Tests going to be fuzzed: %v from package %s", test.Func, test.Package)
+	}
+	log.Printf("Custom Commands going to be fuzzed: %s", customCmds)
 	log.Printf("Number of workers: %d", numOfWorkers)
 	InitWorkers(numOfWorkers, fuzzerContext)
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // fuzzerContext is a global context during whole fuzzing process.
@@ -34,10 +35,15 @@ type FuzzContext struct {
 	mainRecord       *Record
 	allRecordHashMap map[string]struct{}
 
+	// A map from bug ID to stdout file contains that bug
+	allBugID2Fp  map[string]string
+	bugID2FpLock sync.RWMutex
+
 	// Metrics
 	numOfBugsFound      uint64
 	numOfRuns           uint64
 	numOfFuzzQueryEntry uint64
+	startAt             time.Time
 }
 
 // NewFuzzContext returns a new FuzzerContext
@@ -47,6 +53,8 @@ func NewFuzzContext() *FuzzContext {
 		fuzzingQueue:     list.New(),
 		mainRecord:       EmptyRecord(),
 		allRecordHashMap: make(map[string]struct{}),
+
+		startAt: time.Now(),
 	}
 }
 
@@ -83,4 +91,18 @@ func (c *FuzzContext) IncNumOfBugsFound(num uint64) {
 
 func (c *FuzzContext) NewFuzzQueryEntryIndex() uint64 {
 	return atomic.AddUint64(&c.numOfFuzzQueryEntry, 1)
+}
+
+func (c *FuzzContext) HasBugID(id string) bool {
+	c.bugID2FpLock.RLock()
+	_, exists := c.allBugID2Fp[id]
+	c.bugID2FpLock.RUnlock()
+	return exists
+}
+
+func (c *FuzzContext) AddBugID(bugID string, filepath string) {
+	c.bugID2FpLock.Lock()
+	c.allBugID2Fp[bugID] = filepath
+	c.bugID2FpLock.Unlock()
+
 }

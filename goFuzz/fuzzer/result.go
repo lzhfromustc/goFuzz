@@ -7,15 +7,10 @@ import (
 )
 
 type RunResult struct {
-	RetInput  *Input
-	RetRecord *Record
-}
-
-func NewRunResult() *RunResult {
-	return &RunResult{
-		RetInput:  nil,
-		RetRecord: nil,
-	}
+	RetInput       *Input
+	RetRecord      *Record
+	StdoutFilepath string
+	BugIds         []string
 }
 
 func CheckBugFromStdout(content string) (numBug int) {
@@ -36,6 +31,21 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 	log.Printf("[Task %s] handling result", runTask.id)
 	retRecord := result.RetRecord
 	stage := runTask.stage
+
+	// Check any unique bugs found
+	numOfBugs := 0
+	for _, bugID := range result.BugIds {
+		if !fuzzCtx.HasBugID(bugID) {
+			fuzzCtx.AddBugID(bugID, result.StdoutFilepath)
+			numOfBugs += 1
+		}
+	}
+
+	if numOfBugs != 0 {
+		fuzzCtx.IncNumOfBugsFound(uint64(numOfBugs))
+	}
+
+	log.Printf("[Task %s] has %d bug(s), %d unique bug(s)", runTask.id, len(result.BugIds), numOfBugs)
 
 	if stage == InitStage {
 		// If we are handling the output from InitStage

@@ -5,4 +5,4 @@ build:
 	go build -o bin/ranktest goFuzz/cmd/ranktest
 
 test:
-	go test goFuzz/fuzzer
+	go test -v goFuzz/fuzzer
