@@ -1,11 +1,14 @@
 package runtime
 
+import "sync/atomic"
+
 func init() {
 	MapChToChanInfo = make(map[interface{}]PrimInfo)
 }
 
 var GlobalEnableOracle = false
 var BoolReportBug = false
+var BoolDeferCheck = true
 
 type PrimInfo interface {
 	Lock()
@@ -23,8 +26,9 @@ type ChanInfo struct {
 	IntBuffer       int             // The buffer capability of channel. 0 if channel is unbuffered
 	MapRefGoroutine map[*GoInfo]struct{} // Stores all goroutines that still hold reference to this channel
 	StrDebug        string
-	EnableOracle    bool // Disable oracle for channels in SDK
+	BoolMakeInSDK   bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
+	Mu              mutex
 }
 
 var MapChToChanInfo map[interface{}]PrimInfo
@@ -42,7 +46,7 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 		IntBuffer:       int(ch.dataqsiz),
 		MapRefGoroutine: make(map[*GoInfo]struct{}),
 		StrDebug:        strLoc,
-		EnableOracle:    Index(strLoc, strSDKPath) < 0,
+		BoolMakeInSDK:   Index(strLoc, strSDKPath) < 0,
 		IntFlagFoundBug: 0,
 	}
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
@@ -54,16 +58,17 @@ func (chInfo *ChanInfo) Lock() {
 	if chInfo == nil {
 		return
 	}
-	lock(&chInfo.Chan.lock)
+	lock(&chInfo.Mu)
 }
 
 func (chInfo *ChanInfo) Unlock() {
 	if chInfo == nil {
 		return
 	}
-	unlock(&chInfo.Chan.lock)
+	unlock(&chInfo.Mu)
 }
 
+// Must be called with chInfo.Mu locked
 func (chInfo *ChanInfo) MapRef() map[*GoInfo]struct{} {
 	if chInfo == nil {
 		return make(map[*GoInfo]struct{})
@@ -109,68 +114,101 @@ func RemoveRefGoroutine(chInfo PrimInfo, goInfo *GoInfo) {
 }
 
 // This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
-// Must be called when chInfo.Chan.lock is held
 func (chInfo *ChanInfo) AddGoroutine(goInfo *GoInfo) {
 	if chInfo == nil {
 		return
 	}
+	chInfo.Lock()
 	chInfo.MapRefGoroutine[goInfo] = struct{}{}
+	chInfo.Unlock()
 }
 
-// Must be called when chInfo.Chan.lock is held
 func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
 	if chInfo == nil {
 		return
 	}
+	chInfo.Lock()
 	delete(chInfo.MapRefGoroutine, goInfo)
+	chInfo.Unlock()
+}
+
+// Only when BoolDeferCheck is true, this struct is used
+// CheckEntry contains information needed for a CheckBlockBug
+type CheckEntry struct {
+	CS []PrimInfo
+	Uint32NeedCheck uint32 // if 0, delete this CheckEntry; if 1, check this CheckEntry
+}
+
+var VecCheckEntry []*CheckEntry
+var MuCheckEntry mutex
+
+func DequeueCheckEntry() *CheckEntry {
+	lock(&MuCheckEntry)
+	defer unlock(&MuCheckEntry)
+	if len(VecCheckEntry) == 0 {
+		return nil
+	} else {
+		result := VecCheckEntry[0]
+		VecCheckEntry = VecCheckEntry[1:]
+		return result
+	}
+}
+
+func EnqueueCheckEntry(CS []PrimInfo) *CheckEntry {
+	lock(&MuCheckEntry)
+	defer unlock(&MuCheckEntry)
+	newCheckEntry := &CheckEntry{
+		CS:              CS,
+		Uint32NeedCheck: 1,
+	}
+	VecCheckEntry = append(VecCheckEntry, newCheckEntry)
+	return newCheckEntry
 }
 
 // A blocking bug is detected, if all goroutines that hold the reference to a channel are blocked at an operation of the channel
-// Should be called with chInfo.Chan.lock is held
 func CheckBlockBug(CS []PrimInfo) {
 	mapCS := make(map[PrimInfo]struct{})
-	mapGS := make(map[*GoInfo]struct{}) // all goroutines that hold reference to ch0
-	if len(CS) == 1 { // called from a single operation
-		mapCS[CS[0]] = struct{}{}
-		//if atomic.LoadInt32(CS[0].IntFlagFoundBug) != 0 {
-		//	return
-		//}
-	} else { // called from a select
-		for _, chI := range CS {
-			mapCS[chI] = struct{}{}
-		}
-	}
+	mapGS := make(map[*GoInfo]struct{}) // all goroutines that hold reference to primitives in mapCS
 
-
-	for chI, _ := range mapCS {
+	for _, chI := range CS {
 		if chI == (*ChanInfo)(nil) {
 			continue
 		}
 		if chanInfo, ok := chI.(*ChanInfo); ok {
-			if chanInfo.EnableOracle == false {
+			if chanInfo.BoolMakeInSDK == false {
 				return
 			}
 		}
+		chI.Lock()
 		for goInfo, _ := range chI.MapRef() {
 			mapGS[goInfo] = struct{}{}
 		}
+		chI.Unlock()
+		mapCS[chI] = struct{}{}
 	}
 
 loopGS:
 	for goInfo, _ := range mapGS {
-		if goInfo.BlockMap == nil { // The goroutine is executing non-blocking operations
+		lock(&goInfo.Mu)
+		if len(goInfo.VecBlockInfo) == 0 { // The goroutine is executing non-blocking operations
+			unlock(&goInfo.Mu)
 			return
 		}
 
-		for chI, _ := range goInfo.BlockMap { // if op is select, op.Channels() returns multiple channels
+		for _, blockInfo := range goInfo.VecBlockInfo { // if it is blocked at select, VecBlockInfo contains multiple channels
+			chI := blockInfo.Prim
 			if _, exist := mapCS[chI]; !exist {
 				mapCS[chI] = struct{}{} // update CS
+				chI.Lock()
 				for goInfo, _ := range chI.MapRef() { // update GS
 					mapGS[goInfo] = struct{}{}
 				}
+				chI.Unlock()
+				unlock(&goInfo.Mu)
 				goto loopGS // since mapGS is updated, we should run this loop once again
 			}
 		}
+		unlock(&goInfo.Mu)
 	}
 
 	ReportBug(mapCS)
@@ -357,6 +395,7 @@ func (w *WgInfo) Unlock() {
 	unlock(&w.Mu)
 }
 
+// Must be called with lock
 func (w *WgInfo) MapRef() map[*GoInfo]struct{} {
 	return w.MapRefGoroutine
 }
@@ -377,27 +416,6 @@ func (w *WgInfo) IamBug() {
 
 }
 
-//func (w *WgInfo) CheckBlockBug() {
-//	// Wait will not be blocked if counter is 0
-//	if w.WgCounter == 0 {
-//		return
-//	}
-//
-//	numOfBlockedGoroutines := 0
-//
-//	// Counting running Goroutine
-//	for goInfo, _ := range w.MapRefGoroutine {
-//		isBlock, _ := goInfo.IsBlock()
-//		if isBlock {
-//			numOfBlockedGoroutines += 1
-//		}
-//	}
-//
-//	if numOfBlockedGoroutines == 0 {
-//		w.IamBug()
-//	}
-//
-//}
 
 // Part 1.3 Data structure for mutex
 
@@ -445,6 +463,7 @@ func (mu *MuInfo) Unlock() {
 	unlock(&mu.Mu)
 }
 
+// Must be called with lock
 func (mu *MuInfo) MapRef() map[*GoInfo]struct{} {
 	return mu.MapRefGoroutine
 }
@@ -506,6 +525,7 @@ func (mu *RWMuInfo) Unlock() {
 	unlock(&mu.Mu)
 }
 
+// Must be called with lock
 func (mu *RWMuInfo) MapRef() map[*GoInfo]struct{} {
 	return mu.MapRefGoroutine
 }
@@ -567,6 +587,7 @@ func (cond *CondInfo) Unlock() {
 	unlock(&cond.Mu)
 }
 
+// Must be called with lock
 func (cond *CondInfo) MapRef() map[*GoInfo]struct{} {
 	return cond.MapRefGoroutine
 }
@@ -591,11 +612,17 @@ func (cond *CondInfo) RemoveGoroutine(goInfo *GoInfo) {
 // Currently we use a global atomic int64 to differentiate each goroutine, and a variable currentGo to represent each goroutine
 // This is not a good practice because the goroutine need to pass currentGo to its every callee
 type GoInfo struct {
-	G *g
-	BlockMap map[PrimInfo]string // Nil when normally running. When blocked at an operation of ChanInfo, store
+	G            *g
+	VecBlockInfo []BlockInfo // Nil when normally running. When blocked at an operation of ChanInfo, store
 	// one ChanInfo and the operation. When blocked at select, store multiple ChanInfo and
 	// operation. Default in select is also also stored in map, which is DefaultCaseChanInfo
 	MapPrimeInfo map[PrimInfo]struct{} // Stores all channels that this goroutine still hold reference to
+	Mu mutex // protects VecBlockInfo and MapPrimeInfo
+}
+
+type BlockInfo struct {
+	Prim PrimInfo
+	StrOp string
 }
 
 const (
@@ -619,7 +646,7 @@ const (
 func NewGoInfo(goroutine *g) *GoInfo {
 	newGoInfo := &GoInfo{
 		G:            goroutine,
-		BlockMap:     nil,
+		VecBlockInfo: []BlockInfo{},
 		MapPrimeInfo: make(map[PrimInfo]struct{}),
 	}
 	return newGoInfo
@@ -670,10 +697,13 @@ func (goInfo *GoInfo) RemoveAllRef() {
 		return
 	}
 	for chInfo, _ := range goInfo.MapPrimeInfo {
-		chInfo.Lock()
 		RemoveRefGoroutine(chInfo, goInfo)
-		CheckBlockBug([]PrimInfo{chInfo})
-		chInfo.Unlock()
+		CS := []PrimInfo{chInfo}
+		if BoolDeferCheck {
+			EnqueueCheckEntry(CS)
+		} else {
+			CheckBlockBug(CS)
+		}
 	}
 }
 
@@ -682,24 +712,29 @@ func (goInfo *GoInfo) RemoveAllRef() {
 // For example, a channel with no buffer is held by a parent and a child.
 //              The parent has already exited, but the child is now about to send to that channel.
 //              Then now is our only chance to detect this bug, so we call CheckBlockBug()
-func (goInfo *GoInfo) SetBlockAt(hch *hchan, strOp string) {
-	if goInfo.BlockMap == nil {
-		goInfo.BlockMap = make(map[PrimInfo]string)
-	}
-	goInfo.BlockMap[hch.chInfo] = strOp
+func (goInfo *GoInfo) SetBlockAt(prim PrimInfo, strOp string) {
+	goInfo.VecBlockInfo = append(goInfo.VecBlockInfo, BlockInfo{
+		Prim:  prim,
+		StrOp: strOp,
+	})
 }
 
 // WithdrawBlock should be called after each channel operation, meaning the current goroutine finished execution that operation
 // If the operation is select, remember to call this function right after each case of the select
-func (goInfo *GoInfo) WithdrawBlock() {
-	goInfo.BlockMap = nil
+func (goInfo *GoInfo) WithdrawBlock(checkEntry *CheckEntry) {
+	goInfo.VecBlockInfo = []BlockInfo{}
+	if checkEntry != nil {
+		atomic.StoreUint32(&checkEntry.Uint32NeedCheck, 0)
+	}
 }
 
 func (goInfo *GoInfo) IsBlock() (boolIsBlock bool, strOp string) {
 	boolIsBlock, strOp = false, ""
 	boolIsSelect := false
 
-	if goInfo.BlockMap == nil {
+	lock(&goInfo.Mu)
+	defer unlock(&goInfo.Mu)
+	if len(goInfo.VecBlockInfo) == 0 {
 		return
 	} else {
 		boolIsBlock = true
@@ -707,17 +742,17 @@ func (goInfo *GoInfo) IsBlock() (boolIsBlock bool, strOp string) {
 
 	// Now we compute strOp
 
-	if len(goInfo.BlockMap) > 1 {
+	if len(goInfo.VecBlockInfo) > 1 {
 		boolIsSelect = true
-	} else if len(goInfo.BlockMap) == 0 {
-		print("Fatal in GoInfo.IsBlock(): goInfo.BlockMap is not nil but lenth is 0\n")
+	} else if len(goInfo.VecBlockInfo) == 0 {
+		print("Fatal in GoInfo.IsBlock(): goInfo.VecBlockInfo is not nil but lenth is 0\n")
 	}
 
 	if boolIsSelect {
 		strOp = BSelect
 	} else {
-		for _, op := range goInfo.BlockMap { // This loop will be executed only one time, since goInfo.BlockMap's len() is 1
-			strOp = op
+		for _, blockInfo := range goInfo.VecBlockInfo { // This loop will be executed only one time, since goInfo.VecBlockInfo's len() is 1
+			strOp = blockInfo.StrOp
 		}
 	}
 
@@ -729,14 +764,16 @@ func (goInfo *GoInfo) IsBlock() (boolIsBlock bool, strOp string) {
 func (goInfo *GoInfo) IsBlockAtGivenChan(chInfo *ChanInfo) (boolIsBlockAtGiven bool, strOp string) {
 	boolIsBlockAtGiven, strOp = false, ""
 
-	if goInfo.BlockMap == nil {
+	lock(&goInfo.Mu)
+	defer unlock(&goInfo.Mu)
+	if goInfo.VecBlockInfo == nil {
 		return
 	}
 
-	for chanInfo, op := range goInfo.BlockMap {
-		if chanInfo == chInfo {
+	for _, blockInfo := range goInfo.VecBlockInfo {
+		if blockInfo.Prim == chInfo {
 			boolIsBlockAtGiven = true
-			strOp = op
+			strOp = blockInfo.StrOp
 			break
 		}
 	}
