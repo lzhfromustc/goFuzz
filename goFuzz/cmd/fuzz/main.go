@@ -72,13 +72,13 @@ func main() {
 		// Find all tests in all packages
 		packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to list package at %s: %v", fuzzer.TargetGoModDir, err)
 		}
 
 		for _, pkg := range packages {
 			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("failed to list tests at package %s: %v", pkg, err)
 			}
 
 			for _, t := range testsInPkg {

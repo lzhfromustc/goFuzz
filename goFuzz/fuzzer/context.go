@@ -53,8 +53,8 @@ func NewFuzzContext() *FuzzContext {
 		fuzzingQueue:     list.New(),
 		mainRecord:       EmptyRecord(),
 		allRecordHashMap: make(map[string]struct{}),
-
-		startAt: time.Now(),
+		allBugID2Fp:      make(map[string]string),
+		startAt:          time.Now(),
 	}
 }
 

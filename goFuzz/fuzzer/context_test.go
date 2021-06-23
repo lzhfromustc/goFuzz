@@ -48,3 +48,19 @@ func TestFuzzContextDequeueQueryEntry(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestAddBugIDHappy(t *testing.T) {
+	c := NewFuzzContext()
+	c.AddBugID("abcde", "/a/b/c")
+	if fp, _ := c.allBugID2Fp["abcde"]; fp != "/a/b/c" {
+		t.Fail()
+	}
+}
+
+func TestHasBugIDHappy(t *testing.T) {
+	c := NewFuzzContext()
+	c.AddBugID("abcde", "/a/b/c")
+	if !c.HasBugID("abcde") {
+		t.Fail()
+	}
+}
