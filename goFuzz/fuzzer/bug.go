@@ -27,11 +27,25 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 		line = strings.TrimLeft(line, " \t")
 		if strings.HasPrefix(line, "-----New Bug:") {
 
-			//
+			// skip `goroutine 3855 [running]:` and package based function
+			// to get line contains filesystem location
 			idLineIdx := idx + 3
-			if idLineIdx >= numOfLines {
-				return nil, fmt.Errorf("total line %d, target bug ID line at %d", numOfLines, idLineIdx)
+
+			// Skip file location(s) that is belongs to my*.go until find the bug root cause
+			for {
+				if idLineIdx >= numOfLines {
+					return nil, fmt.Errorf("total line %d, target bug ID line at %d", numOfLines, idLineIdx)
+				}
+
+				if strings.Contains(lines[idLineIdx], "src/runtime/my") {
+					idLineIdx += 2
+				}
+
+				// if this line is not from our my*.go files, then it is where bug happened
+				break
 			}
+
+
 			targetLine := lines[idLineIdx]
 
 			targetLine = strings.TrimLeft(targetLine, " \t")

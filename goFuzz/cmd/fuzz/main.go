@@ -18,7 +18,7 @@ func parseFlag() {
 	pOutputDir := flag.String("outputDir", "", "Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
 	maxParallel := flag.Int("parallel", 1, "Specified the maximum subroutine number for fuzzing.")
-
+	scoreSdk := flag.Bool("scoreSdk", false, "Recording/scoring if channel comes from Go SDK")
 	flag.Parse()
 
 	fuzzer.TargetTestFunc = *pTargetTestFunc
@@ -26,6 +26,7 @@ func parseFlag() {
 	fuzzer.TargetGoModDir = *pTargetGoModDir
 	fuzzer.GlobalTuple = *pModeGlobalTuple
 	fuzzer.MaxParallel = *maxParallel
+	fuzzer.ScoreSdk = *scoreSdk
 
 	if fuzzer.OutputDir == "" {
 		log.Fatal("-outputDir is required")

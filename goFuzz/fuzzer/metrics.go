@@ -19,6 +19,12 @@ type FuzzerMetrics struct {
 	Duration uint64
 }
 
+type BugMetrics struct {
+	StartTestAt time.Time
+	FoundAt time.Time
+	Stdout string
+}
+
 func StreamMetrics(filePath string, intervalSec time.Duration) {
 	go func() {
 		f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)

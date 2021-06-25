@@ -128,6 +128,9 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	env = append(env, fmt.Sprintf("GF_RECORD_FILE=%s", gfRecordFp))
 	env = append(env, fmt.Sprintf("GF_INPUT_FILE=%s", gfInputFp))
 	env = append(env, fmt.Sprintf("BitGlobalTuple=%s", globalTuple))
+	if ScoreSdk {
+		env = append(env, "GF_SCORE_SDK=1")
+	}
 	cmd.Env = env
 
 	// setting up redirection
