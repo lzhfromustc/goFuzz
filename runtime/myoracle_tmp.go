@@ -170,7 +170,7 @@ outer:
 				}
 			}
 
-			retStr += "-----New Bug:\n" + str + "\n"
+			retStr += "-----New Blocking Bug:\n" + str + "\n"
 			print(retStr)
 			foundBug = true
 

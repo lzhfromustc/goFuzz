@@ -18,7 +18,7 @@ func CheckBugFromStdout(content string) (numBug int) {
 	text := strings.Split(content, "\n")
 
 	for _, oneLine := range text {
-		if oneLine == "-----New Bug:" {
+		if oneLine == "-----New Blocking Bug:" {
 			numBug++
 		}
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 func TestGetListOfBugIDFromStdoutContentHappy(t *testing.T) {
-	content := `-----New Bug:
+	content := `-----New Blocking Bug:
 	goroutine 3855 [running]:
 github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 	/Users/xsh/code/prometheus/tsdb/wal/wal.go:372 +0x47a
@@ -14,7 +14,7 @@ github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 alkdfjalkdf
 alsdkfjalsd
 lkajdfadf
------New Bug:
+-----New Blocking Bug:
 	goroutine 3855 [running]:
 github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 	/Users/xsh/code/prometheus/tsdb/wal/wal1.go:372 +0x47a
@@ -58,7 +58,7 @@ github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 }
 
 func TestGetListOfBugIDFromStdoutContentBad(t *testing.T) {
-	content := `-----New Bug:
+	content := `-----New Blocking Bug:
 	goroutine 3855 [running]:
 github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 	`
@@ -73,7 +73,7 @@ github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 }
 
 func TestGetListOfBugIDFromStdoutContentSkipGoOracle(t *testing.T) {
-	content := `-----New Bug:
+	content := `-----New Blocking Bug:
 goroutine 11 [running]:
 runtime.TmpBeforeBlock()
         /home/luy70/go/src/runtime/myoracle_tmp.go:32 +0x90
@@ -81,7 +81,7 @@ google.golang.org/grpc.(*addrConn).resetTransport(0xc0004a3080)
         /home/luy70/goFuzz/src/grpc/clientconn.go:1482 +0xac6
 created by google.golang.org/grpc.(*addrConn).connect
         /home/luy70/goFuzz/src/grpc/clientconn.go:1082 +0x12a
------New Bug:
+-----New Blocking Bug:
 goroutine 10 [running]:
 runtime.TmpBeforeBlock()
         /home/luy70/go/src/runtime/myoracle_tmp.go:32 +0x90

@@ -10,7 +10,7 @@ import (
 // that channel will trigger block bug.
 //
 // Example from stdout
-// -----New Bug:
+// -----New Blocking Bug:
 // goroutine 3855 [running]:
 // github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 // /Users/xsh/code/prometheus/tsdb/wal/wal.go:372 +0x47a <------ "/Users/xsh/code/prometheus/tsdb/wal/wal.go:372" is Bug ID
@@ -25,7 +25,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 
 		// trim space and tab
 		line = strings.TrimLeft(line, " \t")
-		if strings.HasPrefix(line, "-----New Bug:") {
+		if strings.HasPrefix(line, "-----New Blocking Bug:") || strings.HasPrefix(line, "-----New NonBlocking Bug:") { // Note for Shihao: changed the format of bug report; now reporting the type of bug
 
 			// skip `goroutine 3855 [running]:` and package based function
 			// to get line contains filesystem location
