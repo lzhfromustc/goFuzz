@@ -47,7 +47,7 @@ func PrintNumTimeoutSelect() {
 	intNotInInputSelect := int(uint32SelectNotInInput)
 	// The number of selects that are not in input (probably not instrumented) and we just execute the original select
 	intTimeOutSelect := int(uint32OriginalSelectCount - uint32SelectNotInInput)
-	// uint32OriginalSelectCount is the number of selects that we execute the original code. There are possibilities:
+	// uint32OriginalSelectCount is the number of selects that we execute the original code. There are two possibilities:
 	// (1) the select is not in input (uint32SelectNotInInput); (2) the select is in input and we tried to force
 	// it choose one case, but it timeouts and goes back to the original select
 

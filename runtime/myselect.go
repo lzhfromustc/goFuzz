@@ -9,6 +9,8 @@ var MuFirstInput mutex
 var Uint32SelectCount uint32
 var BoolSelectCount bool
 
+
+
 type SelectInfo struct {
 	StrFileName string
 	StrLineNum string

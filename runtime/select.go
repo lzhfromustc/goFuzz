@@ -321,7 +321,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		var checkEntry *CheckEntry
 		if lastC != nil {
 			CS := []PrimInfo{lastC.chInfo}
-			if BoolDeferCheck {
+			if BoolDelayCheck {
 				checkEntry = EnqueueCheckEntry(CS)
 			} else {
 				CheckBlockBug(CS)
@@ -330,7 +330,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		}
 		defer currentGo.WithdrawBlock(checkEntry)
 	}
-outOfOracle:
+	outOfOracle:
 
 
 	// pass 2 - enqueue on all chans

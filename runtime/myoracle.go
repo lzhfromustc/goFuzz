@@ -8,7 +8,7 @@ func init() {
 
 var GlobalEnableOracle = false
 var BoolReportBug = false
-var BoolDeferCheck = true
+var BoolDelayCheck = true
 
 type PrimInfo interface {
 	Lock()
@@ -132,7 +132,7 @@ func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
 	chInfo.Unlock()
 }
 
-// Only when BoolDeferCheck is true, this struct is used
+// Only when BoolDelayCheck is true, this struct is used
 // CheckEntry contains information needed for a CheckBlockBug
 type CheckEntry struct {
 	CS []PrimInfo
@@ -141,6 +141,7 @@ type CheckEntry struct {
 
 var VecCheckEntry []*CheckEntry
 var MuCheckEntry mutex
+var FnCheckCount = func () {} // this is defined in gooracle/gooracle.go
 
 func DequeueCheckEntry() *CheckEntry {
 	lock(&MuCheckEntry)
@@ -157,6 +158,7 @@ func DequeueCheckEntry() *CheckEntry {
 func EnqueueCheckEntry(CS []PrimInfo) *CheckEntry {
 	lock(&MuCheckEntry)
 	defer unlock(&MuCheckEntry)
+	FnCheckCount()
 	newCheckEntry := &CheckEntry{
 		CS:              CS,
 		Uint32NeedCheck: 1,
@@ -187,7 +189,7 @@ func CheckBlockBug(CS []PrimInfo) {
 		mapCS[chI] = struct{}{}
 	}
 
-loopGS:
+	loopGS:
 	for goInfo, _ := range mapGS {
 		lock(&goInfo.Mu)
 		if len(goInfo.VecBlockInfo) == 0 { // The goroutine is executing non-blocking operations
@@ -699,8 +701,8 @@ func (goInfo *GoInfo) RemoveAllRef() {
 	for chInfo, _ := range goInfo.MapPrimeInfo {
 		RemoveRefGoroutine(chInfo, goInfo)
 		CS := []PrimInfo{chInfo}
-		if BoolDeferCheck {
-			EnqueueCheckEntry(CS)
+		if BoolDelayCheck {
+			 EnqueueCheckEntry(CS)
 		} else {
 			CheckBlockBug(CS)
 		}

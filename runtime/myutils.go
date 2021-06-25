@@ -508,7 +508,6 @@ const host32bit = ^uint(0)>>32 == 0
 const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
-
 // Following two functions comes from https://stackoverflow.com/questions/35212985/is-it-possible-get-information-about-caller-function-in-golang
 func getFrame(skipFrames int) Frame {
 	// We need the frame at index skipFrames+2, since we never want runtime.Callers and getFrame

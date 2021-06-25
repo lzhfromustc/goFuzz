@@ -1,5 +1,6 @@
 package gooracle
 
+
 import "runtime"
 
 func StoreOpInfo(strOpType string, uint16OpID uint16) {

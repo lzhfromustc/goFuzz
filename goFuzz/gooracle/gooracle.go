@@ -26,6 +26,19 @@ var StrTestMod string
 var StrTestName string
 var StrTestFile string
 
+var chEnforceCheck chan struct{}
+var chDelayCheckSign chan struct{}
+var intDelayCheckCounter int
+const (
+	DelayCheckModPerTime int = 0 // Check bugs every DelayCheckMS Milliseconds
+	DelayCheckModCount int = 1 // Check bugs when runtime.EnqueueCheckEntry is called DelayCheckCountMax times
+)
+
+// config
+var DelayCheckMod int = DelayCheckModPerTime
+var DelayCheckMS int = 1000
+var DelayCheckCountMax int = 10
+
 func BeforeRun() {
 	StrTestMod = os.Getenv("TestMod")
 	switch StrTestMod {
@@ -87,19 +100,61 @@ func BeforeRunFuzz() {
 		fmt.Println("Error when parsing input during text start: MapInput is nil")
 	}
 
-	if runtime.BoolDeferCheck {
+	if runtime.BoolDelayCheck {
+		chEnforceCheck = make(chan struct{})
+		chDelayCheckSign = make(chan struct{}, 10)
+		if DelayCheckMod == DelayCheckModCount {
+			runtime.FnCheckCount = DelayCheckCounterFN
+		}
 		go CheckBugClient()
+		go CheckBugServer()
 	}
 }
 
 // An endless loop that checks bug
-func CheckBugClient() {
+func CheckBugServer() {
+	defer close(chEnforceCheck)
 	for {
-		time.Sleep(2 * time.Second)
+		boolBreakLoop := false
+		switch DelayCheckMod {
+		case DelayCheckModPerTime:
+			select {
+			case <-time.After(time.Millisecond * time.Duration(DelayCheckMS)):
+			case <-chEnforceCheck:
+				boolBreakLoop = true
+			}
+		case DelayCheckModCount:
+			select {
+			case <-chDelayCheckSign:
+			case <-chEnforceCheck:
+				boolBreakLoop = true
+			}
+		}
+
 		for len(runtime.VecCheckEntry) > 0 {
 			checkEntry := runtime.DequeueCheckEntry()
 			if atomic.LoadUint32(&checkEntry.Uint32NeedCheck) == 1 {
 				runtime.CheckBlockBug(checkEntry.CS)
+			}
+		}
+		if boolBreakLoop {
+			break
+		}
+	}
+}
+
+func CheckBugClient() {
+
+}
+
+func DelayCheckCounterFN() {
+	if DelayCheckMod == DelayCheckModCount {
+		intDelayCheckCounter++ // no need to worry about data race, since runtime.MuCheckEntry is held
+		if intDelayCheckCounter > DelayCheckCountMax {
+			intDelayCheckCounter = 0
+			select { // the channel has buffer, so default should be rarely chosen
+			case chDelayCheckSign <- struct{}{}:
+			default:
 			}
 		}
 	}
@@ -134,7 +189,12 @@ func StrTestNameAndSelectCount() string {
 }
 
 func AfterRunFuzz() {
-	PrintNumTimeoutSelect()
+	PrintNumTimeoutSelect() // Print the number of selects, number of timeout selects and not in input selects
+
+	if runtime.BoolDelayCheck { // This is the end of program, need to do all delayed bug detection
+		chEnforceCheck <- struct{}{}
+		<-chEnforceCheck // wait for checking to finish
+	}
 
 	// if this is the first run, create input file using runtime's global variable
 	if BoolFirstRun {

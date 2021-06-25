@@ -228,7 +228,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		currentGo.SetBlockAt(c.chInfo, Send)
 		CS := []PrimInfo{c.chInfo}
 		var checkEntry *CheckEntry
-		if BoolDeferCheck {
+		if BoolDelayCheck {
 			checkEntry = EnqueueCheckEntry(CS)
 		} else {
 			CheckBlockBug(CS)
@@ -581,7 +581,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		currentGo.SetBlockAt(c.chInfo, Recv)
 		CS := []PrimInfo{c.chInfo}
 		var checkEntry *CheckEntry
-		if BoolDeferCheck {
+		if BoolDelayCheck {
 			checkEntry = EnqueueCheckEntry(CS)
 		} else {
 			CheckBlockBug(CS)
