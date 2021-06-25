@@ -14,6 +14,7 @@ func TestHello(t *testing.T) {
 	gooracle.StoreChMakeInfo(ch, 28421)
 
 	go func() {
+		time.Sleep(time.Second * 2)
 		gooracle.StoreOpInfo("Send", 28422)
 		ch <- 1
 	}()
@@ -23,6 +24,7 @@ func TestHello(t *testing.T) {
 		case <-ch:
 			fmt.Println("Normal")
 		case <-gooracle.SelectTimeout():
+			fmt.Println("After SelectTimeout")
 			gooracle.StoreLastMySwitchChoice(-1)
 			select {
 			case <-ch:
@@ -36,6 +38,7 @@ func TestHello(t *testing.T) {
 		case <-time.After(300 * time.Millisecond):
 			fmt.Println("Should be buggy")
 		case <-gooracle.SelectTimeout():
+			fmt.Println("After SelectTimeout")
 			gooracle.StoreLastMySwitchChoice(-1)
 			select {
 			case <-ch:
