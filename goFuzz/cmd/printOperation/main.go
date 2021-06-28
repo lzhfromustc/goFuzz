@@ -120,10 +120,14 @@ func pre(c *astutil.Cursor) bool {
 				if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
 					if funcIdent.Name == "make" {
 						if len(callExpr.Args) == 1 { // This is a make operation
-							positionOp := currentFSet.Position(concrete.TokPos)
-							positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
-							str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line)
-							vecPosition = append(vecPosition, str)
+							if len(callExpr.Args) == 1 { // This is a make operation
+								if _, ok := callExpr.Args[0].(*ast.ChanType); ok {
+									positionOp := currentFSet.Position(concrete.TokPos)
+									positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
+									str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line)
+									vecPosition = append(vecPosition, str)
+								}
+							}
 						}
 					}
 				}
