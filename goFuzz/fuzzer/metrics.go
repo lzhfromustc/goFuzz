@@ -10,7 +10,7 @@ import (
 
 type FuzzerMetrics struct {
 	// Map from bug ID to stdout file
-	Bugs                map[string]string
+	Bugs                map[string]*BugMetrics
 	NumOfBugsFound      uint64
 	NumOfRuns           uint64
 	NumOfFuzzQueryEntry uint64
@@ -20,9 +20,8 @@ type FuzzerMetrics struct {
 }
 
 type BugMetrics struct {
-	StartTestAt time.Time
 	FoundAt time.Time
-	Stdout string
+	Stdout  string
 }
 
 func StreamMetrics(filePath string, intervalSec time.Duration) {

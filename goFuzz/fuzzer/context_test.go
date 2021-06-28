@@ -52,7 +52,7 @@ func TestFuzzContextDequeueQueryEntry(t *testing.T) {
 func TestAddBugIDHappy(t *testing.T) {
 	c := NewFuzzContext()
 	c.AddBugID("abcde", "/a/b/c")
-	if fp, _ := c.allBugID2Fp["abcde"]; fp != "/a/b/c" {
+	if fp, _ := c.allBugID2Fp["abcde"]; fp.Stdout != "/a/b/c" {
 		t.Fail()
 	}
 }

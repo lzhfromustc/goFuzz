@@ -36,7 +36,7 @@ type FuzzContext struct {
 	allRecordHashMap map[string]struct{}
 
 	// A map from bug ID to stdout file contains that bug
-	allBugID2Fp  map[string]string
+	allBugID2Fp  map[string]*BugMetrics
 	bugID2FpLock sync.RWMutex
 
 	// Metrics
@@ -53,7 +53,7 @@ func NewFuzzContext() *FuzzContext {
 		fuzzingQueue:     list.New(),
 		mainRecord:       EmptyRecord(),
 		allRecordHashMap: make(map[string]struct{}),
-		allBugID2Fp:      make(map[string]string),
+		allBugID2Fp:      make(map[string]*BugMetrics),
 		startAt:          time.Now(),
 	}
 }
@@ -102,7 +102,10 @@ func (c *FuzzContext) HasBugID(id string) bool {
 
 func (c *FuzzContext) AddBugID(bugID string, filepath string) {
 	c.bugID2FpLock.Lock()
-	c.allBugID2Fp[bugID] = filepath
+	c.allBugID2Fp[bugID] = &BugMetrics{
+		FoundAt: time.Now(),
+		Stdout:  filepath,
+	}
 	c.bugID2FpLock.Unlock()
 
 }
