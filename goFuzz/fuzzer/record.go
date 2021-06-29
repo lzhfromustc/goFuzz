@@ -12,6 +12,16 @@ type Record struct {
 	MapChanRecord  map[string]ChanRecord
 }
 
+func (r *Record) GetChanRecords() []ChanRecord {
+	values := make([]ChanRecord, 0, len(r.MapChanRecord))
+
+	for _, v := range r.MapChanRecord {
+		values = append(values, v)
+	}
+
+	return values
+}
+
 type ChanRecord struct {
 	ChID      string
 	Closed    bool

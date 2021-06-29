@@ -22,7 +22,7 @@ func ListPackages(goModRootPath string) ([]string, error) {
 	err := cmd.Run()
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return parseGoCmdListOutput(out.String())
