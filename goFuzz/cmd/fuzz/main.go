@@ -58,12 +58,14 @@ func setupLogger(logFile string) {
 }
 
 func main() {
-
 	// parse command line flags
 	parseFlag()
 
 	// setup logger
 	setupLogger(filepath.Join(fuzzer.OutputDir, "fuzzer.log"))
+
+	// print version
+	log.Printf("Go Fuzzer Version: %s", fuzzer.Version)
 
 	// find out which tests we need during this fuzzing
 	var testsToFuzz []*fuzzer.GoTest
@@ -78,6 +80,8 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to list packages at %s: %v", fuzzer.TargetGoModDir, err)
 		}
+
+		log.Printf("found packages: %v", packages)
 
 		for _, pkg := range packages {
 			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
