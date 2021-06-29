@@ -2,7 +2,6 @@ package fuzzer
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -56,7 +55,7 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	err := cmd.Run()
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	testFuncs, err := parseGoCmdTestListOutput(out.String())
