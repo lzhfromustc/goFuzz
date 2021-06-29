@@ -86,7 +86,8 @@ func main() {
 		for _, pkg := range packages {
 			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
 			if err != nil {
-				log.Fatalf("failed to list tests at package %s: %v", pkg, err)
+				log.Printf("[ignored] failed to list tests at package %s: %v", pkg, err)
+				continue
 			}
 
 			for _, t := range testsInPkg {
