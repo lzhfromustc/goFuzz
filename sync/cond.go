@@ -5,6 +5,7 @@
 package sync
 
 import (
+	"runtime"
 	"sync/atomic"
 	"unsafe"
 )
@@ -52,6 +53,8 @@ func NewCond(l Locker) *Cond {
 //    c.L.Unlock()
 //
 func (c *Cond) Wait() {
+	runtime.TmpBeforeBlock()
+	defer runtime.TmpAfterBlock()
 	c.checker.check()
 	t := runtime_notifyListAdd(&c.notify)
 	c.L.Unlock()

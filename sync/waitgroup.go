@@ -6,6 +6,7 @@ package sync
 
 import (
 	"internal/race"
+	"runtime"
 	"sync/atomic"
 	"unsafe"
 )
@@ -104,6 +105,8 @@ func (wg *WaitGroup) Done() {
 
 // Wait blocks until the WaitGroup counter is zero.
 func (wg *WaitGroup) Wait() {
+	runtime.TmpBeforeBlock()
+	defer runtime.TmpAfterBlock()
 	statep, semap := wg.state()
 	if race.Enabled {
 		_ = *statep // trigger nil deref early

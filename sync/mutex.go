@@ -11,6 +11,7 @@
 package sync
 
 import (
+	"goFuzz/runtime"
 	"internal/race"
 	"sync/atomic"
 	"unsafe"
@@ -73,6 +74,8 @@ const (
 // If the lock is already in use, the calling goroutine
 // blocks until the mutex is available.
 func (m *Mutex) Lock() {
+	runtime.TmpBeforeBlock()
+	defer runtime.TmpAfterBlock()
 	// Fast path: grab unlocked mutex.
 	if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) {
 		if race.Enabled {

@@ -6,6 +6,7 @@ package sync
 
 import (
 	"internal/race"
+	"runtime"
 	"sync/atomic"
 	"unsafe"
 )
@@ -56,6 +57,8 @@ const rwmutexMaxReaders = 1 << 30
 // call excludes new readers from acquiring the lock. See the
 // documentation on the RWMutex type.
 func (rw *RWMutex) RLock() {
+	runtime.TmpBeforeBlock()
+	defer runtime.TmpAfterBlock()
 	if race.Enabled {
 		_ = rw.w.state
 		race.Disable()
@@ -105,6 +108,8 @@ func (rw *RWMutex) rUnlockSlow(r int32) {
 // If the lock is already locked for reading or writing,
 // Lock blocks until the lock is available.
 func (rw *RWMutex) Lock() {
+	runtime.TmpBeforeBlock()
+	defer runtime.TmpAfterBlock()
 	if race.Enabled {
 		_ = rw.w.state
 		race.Disable()
