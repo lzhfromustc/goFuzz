@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // This program should be run after the instrumentation step
@@ -74,7 +75,9 @@ func main() {
 
 	strOutput := ""
 	for _, str := range vecPosition {
-		if _, exist := mapDoNotPrint[str]; exist {
+		strOnlyFileAndLine := strings.TrimSuffix(str, ":Send")
+		strOnlyFileAndLine = strings.TrimSuffix(strOnlyFileAndLine, ":Receive")
+		if _, exist := mapDoNotPrint[strOnlyFileAndLine]; exist {
 			continue
 		}
 		strOutput += str + "\n"
@@ -95,24 +98,24 @@ func pre(c *astutil.Cursor) bool {
 	}()
 	switch concrete := c.Node().(type) {
 
-	//case *ast.SelectStmt: // for select, just print the location of select, not cases
-	//	positionOriSelect := currentFSet.Position(concrete.Select)
-	//	positionOriSelect.Filename, _ = filepath.Abs(positionOriSelect.Filename)
-	//	str := positionOriSelect.Filename + ":" + strconv.Itoa(positionOriSelect.Line)
-	//	vecPosition = append(vecPosition, str)
-	//	for _, stmtCommClause := range concrete.Body.List {
-	//		commClause, _ := stmtCommClause.(*ast.CommClause)
-	//		positionOriSelect := currentFSet.Position(commClause.Case)
-	//		positionOriSelect.Filename, _ = filepath.Abs(positionOriSelect.Filename)
-	//		str := positionOriSelect.Filename + ":" + strconv.Itoa(positionOriSelect.Line)
-	//		mapDoNotPrint[str] = struct{}{}
-	//	}
-	//
-	//case *ast.SendStmt: // This is a send operation
-	//	positionOriSend := currentFSet.Position(concrete.Arrow)
-	//	positionOriSend.Filename, _ = filepath.Abs(positionOriSend.Filename)
-	//	str := positionOriSend.Filename + ":" + strconv.Itoa(positionOriSend.Line)
-	//	vecPosition = append(vecPosition, str)
+	case *ast.SelectStmt: // for select, just print the location of select, not cases
+		positionOriSelect := currentFSet.Position(concrete.Select)
+		positionOriSelect.Filename, _ = filepath.Abs(positionOriSelect.Filename)
+		str := positionOriSelect.Filename + ":" + strconv.Itoa(positionOriSelect.Line) + ":" + "Select"
+		vecPosition = append(vecPosition, str)
+		for _, stmtCommClause := range concrete.Body.List {
+			commClause, _ := stmtCommClause.(*ast.CommClause)
+			positionOriSelect := currentFSet.Position(commClause.Case)
+			positionOriSelect.Filename, _ = filepath.Abs(positionOriSelect.Filename)
+			str := positionOriSelect.Filename + ":" + strconv.Itoa(positionOriSelect.Line)
+			mapDoNotPrint[str] = struct{}{}
+		}
+
+	case *ast.SendStmt: // This is a send operation
+		positionOriSend := currentFSet.Position(concrete.Arrow)
+		positionOriSend.Filename, _ = filepath.Abs(positionOriSend.Filename)
+		str := positionOriSend.Filename + ":" + strconv.Itoa(positionOriSend.Line) + ":" + "Send"
+		vecPosition = append(vecPosition, str)
 
 	case *ast.AssignStmt:
 		if len(concrete.Rhs) == 1 {
@@ -124,7 +127,7 @@ func pre(c *astutil.Cursor) bool {
 								if _, ok := callExpr.Args[0].(*ast.ChanType); ok {
 									positionOp := currentFSet.Position(concrete.TokPos)
 									positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
-									str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line)
+									str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line) + ":" + "Make"
 									vecPosition = append(vecPosition, str)
 								}
 							}
@@ -134,24 +137,24 @@ func pre(c *astutil.Cursor) bool {
 			}
 		}
 
-	//case *ast.ExprStmt:
-	//	if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {
-	//		if unaryExpr.Op == token.ARROW { // This is a receive operation
-	//			positionOp := currentFSet.Position(unaryExpr.OpPos)
-	//			positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
-	//			str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line)
-	//			vecPosition = append(vecPosition, str)
-	//		}
-	//	} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok {
-	//		if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
-	//			if funcIdent.Name == "close" { // This is a close operation
-	//				positionOp := currentFSet.Position(callExpr.Lparen)
-	//				positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
-	//				str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line)
-	//				vecPosition = append(vecPosition, str)
-	//			}
-	//		}
-	//	}
+	case *ast.ExprStmt:
+		if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {
+			if unaryExpr.Op == token.ARROW { // This is a receive operation
+				positionOp := currentFSet.Position(unaryExpr.OpPos)
+				positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
+				str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line) + ":" + "Receive"
+				vecPosition = append(vecPosition, str)
+			}
+		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok {
+			if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
+				if funcIdent.Name == "close" { // This is a close operation
+					positionOp := currentFSet.Position(callExpr.Lparen)
+					positionOp.Filename, _ = filepath.Abs(positionOp.Filename)
+					str := positionOp.Filename + ":" + strconv.Itoa(positionOp.Line) + ":" + "Close"
+					vecPosition = append(vecPosition, str)
+				}
+			}
+		}
 
 	default:
 	}
