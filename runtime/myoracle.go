@@ -163,8 +163,32 @@ func EnqueueCheckEntry(CS []PrimInfo) *CheckEntry {
 		CS:              CS,
 		Uint32NeedCheck: 1,
 	}
+	for _, entry := range VecCheckEntry {
+		if BoolCheckEntryEqual(entry, newCheckEntry) {
+			return nil // It's OK to return nil
+		}
+	}
 	VecCheckEntry = append(VecCheckEntry, newCheckEntry)
 	return newCheckEntry
+}
+
+func BoolCheckEntryEqual(a, b *CheckEntry) bool {
+	if len(a.CS) != len(b.CS) {
+		return false
+	}
+	for _, primInfo1 := range a.CS {
+		boolFound := false
+		for _, primInfo2 := range b.CS {
+			if primInfo2 == primInfo1 {
+				boolFound = true
+				break
+			}
+		}
+		if boolFound == false {
+			return false
+		}
+	}
+	return true
 }
 
 // A blocking bug is detected, if all goroutines that hold the reference to a channel are blocked at an operation of the channel
@@ -342,7 +366,6 @@ func ReportBug(mapCS map[PrimInfo]struct{}) {
 
 func ReportNonBlockingBug() {
 	print("-----New NonBlocking Bug:\n")
-	print("Non blocking bug!\n")
 	const size = 64 << 10
 	buf := make([]byte, size)
 	buf = buf[:Stack(buf, false)]

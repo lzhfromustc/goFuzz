@@ -36,7 +36,6 @@ func TmpBeforeBlock() {
 }
 
 
-
 func TmpAfterBlock() {
 	if !BoolDebug {
 		return
@@ -55,7 +54,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 	}
 	SleepMS(500)
 	lock(&muMap)
-outer:
+	outer:
 	for gid, sliceByte := range mys.mpGoID2Bytes {
 		if gid != 1 { // No need to print the main goroutine
 			str := string(sliceByte)
@@ -88,7 +87,7 @@ outer:
 				continue
 			case Index(str, "k8s.io/klog:1169") >= 0:
 				continue
-			case Index(str, "=====") >= 0:
+			case Index(str, "/home/luy70/go/src") >= 0:
 				continue
 			case Index(str, "=====") >= 0:
 				continue

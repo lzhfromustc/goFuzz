@@ -86,7 +86,7 @@ func RecordChOp(c *hchan) {
 		c.preLoc = curLoc >> 1
 	} else {
 		preLoc = uint16(atomic.LoadUint32(&GlobalLastLoc))
-		atomic.StoreUint32(&GlobalLastLoc, uint32(curLoc>>1))
+		atomic.StoreUint32(&GlobalLastLoc, uint32(curLoc >> 1))
 	}
 	xorLoc = XorUint16(curLoc, preLoc)
 
@@ -108,6 +108,7 @@ func CurrentGoAddMutex(ch interface{}) {
 	AddRefGoroutine(chInfo, CurrentGoInfo())
 }
 
+
 func CurrentGoAddCond(ch interface{}) {
 	lock(&MuMapChToChanInfo)
 	chInfo, exist := MapChToChanInfo[ch]
@@ -117,6 +118,7 @@ func CurrentGoAddCond(ch interface{}) {
 	}
 	AddRefGoroutine(chInfo, CurrentGoInfo())
 }
+
 
 func CurrentGoAddWaitgroup(ch interface{}) {
 	lock(&MuMapChToChanInfo)
