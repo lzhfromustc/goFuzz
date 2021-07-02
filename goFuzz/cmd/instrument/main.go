@@ -66,6 +66,7 @@ func main() {
 	err = format.Node(buf, tokenFSet, newAST)
 	if err != nil {
 		fmt.Printf("error formatting new code: %s\n", err.Error())
+		fmt.Println("Inside file", filename)
 		return
 	}
 
@@ -78,11 +79,12 @@ func main() {
 	ioutil.WriteFile(filename, newSource, fi.Mode())
 }
 
+
 func pre(c *astutil.Cursor) bool {
 	defer func() {
 		if r := recover(); r != nil { // This is allowed. If we insert node into nodes not in slice, we will meet a panic
 			// For example, we may identified a receive in select and wanted to insert a function call before it, then this function will panic
-			//fmt.Println("Recover in pre(): c.Name():", c.Name())
+			fmt.Println("Recover in pre(): c.Name():", c.Name())
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
@@ -257,7 +259,7 @@ func pre(c *astutil.Cursor) bool {
 
 	case *ast.AssignStmt:
 		if len(concrete.Rhs) == 1 {
-			if callExpr, ok := concrete.Rhs[0].(*ast.CallExpr); ok {
+			if callExpr, ok := concrete.Rhs[0].(*ast.CallExpr); ok { // calling on the right
 				if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
 					if funcIdent.Name == "make" {
 						if len(callExpr.Args) == 1 { // This is a make operation
@@ -274,6 +276,47 @@ func pre(c *astutil.Cursor) bool {
 								boolNeedImport_gooracle = true // We need to import gooracle
 								Uint16OpID++
 							}
+						}
+					}
+				}
+			} else if compositeLit, ok := concrete.Rhs[0].(*ast.CompositeLit); ok { // like `mu := sync.Mutex{}`
+				if typeSelectorExpr, ok := compositeLit.Type.(*ast.SelectorExpr); ok { // like `sync.Mutex{}`
+					if pkgIdent, ok := typeSelectorExpr.X.(*ast.Ident); ok { // like `sync`
+						if pkgIdent.Name == "sync" {
+							var strCallee string
+							switch typeSelectorExpr.Sel.Name {
+							case "WaitGroup":
+								strCallee = "RecordWgCreate"
+							case "Mutex":
+								strCallee = "RecordMutexCreate"
+							case "RWMutex":
+								strCallee = "RecordRWMutexCreate"
+							case "Cond":
+								strCallee = "RecordCondCreate"
+							}
+							position := currentFSet.Position(concrete.TokPos)
+							position.Filename, _ = filepath.Abs(position.Filename)
+							intID := int(Uint16OpID)
+							newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
+								&ast.UnaryExpr{
+									OpPos: 0,
+									Op:    token.AND,
+									X:     concrete.Lhs[0],
+								},
+								&ast.BasicLit{
+									ValuePos: 0,
+									Kind:     token.STRING,
+									Value:    "\"" + position.Filename + ":" + strconv.Itoa(position.Line) + "\"",
+								},
+								&ast.BasicLit{
+									ValuePos: 0,
+									Kind:     token.INT,
+									Value:    strconv.Itoa(intID),
+								},
+							})
+							c.InsertAfter(newCall)
+							boolNeedImport_gooracle = true // We need to import gooracle
+							Uint16OpID++
 						}
 					}
 				}
@@ -306,8 +349,8 @@ func pre(c *astutil.Cursor) bool {
 				boolNeedImport_gooracle = true // We need to import gooracle
 				Uint16OpID++
 			}
-		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok {
-			if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok {
+		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok { // like `close(ch)` or `mu.Lock()`
+			if funcIdent, ok := callExpr.Fun.(*ast.Ident); ok { // like `close(ch)`
 				if funcIdent.Name == "close" { // This is a close operation
 					intID := int(Uint16OpID)
 					newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
@@ -323,6 +366,38 @@ func pre(c *astutil.Cursor) bool {
 					boolNeedImport_gooracle = true // We need to import gooracle
 					Uint16OpID++
 				}
+			} else if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok { // like `mu.Lock()`
+				var strCallee string
+				switch selectorExpr.Sel.Name {
+				case "Lock":
+					strCallee = "RecordLockCall"
+				case "RLock", "RUnlock":
+					strCallee = "RecordRWMutexUniqueCall"
+				case "Unlock":
+					strCallee = "RecordUnlockCall"
+				case "Add", "Done":
+					strCallee = "RecordWgUniqueCall"
+				case "Signal", "Broadcast":
+					strCallee = "RecordCondUniqueCall"
+				case "Wait":
+					strCallee = "RecordWaitCall"
+				}
+				intID := int(Uint16OpID)
+				newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
+					&ast.UnaryExpr{
+						OpPos: 0,
+						Op:    token.AND,
+						X:     selectorExpr.X,
+					},
+					&ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.INT,
+						Value:    strconv.Itoa(intID),
+					},
+				})
+				c.InsertAfter(newCall)
+				boolNeedImport_gooracle = true // We need to import gooracle
+				Uint16OpID++
 			}
 		}
 

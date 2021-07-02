@@ -1,7 +1,7 @@
 #!/bin/bash -e
 cd "$(dirname "$0")"
 
-echo "Copying from /usr/local/go/src/runtime into goFuzz's runtime and gooracle"
+echo "Copying from /usr/local/go/src/runtime into goFuzz's runtime, sync and gooracle"
 
 #GOROOT=$(go env GOROOT)
 GOROOT=/usr/local/go
@@ -13,3 +13,4 @@ cp $RUNTIME/chan.go ../../runtime/chan.go
 cp $RUNTIME/runtime2.go ../../runtime/runtime2.go
 cp $RUNTIME/proc.go ../../runtime/proc.go
 cp $GOROOT/src/gooracle/* ../gooracle
+cp $GOROOT/src/sync/* ../../sync
