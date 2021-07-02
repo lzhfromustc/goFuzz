@@ -1,6 +1,7 @@
 package gooracle
 
 import (
+	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -9,7 +10,12 @@ import (
 //Note: different from channel, the instrumentation of traditional primitives may fail.
 // Because channel must be created by make(chan Type), but traditional primitives can be created by just declare the variable, which may happen when declaring a global variable
 
+var BoolRecordTrad bool = os.Getenv("GF_RECORD_TRAD") == "1"
+
 func RecordLockCall(ident interface{}, opID uint16) {
+	if !BoolRecordTrad {
+		return
+	}
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
 		RecordMutexOp(concrete, opID)
@@ -23,6 +29,9 @@ func RecordLockCall(ident interface{}, opID uint16) {
 }
 
 func RecordUnlockCall(ident interface{}, opID uint16) {
+	if !BoolRecordTrad {
+		return
+	}
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
 		RecordMutexOp(concrete, opID)
@@ -36,6 +45,9 @@ func RecordUnlockCall(ident interface{}, opID uint16) {
 }
 
 func RecordRWMutexUniqueCall(ident interface{}, opID uint16) {
+	if !BoolRecordTrad {
+		return
+	}
 	switch concrete := ident.(type) {
 	case *sync.RWMutex:
 		RecordRWMutexOp(concrete, opID)
@@ -46,6 +58,9 @@ func RecordRWMutexUniqueCall(ident interface{}, opID uint16) {
 
 
 func RecordWaitCall(ident interface{}, opID uint16) {
+	if !BoolRecordTrad {
+		return
+	}
 	switch concrete := ident.(type) {
 	case *sync.WaitGroup:
 		RecordWgOp(concrete, opID)
@@ -59,6 +74,9 @@ func RecordWaitCall(ident interface{}, opID uint16) {
 }
 
 func RecordWgUniqueCall(ident interface{}, opID uint16) {
+	if !BoolRecordTrad {
+		return
+	}
 	switch concrete := ident.(type) {
 	case *sync.WaitGroup:
 		RecordWgOp(concrete, opID)
@@ -69,6 +87,9 @@ func RecordWgUniqueCall(ident interface{}, opID uint16) {
 
 
 func RecordCondUniqueCall(ident interface{}, opID uint16) {
+	if !BoolRecordTrad {
+		return
+	}
 	switch concrete := ident.(type) {
 	case *sync.Cond:
 		RecordCondOp(concrete, opID)
