@@ -11,7 +11,7 @@
 package sync
 
 import (
-	"goFuzz/runtime"
+	"runtime"
 	"internal/race"
 	"sync/atomic"
 	"unsafe"
@@ -27,8 +27,8 @@ type Mutex struct {
 	state int32
 	sema  uint32
 
-	// mycode
-	Record MutexRecord
+	//MYCODE:
+	Record *MutexRecord
 }
 
 // A Locker represents an object that can be locked and unlocked.

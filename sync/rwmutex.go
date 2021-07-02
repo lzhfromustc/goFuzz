@@ -33,7 +33,8 @@ type RWMutex struct {
 	readerCount int32  // number of pending readers
 	readerWait  int32  // number of departing readers
 
-	Record RWMutexRecord
+	///MYCODE
+	Record *RWMutexRecord
 }
 
 const rwmutexMaxReaders = 1 << 30

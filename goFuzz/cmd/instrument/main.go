@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-var boolNeedImport_gooracle bool = false
+var boolNeedInstrument bool = false // remember: if we instrument, we always need to import gooracle
 var additionalNode ast.Stmt
 var currentFSet *token.FileSet
 var Uint16OpID uint16
@@ -54,19 +54,20 @@ func main() {
 
 	newAST := astutil.Apply(oldAST, pre, nil)
 
-	if boolNeedImport_gooracle {
-		ok := astutil.AddNamedImport(tokenFSet, oldAST, "gooracle", "gooracle")
-		if !ok {
-			fmt.Printf("add import failed when parsing %s\n", filename)
-			return
-		}
+	if !boolNeedInstrument {
+		return
+	}
+
+	ok := astutil.AddNamedImport(tokenFSet, oldAST, "gooracle", "gooracle")
+	if !ok {
+		fmt.Printf("add import failed when parsing %s\n", filename)
+		return
 	}
 
 	buf := &bytes.Buffer{}
 	err = format.Node(buf, tokenFSet, newAST)
 	if err != nil {
-		fmt.Printf("error formatting new code: %s\n", err.Error())
-		fmt.Println("Inside file", filename)
+		fmt.Printf("error formatting new code: %s in file:%s\n", err.Error(), filename)
 		return
 	}
 
@@ -84,7 +85,11 @@ func pre(c *astutil.Cursor) bool {
 	defer func() {
 		if r := recover(); r != nil { // This is allowed. If we insert node into nodes not in slice, we will meet a panic
 			// For example, we may identified a receive in select and wanted to insert a function call before it, then this function will panic
-			fmt.Println("Recover in pre(): c.Name():", c.Name())
+
+			//fmt.Printf("Recover in pre(): c.Name(): %s\n", c.Name())
+			//position := currentFSet.Position(c.Node().Pos())
+			//position.Filename, _ = filepath.Abs(position.Filename)
+			//fmt.Printf("\tLocation: %s\n", position.Filename + ":" + strconv.Itoa(position.Line))
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
@@ -98,6 +103,7 @@ func pre(c *astutil.Cursor) bool {
 		}
 		c.InsertBefore(newDefer)
 		additionalNode = nil
+		boolNeedInstrument = true
 	}
 	switch concrete := c.Node().(type) {
 
@@ -239,7 +245,7 @@ func pre(c *astutil.Cursor) bool {
 		// Delete the original select
 		c.Delete()
 
-		boolNeedImport_gooracle = true // We need to import gooracle
+		boolNeedInstrument = true // We need to import gooracle
 
 	case *ast.SendStmt: // This is a send operation
 		intID := int(Uint16OpID)
@@ -255,7 +261,7 @@ func pre(c *astutil.Cursor) bool {
 		c.InsertBefore(newCall) // Insert the call to store this operation's type and ID into goroutine local storage
 		Uint16OpID++
 
-		boolNeedImport_gooracle = true // We need to import gooracle
+		boolNeedInstrument = true // We need to import gooracle
 
 	case *ast.AssignStmt:
 		if len(concrete.Rhs) == 1 {
@@ -273,7 +279,7 @@ func pre(c *astutil.Cursor) bool {
 										Value:    strconv.Itoa(intID),
 									}})
 								c.InsertAfter(newCall)
-								boolNeedImport_gooracle = true // We need to import gooracle
+								boolNeedInstrument = true // We need to import gooracle
 								Uint16OpID++
 							}
 						}
@@ -283,6 +289,7 @@ func pre(c *astutil.Cursor) bool {
 				if typeSelectorExpr, ok := compositeLit.Type.(*ast.SelectorExpr); ok { // like `sync.Mutex{}`
 					if pkgIdent, ok := typeSelectorExpr.X.(*ast.Ident); ok { // like `sync`
 						if pkgIdent.Name == "sync" {
+							var boolIsSyncAlloc bool = true
 							var strCallee string
 							switch typeSelectorExpr.Sel.Name {
 							case "WaitGroup":
@@ -293,30 +300,34 @@ func pre(c *astutil.Cursor) bool {
 								strCallee = "RecordRWMutexCreate"
 							case "Cond":
 								strCallee = "RecordCondCreate"
+							default:
+								boolIsSyncAlloc = false
 							}
-							position := currentFSet.Position(concrete.TokPos)
-							position.Filename, _ = filepath.Abs(position.Filename)
-							intID := int(Uint16OpID)
-							newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
-								&ast.UnaryExpr{
-									OpPos: 0,
-									Op:    token.AND,
-									X:     concrete.Lhs[0],
-								},
-								&ast.BasicLit{
-									ValuePos: 0,
-									Kind:     token.STRING,
-									Value:    "\"" + position.Filename + ":" + strconv.Itoa(position.Line) + "\"",
-								},
-								&ast.BasicLit{
-									ValuePos: 0,
-									Kind:     token.INT,
-									Value:    strconv.Itoa(intID),
-								},
-							})
-							c.InsertAfter(newCall)
-							boolNeedImport_gooracle = true // We need to import gooracle
-							Uint16OpID++
+							if boolIsSyncAlloc {
+								position := currentFSet.Position(concrete.TokPos)
+								position.Filename, _ = filepath.Abs(position.Filename)
+								intID := int(Uint16OpID)
+								newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
+									&ast.UnaryExpr{
+										OpPos: 0,
+										Op:    token.AND,
+										X:     concrete.Lhs[0],
+									},
+									&ast.BasicLit{
+										ValuePos: 0,
+										Kind:     token.STRING,
+										Value:    "\"" + position.Filename + ":" + strconv.Itoa(position.Line) + "\"",
+									},
+									&ast.BasicLit{
+										ValuePos: 0,
+										Kind:     token.INT,
+										Value:    strconv.Itoa(intID),
+									},
+								})
+								c.InsertAfter(newCall)
+								boolNeedInstrument = true // We need to import gooracle
+								Uint16OpID++
+							}
 						}
 					}
 				}
@@ -346,7 +357,7 @@ func pre(c *astutil.Cursor) bool {
 					Value:    strconv.Itoa(intID),
 				}})
 				c.InsertBefore(newCall)
-				boolNeedImport_gooracle = true // We need to import gooracle
+				boolNeedInstrument = true // We need to import gooracle
 				Uint16OpID++
 			}
 		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok { // like `close(ch)` or `mu.Lock()`
@@ -363,10 +374,11 @@ func pre(c *astutil.Cursor) bool {
 						Value:    strconv.Itoa(intID),
 					}})
 					c.InsertBefore(newCall)
-					boolNeedImport_gooracle = true // We need to import gooracle
+					boolNeedInstrument = true // We need to import gooracle
 					Uint16OpID++
 				}
 			} else if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok { // like `mu.Lock()`
+				var boolNameMatchSyncCall bool = true
 				var strCallee string
 				switch selectorExpr.Sel.Name {
 				case "Lock":
@@ -381,23 +393,27 @@ func pre(c *astutil.Cursor) bool {
 					strCallee = "RecordCondUniqueCall"
 				case "Wait":
 					strCallee = "RecordWaitCall"
+				default:
+					boolNameMatchSyncCall = false
 				}
-				intID := int(Uint16OpID)
-				newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
-					&ast.UnaryExpr{
-						OpPos: 0,
-						Op:    token.AND,
-						X:     selectorExpr.X,
-					},
-					&ast.BasicLit{
-						ValuePos: 0,
-						Kind:     token.INT,
-						Value:    strconv.Itoa(intID),
-					},
-				})
-				c.InsertAfter(newCall)
-				boolNeedImport_gooracle = true // We need to import gooracle
-				Uint16OpID++
+				if boolNameMatchSyncCall {
+					intID := int(Uint16OpID)
+					newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
+						&ast.UnaryExpr{
+							OpPos: 0,
+							Op:    token.AND,
+							X:     selectorExpr.X,
+						},
+						&ast.BasicLit{
+							ValuePos: 0,
+							Kind:     token.INT,
+							Value:    strconv.Itoa(intID),
+						},
+					})
+					c.InsertAfter(newCall)
+					boolNeedInstrument = true // We need to import gooracle
+					Uint16OpID++
+				}
 			}
 		}
 
@@ -410,7 +426,7 @@ func pre(c *astutil.Cursor) bool {
 			if concrete.Body != nil && len(concrete.Body.List) != 0 {
 				firstStmt := concrete.Body.List[0]
 				additionalNode = firstStmt
-				boolNeedImport_gooracle = true // We need to import gooracle
+				boolNeedInstrument = true // We need to import gooracle
 			}
 
 		}

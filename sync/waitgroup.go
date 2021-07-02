@@ -28,8 +28,8 @@ type WaitGroup struct {
 	// for the sema.
 	state1 [3]uint32
 
-	// mycode
-	Record WgRecord
+	///MYCODE
+	Record *WgRecord
 }
 
 // state returns pointers to the state and sema fields stored within wg.state1.

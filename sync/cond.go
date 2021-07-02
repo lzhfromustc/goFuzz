@@ -28,7 +28,8 @@ type Cond struct {
 	notify  notifyList
 	checker copyChecker
 
-	Record CondRecord
+	///MYCODE:
+	Record *CondRecord
 }
 
 // NewCond returns a new Cond with Locker l.
