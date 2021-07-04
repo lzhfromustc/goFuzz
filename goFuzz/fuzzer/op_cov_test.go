@@ -28,31 +28,6 @@ alsdkf:2
 
 }
 
-func TestParseChStatsFileContentIncorrectFormat(t *testing.T) {
-	_, err := parseChStatsFileContent(`
-
-abc1
-
-
-`)
-	if err == nil {
-		t.Fail()
-	}
-
-}
-
-func TestParseChStatsFileContentIncorrectLine(t *testing.T) {
-	_, err := parseChStatsFileContent(`
-
-abc:-1
-
-`)
-	if err == nil {
-		t.Fail()
-	}
-
-}
-
 func TestGetChannelCoverageHappy(t *testing.T) {
 	chs := []string{
 		"abc.go:1",

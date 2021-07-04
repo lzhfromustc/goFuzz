@@ -1,9 +1,7 @@
 package fuzzer
 
 import (
-	"fmt"
 	"io/ioutil"
-	"strconv"
 	"strings"
 )
 
@@ -32,19 +30,6 @@ func parseChStatsFileContent(content string) ([]string, error) {
 	for _, line := range lines {
 		if line == "" {
 			continue
-		}
-
-		// check basic formats
-		parts := strings.Split(line, ":")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("expected format in channel statistics is filename:line, actual: %s", line)
-		}
-		i, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return nil, fmt.Errorf("expected format in channel statistics is filename:line, actual: %s", line)
-		}
-		if i < 0 {
-			return nil, fmt.Errorf("expected format in channel statistics is filename:line, actual: %s", line)
 		}
 		chIDs = append(chIDs, line)
 	}

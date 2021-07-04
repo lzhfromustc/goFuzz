@@ -48,7 +48,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 	// echo channel coverage if it has
 	if len(fuzzCtx.chStats) != 0 {
 		cov := GetChannelCoverage(fuzzCtx.chStats, result.RetRecord.GetChanRecords())
-		log.Printf("[Task %s] Channel coverage: %.2f%", runTask.id, cov)
+		log.Printf("[Task %s] Channel coverage: %.2f%%", runTask.id, cov)
 	}
 
 	log.Printf("[Task %s] has %d bug(s), %d unique bug(s)", runTask.id, len(result.BugIds), numOfBugs)

@@ -33,6 +33,10 @@ func getErrFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "stderr"))
 }
 
+func getOpCovFilePath(outputDir string) (string, error) {
+	return filepath.Abs(path.Join(outputDir, "opcov"))
+}
+
 func getRecordFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "record"))
 }
@@ -92,6 +96,10 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	gfOpCovFp, err := getOpCovFilePath(runOutputDir)
+	if err != nil {
+		return nil, err
+	}
 
 	boolFirstRun := input.Note == NotePrintInput
 
@@ -127,6 +135,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("GF_RECORD_FILE=%s", gfRecordFp))
 	env = append(env, fmt.Sprintf("GF_INPUT_FILE=%s", gfInputFp))
+	env = append(env, fmt.Sprintf("GF_OP_COV_FILE=%s", gfOpCovFp))
 	env = append(env, fmt.Sprintf("BitGlobalTuple=%s", globalTuple))
 	if ScoreSdk {
 		env = append(env, "GF_SCORE_SDK=1")

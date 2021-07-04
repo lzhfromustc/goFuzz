@@ -22,6 +22,9 @@ var additionalNode ast.Stmt
 var currentFSet *token.FileSet
 var Uint16OpID uint16
 
+var recordOutputFile string
+var records []string
+
 func main() {
 	//pProjectPath := flag.String("path","","Full path of the target project")
 	//pRelativePath := flag.String("include","","Relative path (what's after /src/) of the target project")
@@ -29,9 +32,9 @@ func main() {
 	//pExcludePath := flag.String("exclude", "vendor", "Name of directories that you want to ignore, divided by \":\"")
 	//pRobustMod := flag.Bool("r", false, "If the main package can't pass compiler, check subdirectories one by one")
 	pFile := flag.String("file", "", "Full path of the target file to be parsed")
-
+	pOutput := flag.String("output","","primitive operation output")
 	flag.Parse()
-
+	recordOutputFile = *pOutput
 	filename := *pFile
 	h := fnv.New32a()
 	h.Write([]byte(filename))
@@ -78,6 +81,26 @@ func main() {
 		return
 	}
 	ioutil.WriteFile(filename, newSource, fi.Mode())
+
+	if recordOutputFile != "" {
+		outputF, err := os.OpenFile(recordOutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			panic(err)
+		}
+
+		defer outputF.Close()
+
+		var buffer bytes.Buffer
+		for _, str := range records {
+			buffer.WriteString(str)
+			buffer.WriteByte('\n')
+		}
+
+		if _, err = outputF.Write(buffer.Bytes()); err != nil {
+			panic(err)
+		}
+	}
+
 }
 
 
@@ -259,6 +282,7 @@ func pre(c *astutil.Cursor) bool {
 			Value:    strconv.Itoa(intID),
 		}})
 		c.InsertBefore(newCall) // Insert the call to store this operation's type and ID into goroutine local storage
+		records = append(records, strconv.Itoa(intID))
 		Uint16OpID++
 
 		boolNeedInstrument = true // We need to import gooracle
@@ -280,6 +304,7 @@ func pre(c *astutil.Cursor) bool {
 									}})
 								c.InsertAfter(newCall)
 								boolNeedInstrument = true // We need to import gooracle
+								records = append(records, strconv.Itoa(intID))
 								Uint16OpID++
 							}
 						}
@@ -326,6 +351,7 @@ func pre(c *astutil.Cursor) bool {
 								})
 								c.InsertAfter(newCall)
 								boolNeedInstrument = true // We need to import gooracle
+								records = append(records, strconv.Itoa(intID))
 								Uint16OpID++
 							}
 						}
@@ -358,6 +384,7 @@ func pre(c *astutil.Cursor) bool {
 				}})
 				c.InsertBefore(newCall)
 				boolNeedInstrument = true // We need to import gooracle
+				records = append(records, strconv.Itoa(intID))
 				Uint16OpID++
 			}
 		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok { // like `close(ch)` or `mu.Lock()`
@@ -375,6 +402,7 @@ func pre(c *astutil.Cursor) bool {
 					}})
 					c.InsertBefore(newCall)
 					boolNeedInstrument = true // We need to import gooracle
+					records = append(records, strconv.Itoa(intID))
 					Uint16OpID++
 				}
 			} else if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok { // like `mu.Lock()`
@@ -412,6 +440,7 @@ func pre(c *astutil.Cursor) bool {
 					})
 					c.InsertAfter(newCall)
 					boolNeedInstrument = true // We need to import gooracle
+					records = append(records, strconv.Itoa(intID))
 					Uint16OpID++
 				}
 			}
