@@ -46,8 +46,8 @@ type FuzzContext struct {
 	startAt             time.Time
 
 	// chStats is an array of string with format filename:line.
-	// Each element of this array represent an channel make operation in the given file name.
-	chStats []string
+	// Each element of this array represent an primitive operations in the given file name.
+	opStats []string
 }
 
 // NewFuzzContext returns a new FuzzerContext

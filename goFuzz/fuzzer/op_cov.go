@@ -5,26 +5,26 @@ import (
 	"strings"
 )
 
-// InitChStats open and parse the file contains channel statistics
-// It returns the a list of channel ID (format is filename:line)
-func InitChStats(chStatFile string) error {
+// InitChStats open and parse the file contains operation statistics
+// It returns the number of operation ID
+func InitOperationStats(chStatFile string) (int, error) {
 	bytes, err := ioutil.ReadFile(chStatFile)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	chIDs, err := parseChStatsFileContent(string(bytes))
+	ids, err := parseOperationCoverageFileContent(string(bytes))
 	if err != nil {
-		return nil
+		return 0, nil
 	}
 
-	fuzzerContext.chStats = chIDs
+	fuzzerContext.opStats = ids
 
-	return nil
+	return len(ids), nil
 }
 
-// parseChStatsFileContent parses the channel statistics file content and
+// parseOperationCoverageFileContent parses the operation statistics file content and
 // returns a list of channel ID
-func parseChStatsFileContent(content string) ([]string, error) {
+func parseOperationCoverageFileContent(content string) ([]string, error) {
 	lines := strings.Split(content, "\n")
 	var chIDs []string
 	for _, line := range lines {
@@ -37,9 +37,9 @@ func parseChStatsFileContent(content string) ([]string, error) {
 	return chIDs, nil
 }
 
-// GetChannelCoverage calculates the percentage of channels in the `records` in the `chStats`
-func GetChannelCoverage(chStats []string, records []ChanRecord) float32 {
-	totalNumOfCh := len(chStats)
+// GetOperationCoverage calculates the percentage of operations(`pmIDs`) in the `chStats`
+func GetOperationCoverage(totalPmIDs []string, pmIDs []string) float32 {
+	totalNumOfCh := len(totalPmIDs)
 
 	if totalNumOfCh == 0 {
 		return 0
@@ -47,8 +47,8 @@ func GetChannelCoverage(chStats []string, records []ChanRecord) float32 {
 
 	numOfMatchedCh := 0
 
-	for _, ch := range records {
-		if contains(chStats, ch.ChID) {
+	for _, id := range pmIDs {
+		if contains(totalPmIDs, id) {
 			numOfMatchedCh += 1
 		}
 	}

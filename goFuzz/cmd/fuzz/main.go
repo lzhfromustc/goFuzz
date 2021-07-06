@@ -100,10 +100,11 @@ func main() {
 
 	// Parse channel statistics if need
 	if fuzzer.ChCover != "" {
-		err := fuzzer.InitChStats(fuzzer.ChCover)
+		numOfOpID, err := fuzzer.InitOperationStats(fuzzer.ChCover)
 		if err != nil {
 			log.Fatalf("Initialial channel coverage failed: %v", err)
 		}
+		log.Printf("found %d operation IDs in %s", numOfOpID, fuzzer.ChCover)
 	}
 
 	// Setup metrics streaming

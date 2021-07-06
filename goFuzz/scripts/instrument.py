@@ -50,10 +50,15 @@ def main():
     parser = argparse.ArgumentParser(description='Instrument Golang test files.')
     parser.add_argument("dir", metavar='DIR', type=str, nargs='+',
                         help='directory contains *_test.go files')
-    parser.add_argument("--op-out", help="Output path of channel statistics(of Go source code in the given dir) ")
+    parser.add_argument("--op-out", help="Output path of premitives statistics(of Go source code in the given dir) ")
 
     args = parser.parse_args()
+
     op_out = args.op_out
+
+    if not op_out:
+        # If output is not given, create a file under CWD.
+        op_out = "op-out"
 
     global PROJ_ROOT_DIR
     global BIN_INSTRUMENT

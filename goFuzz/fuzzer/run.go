@@ -206,16 +206,30 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		return nil, err
 	}
 
-	bugIds, err := GetListOfBugIDFromStdoutContent(stdOutBuf.String())
+	// Read bug IDs from stdout
+	bugIDs, err := GetListOfBugIDFromStdoutContent(stdOutBuf.String())
 	if err != nil {
 		return nil, err
+	}
+
+	// Read executed operations from gfOpCovFp
+	b, err = ioutil.ReadFile(gfOpCovFp)
+	if err != nil {
+		// if error happened, log and ignore
+		log.Printf("[Task %s][ignored] cannot read operation coverage file %s: %v", task.id, gfOpCovFp, err)
+	}
+	opIDs, err := parseOperationCoverageFileContent(string(b))
+	if err != nil {
+		// if error happened, log and ignore
+		log.Printf("[Task %s][ignored] failed to parse operation coverage file %s: %v", task.id, gfOpCovFp, err)
 	}
 
 	retOutput := &RunResult{
 		RetInput:       retInput,
 		RetRecord:      retRecord,
-		BugIds:         bugIds,
+		BugIDs:         bugIDs,
 		StdoutFilepath: gfOutputFp,
+		opIDs:          opIDs,
 	}
 	retOutput.RetInput = retInput
 	retOutput.RetRecord = retRecord
