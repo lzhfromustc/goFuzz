@@ -7,33 +7,32 @@ import (
 
 const TOLERANCE = 0.000001
 
-func TestParseChStatsFileContentHappy(t *testing.T) {
-	chs, err := parseOperationCoverageFileContent(`
+func TestParseOpCovFileContentHappy(t *testing.T) {
+	res, err := parseOperationCoverageFileContent(`
 
-abc:1
-alsdkf:2
+1:chmake
+2:chsend
 
 `)
 	if err != nil {
 		t.Fail()
 	}
 
-	if !contains(chs, "abc:1") {
+	if _, exist := res["1"]; !exist {
 		t.Fail()
 	}
 
-	if !contains(chs, "alsdkf:2") {
+	if _, exist := res["2"]; !exist {
 		t.Fail()
 	}
 
 }
 
 func TestGetOperationCoverageHappy(t *testing.T) {
-	chs := []string{
-		"1",
-		"2",
-		"3",
-	}
+	chs := map[string]string{}
+	chs["1"] = "chsend"
+	chs["2"] = "chsend"
+	chs["3"] = "chsend"
 
 	records := []string{
 		"1",
@@ -47,7 +46,7 @@ func TestGetOperationCoverageHappy(t *testing.T) {
 }
 
 func TestGetChannelCoverageEmpty(t *testing.T) {
-	chs := []string{}
+	chs := map[string]string{}
 
 	records := []string{
 		"1",

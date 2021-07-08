@@ -2,56 +2,69 @@ package fuzzer
 
 import (
 	"io/ioutil"
+	"log"
 	"strings"
 )
 
-// InitChStats open and parse the file contains operation statistics
+var (
+	// opID2Type is the map from operation ID to operation type (chmake, chsend, etc..)
+	opID2Type map[string]string
+)
+
+// InitOperationStats open and parse the file contains operation statistics
 // It returns the number of operation ID
 func InitOperationStats(chStatFile string) (int, error) {
 	bytes, err := ioutil.ReadFile(chStatFile)
 	if err != nil {
 		return 0, err
 	}
-	ids, err := parseOperationCoverageFileContent(string(bytes))
+	res, err := parseOperationCoverageFileContent(string(bytes))
 	if err != nil {
 		return 0, nil
 	}
 
-	fuzzerContext.opStats = ids
+	opID2Type = res
 
-	return len(ids), nil
+	return len(res), nil
 }
 
 // parseOperationCoverageFileContent parses the operation statistics file content and
 // returns a list of channel ID
-func parseOperationCoverageFileContent(content string) ([]string, error) {
+func parseOperationCoverageFileContent(content string) (map[string]string, error) {
 	lines := strings.Split(content, "\n")
-	var chIDs []string
+	var id2type = make(map[string]string)
 	for _, line := range lines {
 		if line == "" {
 			continue
 		}
-		chIDs = append(chIDs, line)
+		parts := strings.Split(line, ":")
+		if len(parts) != 2 {
+			log.Printf("[ignored] malformed format of operation cov: %s", line)
+			continue
+		}
+		id2type[parts[0]] = parts[1]
 	}
 
-	return chIDs, nil
+	return id2type, nil
 }
 
 // GetOperationCoverage calculates the percentage of operations(`pmIDs`) in the `chStats`
-func GetOperationCoverage(totalPmIDs []string, pmIDs []string) float32 {
-	totalNumOfCh := len(totalPmIDs)
+func GetOperationCoverage(totalID2Type map[string]string, ids []string) float32 {
+	totalNumOfCh := len(totalID2Type)
 
 	if totalNumOfCh == 0 {
 		return 0
 	}
 
-	numOfMatchedCh := 0
+	numOfMatchedID := 0
 
-	for _, id := range pmIDs {
-		if contains(totalPmIDs, id) {
-			numOfMatchedCh += 1
+	for _, id := range ids {
+
+		_, exist := totalID2Type[id]
+		if exist {
+			numOfMatchedID += 1
 		}
 	}
 
-	return float32(numOfMatchedCh) / float32(totalNumOfCh)
+	return float32(numOfMatchedID) / float32(totalNumOfCh)
 }

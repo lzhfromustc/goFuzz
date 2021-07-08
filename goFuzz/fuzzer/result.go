@@ -47,9 +47,9 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		fuzzCtx.IncNumOfBugsFound(uint64(numOfBugs))
 	}
 
-	// echo channel coverage if it has
-	if fuzzCtx.opStats != nil {
-		cov := GetOperationCoverage(fuzzCtx.opStats, result.opIDs)
+	// echo primitive operation coverage if it has
+	if OpCover != "" {
+		cov := GetOperationCoverage(opID2Type, result.opIDs)
 		log.Printf("[Task %s] triggered %d operation(s), coverage: %.2f%%", runTask.id, len(result.opIDs), cov)
 	}
 

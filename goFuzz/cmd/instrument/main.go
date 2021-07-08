@@ -32,7 +32,7 @@ func main() {
 	//pExcludePath := flag.String("exclude", "vendor", "Name of directories that you want to ignore, divided by \":\"")
 	//pRobustMod := flag.Bool("r", false, "If the main package can't pass compiler, check subdirectories one by one")
 	pFile := flag.String("file", "", "Full path of the target file to be parsed")
-	pOutput := flag.String("output","","primitive operation output")
+	pOutput := flag.String("output", "", "primitive operation output")
 	flag.Parse()
 	recordOutputFile = *pOutput
 	filename := *pFile
@@ -102,7 +102,6 @@ func main() {
 	}
 
 }
-
 
 func pre(c *astutil.Cursor) bool {
 	defer func() {
@@ -282,7 +281,7 @@ func pre(c *astutil.Cursor) bool {
 			Value:    strconv.Itoa(intID),
 		}})
 		c.InsertBefore(newCall) // Insert the call to store this operation's type and ID into goroutine local storage
-		records = append(records, strconv.Itoa(intID))
+		records = append(records, strconv.Itoa(intID)+":chsend")
 		Uint16OpID++
 
 		boolNeedInstrument = true // We need to import gooracle
@@ -304,7 +303,7 @@ func pre(c *astutil.Cursor) bool {
 									}})
 								c.InsertAfter(newCall)
 								boolNeedInstrument = true // We need to import gooracle
-								records = append(records, strconv.Itoa(intID))
+								records = append(records, strconv.Itoa(intID)+":chmake")
 								Uint16OpID++
 							}
 						}
@@ -351,7 +350,7 @@ func pre(c *astutil.Cursor) bool {
 								})
 								c.InsertAfter(newCall)
 								boolNeedInstrument = true // We need to import gooracle
-								records = append(records, strconv.Itoa(intID))
+								records = append(records, strconv.Itoa(intID)+":"+strCallee)
 								Uint16OpID++
 							}
 						}
@@ -384,7 +383,7 @@ func pre(c *astutil.Cursor) bool {
 				}})
 				c.InsertBefore(newCall)
 				boolNeedInstrument = true // We need to import gooracle
-				records = append(records, strconv.Itoa(intID))
+				records = append(records, strconv.Itoa(intID)+":chrecv")
 				Uint16OpID++
 			}
 		} else if callExpr, ok := concrete.X.(*ast.CallExpr); ok { // like `close(ch)` or `mu.Lock()`
@@ -402,7 +401,7 @@ func pre(c *astutil.Cursor) bool {
 					}})
 					c.InsertBefore(newCall)
 					boolNeedInstrument = true // We need to import gooracle
-					records = append(records, strconv.Itoa(intID))
+					records = append(records, strconv.Itoa(intID)+":chclose")
 					Uint16OpID++
 				}
 			} else if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok { // like `mu.Lock()`
@@ -440,7 +439,7 @@ func pre(c *astutil.Cursor) bool {
 					})
 					c.InsertAfter(newCall)
 					boolNeedInstrument = true // We need to import gooracle
-					records = append(records, strconv.Itoa(intID))
+					records = append(records, strconv.Itoa(intID)+":"+strCallee)
 					Uint16OpID++
 				}
 			}

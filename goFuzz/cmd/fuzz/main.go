@@ -28,7 +28,7 @@ func parseFlag() {
 	fuzzer.GlobalTuple = *pModeGlobalTuple
 	fuzzer.MaxParallel = *maxParallel
 	fuzzer.ScoreSdk = *scoreSdk
-	fuzzer.ChCover = *chCover
+	fuzzer.OpCover = *chCover
 
 	if fuzzer.OutputDir == "" {
 		log.Fatal("-outputDir is required")
@@ -98,13 +98,13 @@ func main() {
 		}
 	}
 
-	// Parse channel statistics if need
-	if fuzzer.ChCover != "" {
-		numOfOpID, err := fuzzer.InitOperationStats(fuzzer.ChCover)
+	// Parse operation statistics if need
+	if fuzzer.OpCover != "" {
+		numOfOpID, err := fuzzer.InitOperationStats(fuzzer.OpCover)
 		if err != nil {
 			log.Fatalf("Initialial channel coverage failed: %v", err)
 		}
-		log.Printf("found %d operation IDs in %s", numOfOpID, fuzzer.ChCover)
+		log.Printf("found %d operation IDs in %s", numOfOpID, fuzzer.OpCover)
 	}
 
 	// Setup metrics streaming

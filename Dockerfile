@@ -7,6 +7,7 @@ RUN apt update \
 
 WORKDIR /gofuzz
 
+# copy source files to docker
 COPY . .
 
 RUN cd goFuzz \
