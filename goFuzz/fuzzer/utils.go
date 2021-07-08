@@ -9,7 +9,11 @@ import (
 
 // ListPackages lists all packages in the current module
 // (Has to be run at the directory contains go.mod)
-func ListPackages(goModRootPath string) ([]string, error) {
+func ListPackages(goModRootPath string, dir string) ([]string, error) {
+	if dir == "" {
+		dir = "./..."
+	}
+
 	cmd := exec.Command("go", "list", "./...")
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
