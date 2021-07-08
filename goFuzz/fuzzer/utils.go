@@ -9,16 +9,12 @@ import (
 
 // ListPackages lists all packages in the current module
 // (Has to be run at the directory contains go.mod)
-func ListPackages(goModRootPath string, dir string) ([]string, error) {
-	if dir == "" {
-		dir = "./..."
-	}
-
+func ListPackages(goModRootPath string) ([]string, error) {
 	cmd := exec.Command("go", "list", "./...")
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
-
 	}
+	cmd.Env = append(cmd.Env, "GO111MODULE=auto")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
@@ -49,10 +45,13 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	if pkg == "" {
 		pkg = "./..."
 	}
+
 	cmd := exec.Command("go", "test", "-list", ".*", pkg)
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
 	}
+	cmd.Env = append(cmd.Env, "GO111MODULE=auto")
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
 

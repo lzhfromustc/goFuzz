@@ -15,7 +15,7 @@ func parseFlag() {
 	// Parse input
 	pTargetGoModDir := flag.String("goModDir", "", "Directory contains Go Mod file")
 	pTargetTestFunc := flag.String("testFunc", "", "Optional, if you only want to test single function in unit test")
-	pTargetTestDir := flag.String("testDir", "", "Optional, fuzz tests under given dir")
+	pTargetTestPkg := flag.String("testPkg", "", "Optional, fuzz tests under given dir")
 	pOutputDir := flag.String("outputDir", "", "Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
 	maxParallel := flag.Int("parallel", 1, "Specified the maximum subroutine number for fuzzing.")
@@ -30,7 +30,7 @@ func parseFlag() {
 	fuzzer.MaxParallel = *maxParallel
 	fuzzer.ScoreSdk = *scoreSdk
 	fuzzer.OpCover = *chCover
-	fuzzer.TargetTestDir = *pTargetTestDir
+	fuzzer.TargetTestPkg = *pTargetTestPkg
 
 	if fuzzer.OutputDir == "" {
 		log.Fatal("-outputDir is required")
@@ -77,13 +77,19 @@ func main() {
 		})
 	} else {
 		log.Printf("finding all tests under module %s", fuzzer.TargetGoModDir)
-		// Find all tests in all packages
-		packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir, fuzzer.TargetTestDir)
-		if err != nil {
-			log.Fatalf("failed to list packages at %s: %v", fuzzer.TargetGoModDir, err)
-		}
 
-		log.Printf("found packages: %v", packages)
+		var packages []string
+		if fuzzer.TargetTestPkg != "" {
+			packages = append(packages, fuzzer.TargetTestPkg)
+		} else {
+			// Find all tests in all packages
+			packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir)
+			if err != nil {
+				log.Fatalf("failed to list packages at %s: %v", fuzzer.TargetGoModDir, err)
+			}
+
+			log.Printf("found packages: %v", packages)
+		}
 
 		for _, pkg := range packages {
 			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
