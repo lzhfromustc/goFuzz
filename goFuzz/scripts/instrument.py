@@ -55,10 +55,10 @@ def main():
     args = parser.parse_args()
 
     op_out = args.op_out
-
     if not op_out:
         # If output is not given, create a file under CWD.
         op_out = "op-out"
+    op_out = os.path.abspath(op_out)
 
     global PROJ_ROOT_DIR
     global BIN_INSTRUMENT

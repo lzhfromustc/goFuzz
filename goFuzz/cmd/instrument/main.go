@@ -12,6 +12,7 @@ import (
 	"hash/fnv"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -78,14 +79,24 @@ func main() {
 	fi, err := os.Stat(filename)
 	if err != nil {
 		fmt.Printf("Error in os.Stat file: %s\tError:%s", filename, err.Error())
-		return
+		os.Exit(1)
 	}
 	ioutil.WriteFile(filename, newSource, fi.Mode())
 
 	if recordOutputFile != "" {
+		fmt.Printf("Dump operations to %s", recordOutputFile)
+		dir := path.Dir(recordOutputFile)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0755)
+			if err != nil {
+				fmt.Printf("failed to create dir at %s: %v", dir, err)
+				os.Exit(1)
+			}
+		}
 		outputF, err := os.OpenFile(recordOutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			panic(err)
+			fmt.Printf("failed to open file at %s: %v", recordOutputFile, err)
+			os.Exit(1)
 		}
 
 		defer outputF.Close()

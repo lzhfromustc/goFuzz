@@ -102,9 +102,12 @@ func main() {
 	if fuzzer.OpCover != "" {
 		numOfOpID, err := fuzzer.InitOperationStats(fuzzer.OpCover)
 		if err != nil {
-			log.Fatalf("Initialial channel coverage failed: %v", err)
+			log.Printf("[ignored] initialial channel coverage failed: %v", err)
+			// continue fuzzing (ignore error)
+			fuzzer.OpCover = ""
+		} else {
+			log.Printf("found %d operation IDs in %s", numOfOpID, fuzzer.OpCover)
 		}
-		log.Printf("found %d operation IDs in %s", numOfOpID, fuzzer.OpCover)
 	}
 
 	// Setup metrics streaming
