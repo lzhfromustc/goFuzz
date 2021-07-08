@@ -60,6 +60,7 @@ func setupLogger(logFile string) {
 }
 
 func main() {
+	var err error
 	// parse command line flags
 	parseFlag()
 
@@ -83,7 +84,7 @@ func main() {
 			packages = append(packages, fuzzer.TargetTestPkg)
 		} else {
 			// Find all tests in all packages
-			packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir)
+			packages, err = fuzzer.ListPackages(fuzzer.TargetGoModDir)
 			if err != nil {
 				log.Fatalf("failed to list packages at %s: %v", fuzzer.TargetGoModDir, err)
 			}

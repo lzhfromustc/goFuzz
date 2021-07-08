@@ -49,8 +49,8 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 
 	// echo primitive operation coverage if it has
 	if OpCover != "" {
-		cov := GetOperationCoverage(opID2Type, result.opIDs)
-		log.Printf("[Task %s] triggered %d operation(s), coverage: %.2f%%", runTask.id, len(result.opIDs), cov)
+		report := GetOperationCoverageReport(opID2Type, result.opIDs)
+		PrintOperationCoverageReport(totalReport, report)
 	}
 
 	log.Printf("[Task %s] has %d bug(s), %d unique bug(s)", runTask.id, len(result.BugIDs), numOfBugs)

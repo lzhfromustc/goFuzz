@@ -1,7 +1,6 @@
 package fuzzer
 
 import (
-	"math"
 	"testing"
 )
 
@@ -38,22 +37,17 @@ func TestGetOperationCoverageHappy(t *testing.T) {
 		"1",
 		"2",
 	}
-	cov := GetOperationCoverage(chs, records)
+	report := GetOperationCoverageReport(chs, records)
 
-	if diff := math.Abs(float64(cov) - float64(2)/float64(3)); diff > TOLERANCE {
-		t.Fail()
-	}
-}
-
-func TestGetChannelCoverageEmpty(t *testing.T) {
-	chs := map[string]string{}
-
-	records := []string{
-		"1",
-	}
-	cov := GetOperationCoverage(chs, records)
-	if cov != 0 {
+	if report.numOfChOp != 2 {
 		t.Fail()
 	}
 
+	if report.numOfOtherPrimitivesOp != 0 {
+		t.Fail()
+	}
+
+	if report.numOfChMake != 0 {
+		t.Fail()
+	}
 }

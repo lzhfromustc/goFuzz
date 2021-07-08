@@ -8,7 +8,8 @@ import (
 
 var (
 	// opID2Type is the map from operation ID to operation type (chmake, chsend, etc..)
-	opID2Type map[string]string
+	opID2Type   map[string]string
+	totalReport OpCovReport
 )
 
 // InitOperationStats open and parse the file contains operation statistics
@@ -24,6 +25,25 @@ func InitOperationStats(chStatFile string) (int, error) {
 	}
 
 	opID2Type = res
+	ids := []string{}
+	for id, _ := range opID2Type {
+		ids = append(ids, id)
+	}
+
+	totalReport = GetOperationCoverageReport(opID2Type, ids)
+
+	// since 0 cannot be divided
+	if totalReport.numOfChOp == 0 {
+		totalReport.numOfChOp = 1
+	}
+
+	if totalReport.numOfChMake == 0 {
+		totalReport.numOfChOp = 1
+	}
+
+	if totalReport.numOfOtherPrimitivesOp == 0 {
+		totalReport.numOfChOp = 1
+	}
 
 	return len(res), nil
 }
@@ -48,23 +68,48 @@ func parseOperationCoverageFileContent(content string) (map[string]string, error
 	return id2type, nil
 }
 
-// GetOperationCoverage calculates the percentage of operations(`pmIDs`) in the `chStats`
-func GetOperationCoverage(totalID2Type map[string]string, ids []string) float32 {
+type OpCovReport struct {
+	numOfChMake            uint
+	numOfChOp              uint
+	numOfOtherPrimitivesOp uint
+}
+
+func GetOperationCoverageReport(totalID2Type map[string]string, ids []string) OpCovReport {
 	totalNumOfCh := len(totalID2Type)
+	report := OpCovReport{}
 
 	if totalNumOfCh == 0 {
-		return 0
+		return report
 	}
 
 	numOfMatchedID := 0
+	recorded := make(map[string]bool)
 
 	for _, id := range ids {
+		if _, dup := recorded[id]; dup {
+			continue
+		}
+		recorded[id] = true
 
-		_, exist := totalID2Type[id]
+		t, exist := totalID2Type[id]
 		if exist {
+			switch t {
+			case "chmake":
+				report.numOfChMake += 1
+			case "chsend", "chrecv", "chclose":
+				report.numOfChOp += 1
+			default:
+				report.numOfOtherPrimitivesOp += 1
+			}
 			numOfMatchedID += 1
 		}
 	}
 
-	return float32(numOfMatchedID) / float32(totalNumOfCh)
+	return report
+}
+
+func PrintOperationCoverageReport(totalReport OpCovReport, currReport OpCovReport) {
+	log.Printf("channel make count %d, coverage %.2f%%", currReport.numOfChMake, float32(currReport.numOfChMake)/float32(totalReport.numOfChMake))
+	log.Printf("channel op count %d,coverage %.2f%%", currReport.numOfChOp, float32(currReport.numOfChOp)/float32(totalReport.numOfChOp))
+	log.Printf("other primitive op count %d,coverage %.2f%%", currReport.numOfOtherPrimitivesOp, float32(currReport.numOfOtherPrimitivesOp)/float32(totalReport.numOfOtherPrimitivesOp))
 }
