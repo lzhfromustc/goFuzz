@@ -44,10 +44,6 @@ type FuzzContext struct {
 	numOfRuns           uint64
 	numOfFuzzQueryEntry uint64
 	startAt             time.Time
-
-	// chStats is an array of string with format filename:line.
-	// Each element of this array represent an channel make operation in the given file name.
-	chStats []string
 }
 
 // NewFuzzContext returns a new FuzzerContext

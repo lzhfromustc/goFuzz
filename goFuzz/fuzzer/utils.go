@@ -13,7 +13,6 @@ func ListPackages(goModRootPath string) ([]string, error) {
 	cmd := exec.Command("go", "list", "./...")
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
-
 	}
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -45,10 +44,12 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	if pkg == "" {
 		pkg = "./..."
 	}
+
 	cmd := exec.Command("go", "test", "-list", ".*", pkg)
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
 	}
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
 

@@ -15,6 +15,7 @@ func parseFlag() {
 	// Parse input
 	pTargetGoModDir := flag.String("goModDir", "", "Directory contains Go Mod file")
 	pTargetTestFunc := flag.String("testFunc", "", "Optional, if you only want to test single function in unit test")
+	pTargetTestPkg := flag.String("testPkg", "", "Optional, fuzz tests under given dir")
 	pOutputDir := flag.String("outputDir", "", "Full path of the output file")
 	pModeGlobalTuple := flag.Bool("globalTuple", false, "Whether prev_location is global or per channel")
 	maxParallel := flag.Int("parallel", 1, "Specified the maximum subroutine number for fuzzing.")
@@ -29,8 +30,9 @@ func parseFlag() {
 	fuzzer.GlobalTuple = *pModeGlobalTuple
 	fuzzer.MaxParallel = *maxParallel
 	fuzzer.ScoreSdk = *scoreSdk
-	fuzzer.ChCover = *chCover
 	fuzzer.ScoreAllPrim = *pBoolScoreAllPrim
+	fuzzer.OpCover = *chCover
+	fuzzer.TargetTestPkg = *pTargetTestPkg
 
 	if fuzzer.OutputDir == "" {
 		log.Fatal("-outputDir is required")
@@ -60,6 +62,7 @@ func setupLogger(logFile string) {
 }
 
 func main() {
+	var err error
 	// parse command line flags
 	parseFlag()
 
@@ -77,13 +80,19 @@ func main() {
 		})
 	} else {
 		log.Printf("finding all tests under module %s", fuzzer.TargetGoModDir)
-		// Find all tests in all packages
-		packages, err := fuzzer.ListPackages(fuzzer.TargetGoModDir)
-		if err != nil {
-			log.Fatalf("failed to list packages at %s: %v", fuzzer.TargetGoModDir, err)
-		}
 
-		log.Printf("found packages: %v", packages)
+		var packages []string
+		if fuzzer.TargetTestPkg != "" {
+			packages = append(packages, fuzzer.TargetTestPkg)
+		} else {
+			// Find all tests in all packages
+			packages, err = fuzzer.ListPackages(fuzzer.TargetGoModDir)
+			if err != nil {
+				log.Fatalf("failed to list packages at %s: %v", fuzzer.TargetGoModDir, err)
+			}
+
+			log.Printf("found packages: %v", packages)
+		}
 
 		for _, pkg := range packages {
 			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
@@ -100,11 +109,15 @@ func main() {
 		}
 	}
 
-	// Parse channel statistics if need
-	if fuzzer.ChCover != "" {
-		err := fuzzer.InitChStats(fuzzer.ChCover)
+	// Parse operation statistics if need
+	if fuzzer.OpCover != "" {
+		numOfOpID, err := fuzzer.InitOperationStats(fuzzer.OpCover)
 		if err != nil {
-			log.Fatalf("Initialial channel coverage failed: %v", err)
+			log.Printf("[ignored] initialial channel coverage failed: %v", err)
+			// continue fuzzing (ignore error)
+			fuzzer.OpCover = ""
+		} else {
+			log.Printf("found %d operation IDs in %s", numOfOpID, fuzzer.OpCover)
 		}
 	}
 

@@ -10,7 +10,9 @@ type RunResult struct {
 	RetInput       *Input
 	RetRecord      *Record
 	StdoutFilepath string
-	BugIds         []string
+	BugIDs         []string
+	// Executed operation ID
+	opIDs []string
 }
 
 func CheckBugFromStdout(content string) (numBug int) {
@@ -34,7 +36,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 
 	// Check any unique bugs found
 	numOfBugs := 0
-	for _, bugID := range result.BugIds {
+	for _, bugID := range result.BugIDs {
 		if !fuzzCtx.HasBugID(bugID) {
 			fuzzCtx.AddBugID(bugID, result.StdoutFilepath)
 			numOfBugs += 1
@@ -45,13 +47,13 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		fuzzCtx.IncNumOfBugsFound(uint64(numOfBugs))
 	}
 
-	// echo channel coverage if it has
-	if len(fuzzCtx.chStats) != 0 {
-		cov := GetChannelCoverage(fuzzCtx.chStats, result.RetRecord.GetChanRecords())
-		log.Printf("[Task %s] Channel coverage: %.2f%", runTask.id, cov)
+	// echo primitive operation coverage if it has
+	if OpCover != "" {
+		report := GetOperationCoverageReport(opID2Type, result.opIDs)
+		PrintOperationCoverageReport(totalReport, report)
 	}
 
-	log.Printf("[Task %s] has %d bug(s), %d unique bug(s)", runTask.id, len(result.BugIds), numOfBugs)
+	log.Printf("[Task %s] has %d bug(s), %d unique bug(s)", runTask.id, len(result.BugIDs), numOfBugs)
 
 	if stage == InitStage {
 		// If we are handling the output from InitStage

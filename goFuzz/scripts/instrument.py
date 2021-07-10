@@ -6,7 +6,7 @@ from typing import List
 import pathlib
 import os
 
-PROJ_ROOT_DIR = pathlib.Path(__file__).parent.parent.absolute().as_posix()
+PROJ_ROOT_DIR = pathlib.Path(os.path.realpath(__file__)).parent.parent.as_posix()
 BIN_INSTRUMENT = None
 BIN_PRINTOPERATION = None
 
@@ -36,13 +36,13 @@ def generate_ch_statistics(bin:str, go_file:str, output_file:str):
     res.check_returncode()
     print(f"Dump channel statistics of file {go_file} to {output_file}")
 
-def instrument_gotest(bin:str, go_file: str):
+def instrument_gotest(bin:str, go_file: str, rec_out_file:str):
     """Instrument Golang test file by bin/instrument
 
     Args:
         file (str): Golang test file going to be instrumented
     """
-    res = subprocess.run([bin, f"-file={go_file}"])
+    res = subprocess.run([bin, f"-file={go_file}", f"-output={rec_out_file}"])
     res.check_returncode()
     print(f"Instrumented file {go_file}")
 
@@ -50,10 +50,15 @@ def main():
     parser = argparse.ArgumentParser(description='Instrument Golang test files.')
     parser.add_argument("dir", metavar='DIR', type=str, nargs='+',
                         help='directory contains *_test.go files')
-    parser.add_argument("--ch-out", help="Output path of channel statistics(of Go source code in the given dir) ")
+    parser.add_argument("--op-out", help="Output path of premitives statistics(of Go source code in the given dir) ")
 
     args = parser.parse_args()
-    ch_out = args.ch_out
+
+    op_out = args.op_out
+    if not op_out:
+        # If output is not given, create a file under CWD.
+        op_out = "op-out"
+    op_out = os.path.abspath(op_out)
 
     global PROJ_ROOT_DIR
     global BIN_INSTRUMENT
@@ -64,18 +69,14 @@ def main():
     if not os.path.exists(BIN_INSTRUMENT):
         raise Exception("Please run 'make instrument' to generate target binary file.")
 
-    if ch_out and not os.path.exists(BIN_PRINTOPERATION):
-        raise Exception("Please run 'make instrument' to generate target binary file.")
-
 
     for dir in args.dir:
         files = find_gotest_in_folder(dir)
 
         for f in files:
             abs_f = os.path.abspath(f)
-            if ch_out:
-                generate_ch_statistics(BIN_PRINTOPERATION, abs_f, ch_out)
-            instrument_gotest(BIN_INSTRUMENT, abs_f)
+
+            instrument_gotest(BIN_INSTRUMENT, abs_f, op_out)
 
 
 

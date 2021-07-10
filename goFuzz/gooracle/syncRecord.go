@@ -109,6 +109,7 @@ func RecordWgCreate(wg *sync.WaitGroup, id string, opId uint16) {
 		PreLoc: opId,
 		Wg: wg,
 	}
+	recordOp(opId)
 }
 
 // RecordWgOp expected to be instrumented at
@@ -131,6 +132,7 @@ func RecordWgOp(wg *sync.WaitGroup, opId uint16) {
 	xorLoc = runtime.XorUint16(curLoc, preLoc)
 
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
+	recordOp(opId)
 }
 
 // RecordCondCreate expected to be instrumented at
@@ -141,7 +143,7 @@ func RecordCondCreate(cond *sync.Cond, id string, opId uint16) {
 		ID: id,
 		PreLoc:opId,
 	}
-
+	recordOp(opId)
 }
 
 // RecordCondOp expected to be instrumented at
@@ -163,6 +165,7 @@ func RecordCondOp(cond *sync.Cond, opId uint16) {
 	xorLoc = runtime.XorUint16(curLoc, preLoc)
 
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
+	recordOp(opId)
 }
 
 
@@ -172,6 +175,7 @@ func RecordMutexCreate(m *sync.Mutex, id string, opId uint16){
 		ID: id,
 		PreLoc:opId,
 	}
+	recordOp(opId)
 }
 
 
@@ -192,6 +196,7 @@ func RecordMutexOp(m *sync.Mutex, opId uint16){
 	xorLoc = runtime.XorUint16(curLoc, preLoc)
 
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
+	recordOp(opId)
 }
 
 func RecordRWMutexCreate(m *sync.RWMutex, id string, opId uint16){
@@ -200,6 +205,7 @@ func RecordRWMutexCreate(m *sync.RWMutex, id string, opId uint16){
 		ID: id,
 		PreLoc:opId,
 	}
+	recordOp(opId)
 }
 
 
@@ -220,5 +226,6 @@ func RecordRWMutexOp(m *sync.RWMutex, opId uint16){
 	xorLoc = runtime.XorUint16(curLoc, preLoc)
 
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
+	recordOp(opId)
 }
 

@@ -2,6 +2,8 @@
   - [Project Structure](#project-structure)
   - [Prerequisite](#prerequisite)
   - [Dev Setup](#dev-setup)
+  - [Helper Scripts](#helper-scripts)
+    - [fuzz.sh](#fuzzsh)
 
 # Go Fuzz Project
 
@@ -76,3 +78,16 @@ BTW, we need to remove "(s)" before "TestStateTransitions_MultipleAddrsEntersRea
 
 
 -path=/Users/xsh/code/goFuzz/goFuzz/example/simple1 -GOPATH=/Users/xsh/code/goFuzz/goFuzz/example -output=/Users/xsh/code/goFuzz/goFuzz/example/simple1/myoutput.txt -test=TestHello
+
+
+## Helper Scripts
+
+### fuzz.sh
+
+Usage:
+```bash
+./fuzz.sh <target dir contains go.mod> <output dir> <parallel> [...optional flags passed to fuzz binary]
+
+Reminder: Optional flags cannot be -goModDir, -chCover, -outputDir and -parallel since they are already filled by the script.
+
+```
