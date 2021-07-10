@@ -16,7 +16,6 @@ func RecordLockCall(ident interface{}, opID uint16) {
 	if !BoolRecordTrad {
 		return
 	}
-	println("Recording trad")
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
 		RecordMutexOp(concrete, opID)
@@ -62,7 +61,6 @@ func RecordWaitCall(ident interface{}, opID uint16) {
 	if !BoolRecordTrad {
 		return
 	}
-	println("Recording trad")
 	switch concrete := ident.(type) {
 	case *sync.WaitGroup:
 		RecordWgOp(concrete, opID)
