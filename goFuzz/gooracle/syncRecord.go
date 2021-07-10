@@ -10,12 +10,13 @@ import (
 //Note: different from channel, the instrumentation of traditional primitives may fail.
 // Because channel must be created by make(chan Type), but traditional primitives can be created by just declare the variable, which may happen when declaring a global variable
 
-var BoolRecordTrad bool = os.Getenv("GF_RECORD_TRAD") == "1"
+var BoolRecordTrad bool = os.Getenv("GF_SCORE_TRAD") == "1"
 
 func RecordLockCall(ident interface{}, opID uint16) {
 	if !BoolRecordTrad {
 		return
 	}
+	println("Recording trad")
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
 		RecordMutexOp(concrete, opID)
@@ -61,6 +62,7 @@ func RecordWaitCall(ident interface{}, opID uint16) {
 	if !BoolRecordTrad {
 		return
 	}
+	println("Recording trad")
 	switch concrete := ident.(type) {
 	case *sync.WaitGroup:
 		RecordWgOp(concrete, opID)
