@@ -5,11 +5,13 @@ import "runtime"
 
 func StoreOpInfo(strOpType string, uint16OpID uint16) {
 	runtime.StoreChOpInfo(strOpType, uint16OpID)
+	recordOp(uint16OpID)
 }
 
 func StoreChMakeInfo(ch interface{}, uint16OpID uint16) {
 	runtime.StoreChOpInfo("ChMake", uint16OpID)
 	runtime.LinkChToLastChanInfo(ch)
+	recordOp(uint16OpID)
 }
 
 func CurrentGoAddPrime(ch interface{}) {
