@@ -6,7 +6,7 @@ const MaxRecordElem int = 65536 // 2^16
 
 // Settings:
 var BoolRecord bool = true
-var BoolRecordPerCh bool = true
+var BoolRecordPerCh bool = gogetenv("BitGlobalTuple") == "0"
 var BoolRecordSDK bool = gogetenv("GF_SCORE_SDK") == "1"
 
 // TODO: important: extend similar algorithm for mutex, conditional variable, waitgroup, etc
@@ -34,7 +34,7 @@ var ChCount uint16
 func RecordChMake(capBuf int, c *hchan) {
 
 	if BoolRecordSDK == false {
-		if c.chInfo.BoolMakeInSDK == false {
+		if c.chInfo.BoolMakeNotInSDK == false {
 			return
 		}
 	}
@@ -63,7 +63,7 @@ func RecordChOp(c *hchan) {
 		return
 	}
 	if BoolRecordSDK {
-		if c.chInfo.BoolMakeInSDK == false {
+		if c.chInfo.BoolMakeNotInSDK == false {
 			return
 		}
 	}

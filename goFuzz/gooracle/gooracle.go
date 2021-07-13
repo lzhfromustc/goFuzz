@@ -209,16 +209,4 @@ func AfterRunFuzz() {
 	if foundBug {
 		fmt.Println(str)
 	}
-
-	// dump operation records
-	opFile := os.Getenv("GF_OP_COV_FILE")
-	if opFile != "" {
-		err := dumpOpRecordsToFile(opFile, opRecords)
-		if err != nil {
-			// print to error
-			println(err)
-		}
-	}
-
-
 }

@@ -222,7 +222,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	lock(&c.lock)
 
 	///MYCODE
-	if GlobalEnableOracle && c.chInfo.BoolMakeInSDK {
+	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
 		currentGo.SetBlockAt(c.chInfo, Send)
@@ -575,7 +575,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	lock(&c.lock)
 
 	///MYCODE
-	if GlobalEnableOracle && c.chInfo.BoolMakeInSDK {
+	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
 		currentGo.SetBlockAt(c.chInfo, Recv)

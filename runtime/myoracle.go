@@ -22,32 +22,36 @@ type PrimInfo interface {
 
 // ChanInfo is 1-to-1 with every channel. It tracks a list of goroutines that hold the reference to the channel
 type ChanInfo struct {
-	Chan            *hchan          // Stores the channel. Can be used as ID of channel
-	IntBuffer       int             // The buffer capability of channel. 0 if channel is unbuffered
-	MapRefGoroutine map[*GoInfo]struct{} // Stores all goroutines that still hold reference to this channel
-	StrDebug        string
-	BoolMakeInSDK   bool  // Disable oracle for channels in SDK
-	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
-	Mu              mutex
+	Chan             *hchan          // Stores the channel. Can be used as ID of channel
+	IntBuffer        int             // The buffer capability of channel. 0 if channel is unbuffered
+	MapRefGoroutine  map[*GoInfo]struct{} // Stores all goroutines that still hold reference to this channel
+	StrDebug         string
+	BoolMakeNotInSDK bool  // Disable oracle for channels in SDK
+	IntFlagFoundBug  int32 // Use atomic int32 operations to mark if a bug is reported
+	Mu               mutex
 }
 
 var MapChToChanInfo map[interface{}]PrimInfo
 var MuMapChToChanInfo mutex
 //var DefaultCaseChanInfo = &ChanInfo{}
 
-const strSDKPath string = "/usr/local/go/src/"
+var strSDKPath string = gogetenv("GOROOT")
+
+func PrintSDK() {
+	println(strSDKPath)
+}
 
 // Initialize a new ChanInfo with a given channel
 func NewChanInfo(ch *hchan) *ChanInfo {
 	_, strFile, intLine, _ := Caller(2)
 	strLoc := strFile + ":" + Itoa(intLine)
 	newChInfo := &ChanInfo{
-		Chan:            ch,
-		IntBuffer:       int(ch.dataqsiz),
-		MapRefGoroutine: make(map[*GoInfo]struct{}),
-		StrDebug:        strLoc,
-		BoolMakeInSDK:   Index(strLoc, strSDKPath) < 0,
-		IntFlagFoundBug: 0,
+		Chan:             ch,
+		IntBuffer:        int(ch.dataqsiz),
+		MapRefGoroutine:  make(map[*GoInfo]struct{}),
+		StrDebug:         strLoc,
+		BoolMakeNotInSDK: Index(strLoc, strSDKPath) < 0,
+		IntFlagFoundBug:  0,
 	}
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
 
@@ -201,7 +205,7 @@ func CheckBlockBug(CS []PrimInfo) {
 			continue
 		}
 		if chanInfo, ok := chI.(*ChanInfo); ok {
-			if chanInfo.BoolMakeInSDK == false {
+			if chanInfo.BoolMakeNotInSDK == false {
 				return
 			}
 		}
