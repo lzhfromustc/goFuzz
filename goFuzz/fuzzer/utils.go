@@ -14,6 +14,7 @@ func ListPackages(goModRootPath string) ([]string, error) {
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
 	}
+	cmd.Env = os.Environ()
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
@@ -49,6 +50,7 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
 	}
+	cmd.Env = os.Environ()
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
