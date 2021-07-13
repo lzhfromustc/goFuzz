@@ -118,11 +118,16 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 
 	var cmd *exec.Cmd
 	if task.input.GoTestCmd != nil {
-		var pkg = input.GoTestCmd.Package
-		if pkg == "" {
-			pkg = "./..."
+		if TargetTestBin != "" {
+			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
+			cmd = exec.Command(TargetTestBin, "test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+		} else {
+			var pkg = input.GoTestCmd.Package
+			if pkg == "" {
+				pkg = "./..."
+			}
+			cmd = exec.Command("go", "test", "-v", "-run", input.GoTestCmd.Func, pkg)
 		}
-		cmd = exec.Command("go", "test", "-v", "-run", input.GoTestCmd.Func, pkg)
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
 		cmd = exec.Command(cmds[0], cmds[1])
