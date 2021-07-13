@@ -145,6 +145,9 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	if ScoreSdk {
 		env = append(env, "GF_SCORE_SDK=1")
 	}
+	if ScoreAllPrim {
+		env = append(env, "GF_SCORE_TRAD=1")
+	}
 	cmd.Env = env
 
 	// setting up redirection

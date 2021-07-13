@@ -219,6 +219,4 @@ func AfterRunFuzz() {
 			println(err)
 		}
 	}
-
-
 }

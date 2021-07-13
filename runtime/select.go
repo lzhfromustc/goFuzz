@@ -310,7 +310,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 			c0 := scases[o].c
 			if c0 != lastC {
 				lastC = c0
-				if lastC.chInfo.BoolMakeInSDK == false {
+				if lastC.chInfo.BoolMakeNotInSDK == false {
 					goto outOfOracle
 				}
 				AddRefGoroutine(c.chInfo, currentGo)
