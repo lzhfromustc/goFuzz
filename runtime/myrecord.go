@@ -62,7 +62,7 @@ func RecordChOp(c *hchan) {
 	if c.chanRecord == nil {
 		return
 	}
-	if BoolRecordSDK {
+	if BoolRecordSDK == false {
 		if c.chInfo.BoolMakeNotInSDK == false {
 			return
 		}
