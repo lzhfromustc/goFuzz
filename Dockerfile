@@ -17,6 +17,11 @@ RUN cd goFuzz \
 RUN chmod +x scripts/patch-go-runtime.sh \
 && ./scripts/patch-go-runtime.sh
 
+RUN addgroup -S gfgroup
+
+RUN adduser -S -D gfuser gfgroup
+
+USER gfuser
 
 WORKDIR /gofuzz/goFuzz
 RUN chmod +x ./scripts/fuzz.sh
