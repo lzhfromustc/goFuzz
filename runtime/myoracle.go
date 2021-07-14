@@ -53,6 +53,11 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 		BoolMakeNotInSDK: Index(strLoc, strSDKPath) < 0,
 		IntFlagFoundBug:  0,
 	}
+	if BoolPrintDebugInfo {
+		println("===Debug Info:")
+		println("\tMake of a new channel. The creation site is:", strLoc)
+		println("\tSDK path is:", strSDKPath, "\tBoolMakeNotInSDK is:", newChInfo.BoolMakeNotInSDK)
+	}
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
 
 	return newChInfo

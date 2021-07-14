@@ -14,7 +14,15 @@ var BoolRecordTrad bool = os.Getenv("GF_SCORE_TRAD") == "1"
 
 func RecordLockCall(ident interface{}, opID uint16) {
 	if !BoolRecordTrad {
+		if runtime.BoolPrintDebugInfo {
+			println("For the Lock operation, we don't record its operation")
+
+		}
 		return
+	} else {
+		if runtime.BoolPrintDebugInfo {
+			println("For the Lock operation, we recorded its operation")
+		}
 	}
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
