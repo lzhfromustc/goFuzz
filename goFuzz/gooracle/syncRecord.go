@@ -13,12 +13,18 @@ import (
 var BoolRecordTrad bool = os.Getenv("GF_SCORE_TRAD") == "1"
 
 func RecordLockCall(ident interface{}, opID uint16) {
-	println("Entering RecordLockCall")
+	if runtime.BoolPrintDebugInfo {
+		println("Entering RecordLockCall")
+	}
 	if !BoolRecordTrad {
-		println("For the Lock operation, we don't record its operation")
+		if runtime.BoolPrintDebugInfo {
+			println("For the Lock operation, we don't record its operation")
+		}
 		return
 	} else {
-		println("For the Lock operation, we recorded its operation")
+		if runtime.BoolPrintDebugInfo {
+			println("For the Lock operation, we recorded its operation")
+		}
 	}
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
@@ -172,7 +178,9 @@ func RecordCondOp(cond *sync.Cond, opId uint16) {
 
 
 func RecordMutexCreate(m *sync.Mutex, id string, opId uint16){
-	println("Entering RecordMutexCreate of m:", m, "\tid:", id, "\topId:", opId)
+	if runtime.BoolPrintDebugInfo {
+		println("Entering RecordMutexCreate of m:", m, "\tid:", id, "\topId:", opId)
+	}
 	m.Record = &sync.MutexRecord{
 		M: m,
 		ID: id,
@@ -183,12 +191,18 @@ func RecordMutexCreate(m *sync.Mutex, id string, opId uint16){
 
 
 func RecordMutexOp(m *sync.Mutex, opId uint16){
-	println("Entering RecordMutexOp. The Mutex is:", m, "\tThe opID is:", opId)
+	if runtime.BoolPrintDebugInfo {
+		println("Entering RecordMutexOp. The Mutex is:", m, "\tThe opID is:", opId)
+	}
 	if m.Record == nil { // This mutex's creation is not instrumented
-		println("m.Record is nil. Now return")
+		if runtime.BoolPrintDebugInfo {
+			println("m.Record is nil. Now return")
+		}
 		return
 	}
-	println("m.Record is not nil. Now recording")
+	if runtime.BoolPrintDebugInfo {
+		println("m.Record is not nil. Now recording")
+	}
 	curLoc := opId
 	var preLoc, xorLoc uint16
 
@@ -200,7 +214,9 @@ func RecordMutexOp(m *sync.Mutex, opId uint16){
 		atomic.StoreUint32(&runtime.GlobalLastLoc, uint32(curLoc>>1))
 	}
 	xorLoc = runtime.XorUint16(curLoc, preLoc)
-	println("xorLoc:", xorLoc)
+	if runtime.BoolPrintDebugInfo {
+		println("xorLoc:", xorLoc)
+	}
 
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
 	recordOp(opId)
