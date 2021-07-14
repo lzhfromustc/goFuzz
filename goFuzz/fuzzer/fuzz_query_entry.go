@@ -74,6 +74,8 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 		randNum := rand.Int31n(101)
 		if e.BestScore < int(randNum) {
 			log.Printf("[%+v] randomly skipped", *e)
+			// if skip, simply add entry to the tail
+			fuzzCtx.EnqueueQueryEntry(e)
 			return nil
 		}
 		currentFuzzingEnergy := e.BestScore
