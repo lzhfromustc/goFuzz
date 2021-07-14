@@ -68,6 +68,13 @@ func main() {
 	// parse command line flags
 	parseFlag()
 
+	goRoot, err := fuzzer.GetGoEnv("GOROOT")
+	if err != nil {
+		log.Fatalf("Failed to get go env GOROOT: %v", err)
+	}
+	fuzzer.GoRoot = goRoot
+	log.Printf("current GOROOT: %s", goRoot)
+
 	// setup logger
 	setupLogger(filepath.Join(fuzzer.OutputDir, "fuzzer.log"))
 

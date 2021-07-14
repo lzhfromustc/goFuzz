@@ -112,3 +112,18 @@ func createDir(dir string) error {
 		return err
 	}
 }
+
+func GetGoEnv(key string) (string, error) {
+	cmd := exec.Command("go", "env", key)
+	cmd.Env = os.Environ()
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimRight(out.String(), "\n"), nil
+}
