@@ -172,6 +172,7 @@ func RecordCondOp(cond *sync.Cond, opId uint16) {
 
 
 func RecordMutexCreate(m *sync.Mutex, id string, opId uint16){
+	println("Entering RecordMutexCreate of m:", m, "\tid:", id, "\topId:", opId)
 	m.Record = &sync.MutexRecord{
 		M: m,
 		ID: id,
