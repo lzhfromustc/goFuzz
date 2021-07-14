@@ -17,14 +17,14 @@ RUN cd goFuzz \
 RUN chmod +x scripts/patch-go-runtime.sh \
 && ./scripts/patch-go-runtime.sh
 
-RUN addgroup -S gfgroup
-
-RUN adduser -S -D gfuser gfgroup
-
-USER gfuser
 
 WORKDIR /gofuzz/goFuzz
-RUN chmod +x ./scripts/fuzz.sh
+
+RUN addgroup gfgroup
+RUN adduser --ingroup gfgroup gfuser
+RUN chown gfuser:gfgroup ./scripts/fuzz.sh && chmod +x ./scripts/fuzz.sh
+
+USER gfuser
 
 ENTRYPOINT [ "scripts/fuzz.sh" ] 
 
