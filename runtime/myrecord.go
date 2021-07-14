@@ -26,7 +26,7 @@ var ChRecord [MaxRecordElem]*ChanRecord
 
 // For the record of each channel operation
 
-var GlobalLastLoc uint32
+var GlobalLastLoc uint32 = uint32(12345)
 var TupleRecord [MaxRecordElem]uint32
 var ChCount uint16
 
