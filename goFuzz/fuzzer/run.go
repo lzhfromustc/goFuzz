@@ -148,6 +148,10 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	if ScoreAllPrim {
 		env = append(env, "GF_SCORE_TRAD=1")
 	}
+	if GoRoot != "" {
+		env = append(env, fmt.Sprintf("GOROOT=%s", GoRoot))
+	}
+
 	cmd.Env = env
 
 	// setting up redirection
