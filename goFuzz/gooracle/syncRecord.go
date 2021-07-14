@@ -13,16 +13,12 @@ import (
 var BoolRecordTrad bool = os.Getenv("GF_SCORE_TRAD") == "1"
 
 func RecordLockCall(ident interface{}, opID uint16) {
+	println("Entering RecordLockCall")
 	if !BoolRecordTrad {
-		if runtime.BoolPrintDebugInfo {
-			println("For the Lock operation, we don't record its operation")
-
-		}
+		println("For the Lock operation, we don't record its operation")
 		return
 	} else {
-		if runtime.BoolPrintDebugInfo {
-			println("For the Lock operation, we recorded its operation")
-		}
+		println("For the Lock operation, we recorded its operation")
 	}
 	switch concrete := ident.(type) {
 	case *sync.Mutex:
@@ -186,9 +182,12 @@ func RecordMutexCreate(m *sync.Mutex, id string, opId uint16){
 
 
 func RecordMutexOp(m *sync.Mutex, opId uint16){
+	println("Entering RecordMutexOp. The Mutex is:", m, "\tThe opID is:", opId)
 	if m.Record == nil { // This mutex's creation is not instrumented
+		println("m.Record is nil. Now return")
 		return
 	}
+	println("m.Record is not nil. Now recording")
 	curLoc := opId
 	var preLoc, xorLoc uint16
 
@@ -200,6 +199,7 @@ func RecordMutexOp(m *sync.Mutex, opId uint16){
 		atomic.StoreUint32(&runtime.GlobalLastLoc, uint32(curLoc>>1))
 	}
 	xorLoc = runtime.XorUint16(curLoc, preLoc)
+	println("xorLoc:", xorLoc)
 
 	atomic.AddUint32(&runtime.TupleRecord[xorLoc], 1)
 	recordOp(opId)
