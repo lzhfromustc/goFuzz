@@ -109,7 +109,7 @@ func GetOperationCoverageReport(totalID2Type map[string]string, ids []string) Op
 }
 
 func PrintOperationCoverageReport(totalReport OpCovReport, currReport OpCovReport) {
-	log.Printf("channel make count %d, coverage %.2f%%", currReport.numOfChMake, float32(currReport.numOfChMake)/float32(totalReport.numOfChMake))
-	log.Printf("channel op count %d,coverage %.2f%%", currReport.numOfChOp, float32(currReport.numOfChOp)/float32(totalReport.numOfChOp))
-	log.Printf("other primitive op count %d,coverage %.2f%%", currReport.numOfOtherPrimitivesOp, float32(currReport.numOfOtherPrimitivesOp)/float32(totalReport.numOfOtherPrimitivesOp))
+	log.Printf("channel make count %d, coverage %.2f%%", currReport.numOfChMake, float32(currReport.numOfChMake)/float32(totalReport.numOfChMake)*100)
+	log.Printf("channel op count %d,coverage %.2f%%", currReport.numOfChOp, float32(currReport.numOfChOp)/float32(totalReport.numOfChOp)*100)
+	log.Printf("other primitive op count %d,coverage %.2f%%", currReport.numOfOtherPrimitivesOp, float32(currReport.numOfOtherPrimitivesOp)/float32(totalReport.numOfOtherPrimitivesOp)*100)
 }

@@ -5,6 +5,7 @@ import subprocess
 from typing import List
 import pathlib
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 PROJ_ROOT_DIR = pathlib.Path(os.path.realpath(__file__)).parent.parent.as_posix()
 BIN_INSTRUMENT = None
@@ -69,14 +70,22 @@ def main():
     if not os.path.exists(BIN_INSTRUMENT):
         raise Exception("Please run 'make instrument' to generate target binary file.")
 
+    all_go_files = []
+    for d in args.dir:
+        files = find_gotest_in_folder(d)
+        all_go_files.extend(files)
 
-    for dir in args.dir:
-        files = find_gotest_in_folder(dir)
+    futures = []
+    with ThreadPoolExecutor(5) as executor:
+        for f in all_go_files:
+            future = executor.submit(instrument_gotest, BIN_INSTRUMENT, f, op_out)
+            futures.append(future)
 
-        for f in files:
-            abs_f = os.path.abspath(f)
+    for f in futures:
+        f.result()
 
-            instrument_gotest(BIN_INSTRUMENT, abs_f, op_out)
+
+
 
 
 
