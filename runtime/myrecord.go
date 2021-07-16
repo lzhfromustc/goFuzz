@@ -1,6 +1,8 @@
 package runtime
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+)
 
 const MaxRecordElem int = 65536 // 2^16
 
@@ -8,6 +10,7 @@ const MaxRecordElem int = 65536 // 2^16
 var BoolRecord bool = true
 var BoolRecordPerCh bool = gogetenv("BitGlobalTuple") == "0"
 var BoolRecordSDK bool = gogetenv("GF_SCORE_SDK") == "1"
+var BoolRecordTrad bool = gogetenv("GF_SCORE_TRAD") == "1"
 
 // TODO: important: extend similar algorithm for mutex, conditional variable, waitgroup, etc
 
@@ -57,7 +60,7 @@ func RecordChMake(capBuf int, c *hchan) {
 	c.chanRecord = newChRecord
 }
 
-// When a channel operation is executed, update ChanRecord, and update the tuple counter (curLoc XOR prevLoc)
+// When a channel operation is executed, update TupleRecord, and update the tuple counter (curLoc XOR prevLoc)
 func RecordChOp(c *hchan) {
 
 	// As mentioned above, we don't record channels created in runtime
@@ -87,10 +90,10 @@ func RecordChOp(c *hchan) {
 		c.chanRecord.NotClosed = false
 	}
 
-	curLoc := getg().uint16ChOpID
+	curLoc := getg().uint16OpID
 	var preLoc, xorLoc uint16
 	if BoolRecordPerCh {
-		preLoc = c.preLoc
+		preLoc = c.preLoc // This may data race
 		c.preLoc = curLoc >> 1
 	} else {
 		preLoc = uint16(atomic.LoadUint32(&GlobalLastLoc))
@@ -101,9 +104,25 @@ func RecordChOp(c *hchan) {
 	atomic.AddUint32(&TupleRecord[xorLoc], 1)
 }
 
+// When a traditional primitive operation is executed, update TupleRecord, and update the tuple counter (curLoc XOR prevLoc)
+// If BoolRecordTrad is false, this function won't be called. See sync package
+func RecordTradOp(primPreLoc *uint16) {
+	curLoc := getg().uint16OpID
+	var preLoc, xorLoc uint16
+	if BoolRecordPerCh {
+		preLoc = *primPreLoc // This may data race
+		*primPreLoc = curLoc >> 1
+	} else {
+		preLoc = uint16(atomic.LoadUint32(&GlobalLastLoc))
+		atomic.StoreUint32(&GlobalLastLoc, uint32(curLoc >> 1))
+	}
+	xorLoc = XorUint16(curLoc, preLoc)
+	atomic.AddUint32(&TupleRecord[xorLoc], 1)
+}
+
 func StoreChOpInfo(strOpType string, uint16OpID uint16) {
 	getg().strChOpType = strOpType
-	getg().uint16ChOpID = uint16OpID
+	getg().uint16OpID = uint16OpID
 }
 
 func CurrentGoAddMutex(ch interface{}) {

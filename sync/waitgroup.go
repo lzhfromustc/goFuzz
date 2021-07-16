@@ -29,7 +29,7 @@ type WaitGroup struct {
 	state1 [3]uint32
 
 	///MYCODE
-	Record *WgRecord
+	Record TradRecord
 }
 
 // state returns pointers to the state and sema fields stored within wg.state1.
@@ -55,6 +55,11 @@ func (wg *WaitGroup) state() (statep *uint64, semap *uint32) {
 // new Add calls must happen after all previous Wait calls have returned.
 // See the WaitGroup example.
 func (wg *WaitGroup) Add(delta int) {
+	///MYCODE:
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&wg.Record.PreLoc)
+	}
+
 	statep, semap := wg.state()
 	if race.Enabled {
 		_ = *statep // trigger nil deref early
@@ -105,8 +110,13 @@ func (wg *WaitGroup) Done() {
 
 // Wait blocks until the WaitGroup counter is zero.
 func (wg *WaitGroup) Wait() {
+	///MYCODE:
 	runtime.TmpBeforeBlock()
 	defer runtime.TmpAfterBlock()
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&wg.Record.PreLoc)
+	}
+
 	statep, semap := wg.state()
 	if race.Enabled {
 		_ = *statep // trigger nil deref early

@@ -34,7 +34,7 @@ type RWMutex struct {
 	readerWait  int32  // number of departing readers
 
 	///MYCODE
-	Record *RWMutexRecord
+	Record TradRecord
 }
 
 const rwmutexMaxReaders = 1 << 30
@@ -58,8 +58,14 @@ const rwmutexMaxReaders = 1 << 30
 // call excludes new readers from acquiring the lock. See the
 // documentation on the RWMutex type.
 func (rw *RWMutex) RLock() {
+	///MYCODE:
 	runtime.TmpBeforeBlock()
 	defer runtime.TmpAfterBlock()
+
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&rw.Record.PreLoc)
+	}
+
 	if race.Enabled {
 		_ = rw.w.state
 		race.Disable()
@@ -79,6 +85,11 @@ func (rw *RWMutex) RLock() {
 // It is a run-time error if rw is not locked for reading
 // on entry to RUnlock.
 func (rw *RWMutex) RUnlock() {
+	///MYCODE:
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&rw.Record.PreLoc)
+	}
+
 	if race.Enabled {
 		_ = rw.w.state
 		race.ReleaseMerge(unsafe.Pointer(&rw.writerSem))
@@ -109,8 +120,13 @@ func (rw *RWMutex) rUnlockSlow(r int32) {
 // If the lock is already locked for reading or writing,
 // Lock blocks until the lock is available.
 func (rw *RWMutex) Lock() {
+	///MYCODE:
 	runtime.TmpBeforeBlock()
 	defer runtime.TmpAfterBlock()
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&rw.Record.PreLoc)
+	}
+
 	if race.Enabled {
 		_ = rw.w.state
 		race.Disable()
@@ -137,6 +153,11 @@ func (rw *RWMutex) Lock() {
 // goroutine. One goroutine may RLock (Lock) a RWMutex and then
 // arrange for another goroutine to RUnlock (Unlock) it.
 func (rw *RWMutex) Unlock() {
+	///MYCODE:
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&rw.Record.PreLoc)
+	}
+
 	if race.Enabled {
 		_ = rw.w.state
 		race.Release(unsafe.Pointer(&rw.readerSem))

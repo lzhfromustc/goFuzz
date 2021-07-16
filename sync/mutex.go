@@ -28,7 +28,7 @@ type Mutex struct {
 	sema  uint32
 
 	//MYCODE:
-	Record *MutexRecord
+	Record TradRecord
 }
 
 // A Locker represents an object that can be locked and unlocked.
@@ -74,8 +74,14 @@ const (
 // If the lock is already in use, the calling goroutine
 // blocks until the mutex is available.
 func (m *Mutex) Lock() {
+	///MYCODE:
 	runtime.TmpBeforeBlock()
 	defer runtime.TmpAfterBlock()
+
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&m.Record.PreLoc)
+	}
+
 	// Fast path: grab unlocked mutex.
 	if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) {
 		if race.Enabled {
@@ -183,6 +189,11 @@ func (m *Mutex) lockSlow() {
 // It is allowed for one goroutine to lock a Mutex and then
 // arrange for another goroutine to unlock it.
 func (m *Mutex) Unlock() {
+	///MYCODE:
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&m.Record.PreLoc)
+	}
+
 	if race.Enabled {
 		_ = m.state
 		race.Release(unsafe.Pointer(m))

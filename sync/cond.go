@@ -29,7 +29,7 @@ type Cond struct {
 	checker copyChecker
 
 	///MYCODE:
-	Record *CondRecord
+	Record TradRecord
 }
 
 // NewCond returns a new Cond with Locker l.
@@ -54,8 +54,14 @@ func NewCond(l Locker) *Cond {
 //    c.L.Unlock()
 //
 func (c *Cond) Wait() {
+	///MYCODE:
 	runtime.TmpBeforeBlock()
 	defer runtime.TmpAfterBlock()
+
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&c.Record.PreLoc)
+	}
+
 	c.checker.check()
 	t := runtime_notifyListAdd(&c.notify)
 	c.L.Unlock()
@@ -68,6 +74,11 @@ func (c *Cond) Wait() {
 // It is allowed but not required for the caller to hold c.L
 // during the call.
 func (c *Cond) Signal() {
+	///MYCODE:
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&c.Record.PreLoc)
+	}
+
 	c.checker.check()
 	runtime_notifyListNotifyOne(&c.notify)
 }
@@ -77,6 +88,11 @@ func (c *Cond) Signal() {
 // It is allowed but not required for the caller to hold c.L
 // during the call.
 func (c *Cond) Broadcast() {
+	///MYCODE:
+	if runtime.BoolRecordTrad {
+		runtime.RecordTradOp(&c.Record.PreLoc)
+	}
+
 	c.checker.check()
 	runtime_notifyListNotifyAll(&c.notify)
 }

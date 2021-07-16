@@ -26,6 +26,22 @@ var Uint16OpID uint16
 var recordOutputFile string
 var records []string
 
+var sliceStrNoInstr = []string {
+	"src/runtime",
+	"src/gooracle",
+	"src/sync",
+	"src/reflect",
+	"src/syscall",
+	"src/bufio",
+	"src/fmt",
+	"src/os",
+	"src/strconv",
+	"src/strings",
+	"src/time",
+	"src/bytes",
+	"src/hash",
+}
+
 func main() {
 	//pProjectPath := flag.String("path","","Full path of the target project")
 	//pRelativePath := flag.String("include","","Relative path (what's after /src/) of the target project")
@@ -35,8 +51,17 @@ func main() {
 	pFile := flag.String("file", "", "Full path of the target file to be parsed")
 	pOutput := flag.String("output", "", "primitive operation output")
 	flag.Parse()
+
 	recordOutputFile = *pOutput
 	filename := *pFile
+
+	// If this file is in SDK and can't be instrumented, skip it
+	for _, str := range sliceStrNoInstr {
+		if strings.Contains(filename, str) {
+			return
+		}
+	}
+
 	h := fnv.New32a()
 	h.Write([]byte(filename))
 	Uint16OpID = uint16(h.Sum32())
@@ -182,64 +207,60 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 						}
 					}
 				}
-			} else if compositeLit, ok := concrete.Rhs[0].(*ast.CompositeLit); ok { // like `mu := sync.Mutex{}`
-				if typeSelectorExpr, ok := compositeLit.Type.(*ast.SelectorExpr); ok { // like `sync.Mutex{}`
-					if pkgIdent, ok := typeSelectorExpr.X.(*ast.Ident); ok { // like `sync`
-						if pkgIdent.Name == "sync" {
-							var boolIsSyncAlloc bool = true
-							var strCallee string
-							switch typeSelectorExpr.Sel.Name {
-							case "WaitGroup":
-								strCallee = "RecordWgCreate"
-							case "Mutex":
-								strCallee = "RecordMutexCreate"
-							case "RWMutex":
-								strCallee = "RecordRWMutexCreate"
-							case "Cond":
-								strCallee = "RecordCondCreate"
-							default:
-								boolIsSyncAlloc = false
-							}
-							if boolIsSyncAlloc {
-								position := currentFSet.Position(concrete.TokPos)
-								position.Filename, _ = filepath.Abs(position.Filename)
-								intID := int(Uint16OpID)
-								newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
-									&ast.UnaryExpr{
-										OpPos: 0,
-										Op:    token.AND,
-										X:     concrete.Lhs[0],
-									},
-									&ast.BasicLit{
-										ValuePos: 0,
-										Kind:     token.STRING,
-										Value:    "\"" + position.Filename + ":" + strconv.Itoa(position.Line) + "\"",
-									},
-									&ast.BasicLit{
-										ValuePos: 0,
-										Kind:     token.INT,
-										Value:    strconv.Itoa(intID),
-									},
-								})
-								c.InsertAfter(newCall)
-								boolNeedInstrument = true // We need to import gooracle
-								records = append(records, strconv.Itoa(intID)+":"+strCallee)
-								Uint16OpID++
-							}
-						}
-					}
-				}
-			}
+			} else {}
+
+			// Below is our old instrumentation plan for trad primitives, which cause compilation errors when we take
+			// the address of an element in map (not allowed in Go)
+
+			//if compositeLit, ok := concrete.Rhs[0].(*ast.CompositeLit); ok { // like `mu := sync.Mutex{}`
+			//	if typeSelectorExpr, ok := compositeLit.Type.(*ast.SelectorExpr); ok { // like `sync.Mutex{}`
+			//		if pkgIdent, ok := typeSelectorExpr.X.(*ast.Ident); ok { // like `sync`
+			//			if pkgIdent.Name == "sync" {
+			//				var boolIsSyncAlloc bool = true
+			//				var strCallee string
+			//				switch typeSelectorExpr.Sel.Name {
+			//				case "WaitGroup":
+			//					strCallee = "RecordWgCreate"
+			//				case "Mutex":
+			//					strCallee = "RecordMutexCreate"
+			//				case "RWMutex":
+			//					strCallee = "RecordRWMutexCreate"
+			//				case "Cond":
+			//					strCallee = "RecordCondCreate"
+			//				default:
+			//					boolIsSyncAlloc = false
+			//				}
+			//				if boolIsSyncAlloc {
+			//					position := currentFSet.Position(concrete.TokPos)
+			//					position.Filename, _ = filepath.Abs(position.Filename)
+			//					intID := int(Uint16OpID)
+			//					newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
+			//						&ast.UnaryExpr{
+			//							OpPos: 0,
+			//							Op:    token.AND,
+			//							X:     concrete.Lhs[0],
+			//						},
+			//						&ast.BasicLit{
+			//							ValuePos: 0,
+			//							Kind:     token.STRING,
+			//							Value:    "\"" + position.Filename + ":" + strconv.Itoa(position.Line) + "\"",
+			//						},
+			//						&ast.BasicLit{
+			//							ValuePos: 0,
+			//							Kind:     token.INT,
+			//							Value:    strconv.Itoa(intID),
+			//						},
+			//					})
+			//					c.InsertAfter(newCall)
+			//					boolNeedInstrument = true // We need to import gooracle
+			//					records = append(records, strconv.Itoa(intID)+":"+strCallee)
+			//					Uint16OpID++
+			//				}
+			//			}
+			//		}
+			//	}
+			//}
 		}
-		//if len(concrete.Lhs) == 1 {
-		//	newValue := concrete.Lhs[0]
-		//	if _, ok := newValue.(*ast.Ident); ok {
-		//		newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
-		//			newValue,
-		//		})
-		//		c.InsertAfter(newCall)
-		//	}
-		//}
 
 	case *ast.ExprStmt:
 		if unaryExpr, ok := concrete.X.(*ast.UnaryExpr); ok {
@@ -279,40 +300,43 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 				}
 			} else if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok { // like `mu.Lock()`
 				var boolNameMatchSyncCall bool = true
-				var strCallee string
+				var strOpType string
 				switch selectorExpr.Sel.Name {
 				case "Lock":
-					strCallee = "RecordLockCall"
-				case "RLock", "RUnlock":
-					strCallee = "RecordRWMutexUniqueCall"
+					strOpType = "Lock"
+				case "RUnlock":
+					strOpType = "RUnlock"
+				case "RLock":
+					strOpType = "RLock"
 				case "Unlock":
-					strCallee = "RecordUnlockCall"
-				case "Add", "Done":
-					strCallee = "RecordWgUniqueCall"
-				case "Signal", "Broadcast":
-					strCallee = "RecordCondUniqueCall"
+					strOpType = "Unlock"
+				case "Add":
+					strOpType = "Add"
+				case "Done":
+					strOpType = "Done"
+				case "Broadcast":
+					strOpType = "Broadcast"
+				case "Signal":
+					strOpType = "Signal"
 				case "Wait":
-					strCallee = "RecordWaitCall"
+					strOpType = "Wait"
 				default:
 					boolNameMatchSyncCall = false
 				}
 				if boolNameMatchSyncCall {
 					intID := int(Uint16OpID)
-					newCall := NewArgCallExpr("gooracle", strCallee, []ast.Expr{
-						&ast.UnaryExpr{
-							OpPos: 0,
-							Op:    token.AND,
-							X:     selectorExpr.X,
-						},
-						&ast.BasicLit{
-							ValuePos: 0,
-							Kind:     token.INT,
-							Value:    strconv.Itoa(intID),
-						},
-					})
-					c.InsertAfter(newCall)
+					newCall := NewArgCallExpr("gooracle", "StoreOpInfo", []ast.Expr{&ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.STRING,
+						Value:    "\"" + strOpType + "\"",
+					}, &ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.INT,
+						Value:    strconv.Itoa(intID),
+					}})
+					c.InsertBefore(newCall)
 					boolNeedInstrument = true // We need to import gooracle
-					records = append(records, strconv.Itoa(intID)+":"+strCallee)
+					records = append(records, strconv.Itoa(intID)+":trad"+strOpType)
 					Uint16OpID++
 				}
 			}
