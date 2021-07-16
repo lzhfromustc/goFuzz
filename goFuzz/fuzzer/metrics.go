@@ -45,6 +45,10 @@ func StreamMetrics(filePath string, intervalSec time.Duration) {
 				log.Printf("failed to truncate file: %v", err)
 				continue
 			}
+			if _, err := f.Seek(0, 0); err != nil {
+				log.Printf("failed to seek file: %v", err)
+				continue
+			}
 			n, err := f.Write(b)
 			if err != nil {
 				log.Printf("failed to write to file: %v", err)
