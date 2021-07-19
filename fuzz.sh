@@ -11,9 +11,14 @@ then
     PARALLEL=4
 fi
 
+# prepare target directory that used in dockerfile
+cp -R $TARGET_GO_MOD_DIR ./target-tmp
+
 docker build -t gofuzz:latest .
 
+# clean target directory
+rm -rf ./target-tmp
+
 docker run -it \
--v $TARGET_GO_MOD_DIR:/fuzz/target \
 -v $OUTPUT_DIR:/fuzz/output \
 gofuzz:latest /fuzz/target /fuzz/output $PARALLEL $@

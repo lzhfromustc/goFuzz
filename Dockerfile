@@ -8,10 +8,16 @@ RUN apt update \
 WORKDIR /gofuzz
 
 # copy source files to docker
-COPY . .
+COPY goFuzz ./goFuzz
+COPY sync ./sync
+COPY runtime ./runtime
+COPY scripts ./scripts
+RUN cd goFuzz && make build
 
-RUN cd goFuzz \
-&& make build
+# target directory expected to be the Golang source code folder
+COPY target-tmp /fuzz/target
+
+
 
 # Patch golang runtime in the container
 RUN chmod +x scripts/patch-go-runtime.sh \

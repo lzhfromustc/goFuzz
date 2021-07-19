@@ -1,2 +1,3 @@
 testdata
 .idea
+goFuzz/bin
