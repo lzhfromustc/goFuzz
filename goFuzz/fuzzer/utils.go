@@ -2,6 +2,7 @@ package fuzzer
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -15,13 +16,16 @@ func ListPackages(goModRootPath string) ([]string, error) {
 		cmd.Dir = goModRootPath
 	}
 	cmd.Env = os.Environ()
+
 	var out bytes.Buffer
+	var errBuf bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &errBuf
 
 	err := cmd.Run()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[go list ./...] %v: %s", err, errBuf.String())
 	}
 
 	return parseGoCmdListOutput(out.String())
@@ -53,12 +57,14 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	cmd.Env = os.Environ()
 
 	var out bytes.Buffer
+	var errBuf bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &errBuf
 
 	err := cmd.Run()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[go test -list .* %s] %v: %s", pkg, err, errBuf.String())
 	}
 
 	testFuncs, err := parseGoCmdTestListOutput(out.String())
@@ -86,7 +92,7 @@ func parseGoCmdTestListOutput(output string) ([]string, error) {
 		// Only keep output like:
 		// TestParseInputFileHappy
 
-		if line != "" && strings.HasPrefix(line, "Test") && line != "Test" && strings.Index(line, " ") == -1 {
+		if line != "" && strings.HasPrefix(line, "Test") && line != "Test" && !strings.ContainsAny(line, " ") {
 			filtered = append(filtered, line)
 		}
 	}

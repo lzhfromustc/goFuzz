@@ -27,7 +27,7 @@ func TestParseOpCovFileContentHappy(t *testing.T) {
 
 }
 
-func TestGetOperationCoverageHappy(t *testing.T) {
+func TestGetCurrOpIDCoverageReportHappy(t *testing.T) {
 	chs := map[string]string{}
 	chs["1"] = "chsend"
 	chs["2"] = "chsend"
@@ -37,7 +37,7 @@ func TestGetOperationCoverageHappy(t *testing.T) {
 		"1",
 		"2",
 	}
-	report := GetOperationCoverageReport(chs, records)
+	report := GetCurrOpIDCoverageReport(chs, records)
 
 	if report.numOfChOp != 2 {
 		t.Fail()
@@ -48,6 +48,54 @@ func TestGetOperationCoverageHappy(t *testing.T) {
 	}
 
 	if report.numOfChMake != 0 {
+		t.Fail()
+	}
+}
+
+func TestGetTriggeredOperationCoverageHappy(t *testing.T) {
+	chs := map[string]string{}
+	chs["1"] = "chmake"
+	chs["2"] = "chsend"
+	chs["3"] = "chclose"
+	chs["4"] = "chclose"
+
+	records := map[string]bool{
+		"1": true,
+		"2": true,
+		"4": true,
+	}
+	report := GetTriggeredOpIDCoverageReport(chs, records)
+
+	if report.numOfChOp != 2 {
+		t.Fail()
+	}
+
+	if report.numOfOtherPrimitivesOp != 0 {
+		t.Fail()
+	}
+
+	if report.numOfChMake != 1 {
+		t.Fail()
+	}
+}
+
+func TestUpdateTriggeredOpID(t *testing.T) {
+	record := map[string]bool{}
+	ids := []string{
+		"1",
+		"3",
+		"9",
+	}
+	UpdateTriggeredOpID(record, ids)
+	if _, exist := record["1"]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := record["3"]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := record["9"]; !exist {
 		t.Fail()
 	}
 }

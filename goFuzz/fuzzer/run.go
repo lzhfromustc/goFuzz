@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type RunTask struct {
@@ -116,17 +118,21 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		globalTuple = "0"
 	}
 
+	// prepare timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3)*time.Second)
+	defer cancel()
+
 	var cmd *exec.Cmd
 	if task.input.GoTestCmd != nil {
 		if TargetTestBin != "" {
 			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
-			cmd = exec.Command(TargetTestBin, "test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+			cmd = exec.CommandContext(ctx, TargetTestBin, "test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
 		} else {
 			var pkg = input.GoTestCmd.Package
 			if pkg == "" {
 				pkg = "./..."
 			}
-			cmd = exec.Command("go", "test", "-v", "-run", input.GoTestCmd.Func, pkg)
+			cmd = exec.CommandContext(ctx, "go", "test", "-v", "-run", input.GoTestCmd.Func, pkg)
 		}
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
@@ -159,7 +165,6 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	cmd.Stdout = &stdOutBuf
 	cmd.Stderr = &stdErrBuf
 	runErr := cmd.Run()
-
 	// Save output to the file
 	outputF, err := os.Create(gfOutputFp)
 	if err != nil {

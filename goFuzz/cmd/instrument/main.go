@@ -8,7 +8,6 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"golang.org/x/tools/go/ast/astutil"
 	"hash/fnv"
 	"io/ioutil"
 	"os"
@@ -16,6 +15,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/ast/astutil"
 )
 
 var boolNeedInstrument bool = false // remember: if we instrument, we always need to import gooracle
@@ -26,7 +27,7 @@ var Uint16OpID uint16
 var recordOutputFile string
 var records []string
 
-var sliceStrNoInstr = []string {
+var sliceStrNoInstr = []string{
 	"src/runtime",
 	"src/gooracle",
 	"src/sync",
@@ -98,7 +99,6 @@ func main() {
 	newAST := astutil.Apply(oldAST, preWithoutSelect, nil)
 	newASTAfterSelectCopy := astutil.Apply(newAST, preOnlySelect, nil)
 
-
 	if !boolNeedInstrument {
 		return
 	}
@@ -134,7 +134,7 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		outputF, err := os.OpenFile(recordOutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		outputF, err := os.OpenFile(recordOutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			fmt.Printf("failed to open file at %s: %v", recordOutputFile, err)
 			os.Exit(1)
@@ -221,7 +221,8 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 						}
 					}
 				}
-			} else {}
+			} else {
+			}
 
 			// Below is our old instrumentation plan for trad primitives, which cause compilation errors when we take
 			// the address of an element in map (not allowed in Go)
@@ -535,7 +536,6 @@ func preOnlySelect(c *astutil.Cursor) bool {
 
 	return true
 }
-
 
 type SelectStruct struct {
 	StmtSelect    *ast.SelectStmt   // StmtSelect.Body.List is a vec of CommClause
