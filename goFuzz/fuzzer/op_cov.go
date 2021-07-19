@@ -22,6 +22,7 @@ var (
 // InitOperationStats open and parse the file contains operation statistics
 // It returns the number of operation ID
 func InitOperationStats(chStatFile string) (int, error) {
+	triggeredOpID = make(map[string]bool)
 	bytes, err := ioutil.ReadFile(chStatFile)
 	if err != nil {
 		return 0, err
@@ -76,6 +77,9 @@ func parseOperationCoverageFileContent(content string) (map[string]string, error
 }
 
 func UpdateTriggeredOpID(triggeredIDs map[string]bool, ids []string) {
+	if triggeredIDs == nil {
+		return
+	}
 	for _, id := range ids {
 		if _, exist := triggeredIDs[id]; !exist {
 			triggeredIDs[id] = true
@@ -87,7 +91,7 @@ func GetTriggeredOpIDCoverageReport(totalID2Type map[string]string, triggeredIDi
 	totalNumOfCh := len(totalID2Type)
 	report := OpCovReport{}
 
-	if totalNumOfCh == 0 {
+	if totalNumOfCh == 0 || triggeredIDinTotal == nil {
 		return report
 	}
 
