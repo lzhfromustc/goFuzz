@@ -79,6 +79,20 @@ func main() {
 		return
 	}
 
+	for _, vecImportSpec := range astutil.Imports(tokenFSet, oldAST) {
+		for _, importSpec := range vecImportSpec {
+			if importSpec != nil {
+				if importSpec.Name != nil {
+					if importSpec.Name.Name == "gooracle" { // instrumented before
+						fmt.Printf("This file is already instrumented before:%s", filename)
+						return
+					}
+				}
+			}
+
+		}
+	}
+
 	currentFSet = tokenFSet
 
 	newAST := astutil.Apply(oldAST, preWithoutSelect, nil)
