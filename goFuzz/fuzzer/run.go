@@ -73,6 +73,12 @@ func NewRunTask(input *Input, stage FuzzStage, entryIdx uint64, execCount int, e
 }
 
 func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[Task %s] recovered from panic in fuzzer", task.id)
+		}
+	}()
+
 	var err error
 	input := task.input
 
