@@ -91,3 +91,13 @@ Usage:
 Reminder: Optional flags cannot be -goModDir, -chCover, -outputDir and -parallel since they are already filled by the script.
 
 ```
+
+Usage:
+```bash
+./fuzz-git.sh <target git> <commit> <output> [...optional flags passed to fuzz binary]
+
+Reminder: Optional flags cannot be -goModDir, -chCover, -outputDir and -parallel since they are already filled by the script.
+
+// Example: 
+// ./fuzz-git.sh https://github.com/etcd-io/etcd.git bbe1e78e6242a57d54c4b96d8c49ea1e094c3cbb ~/out/etcd
+```
