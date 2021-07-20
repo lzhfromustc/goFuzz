@@ -183,8 +183,10 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 
 	///MYCODE
-	TmpBeforeBlock()
-	defer TmpAfterBlock()
+	if okToCheck(c) {
+		TmpBeforeBlock()
+		defer TmpAfterBlock()
+	}
 
 	if debugChan {
 		print("chansend: chan=", c, "\n")
@@ -222,7 +224,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	lock(&c.lock)
 
 	///MYCODE
-	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK {
+	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK && okToCheck(c) {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
 		currentGo.SetBlockAt(c.chInfo, Send)
@@ -528,7 +530,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	///MYCODE
-	if BoolDebug {
+	if BoolDebug && okToCheck(c) {
 		TmpBeforeBlock()
 		defer TmpAfterBlock()
 	}
@@ -575,7 +577,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	lock(&c.lock)
 
 	///MYCODE
-	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK {
+	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK && okToCheck(c) {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
 		currentGo.SetBlockAt(c.chInfo, Recv)

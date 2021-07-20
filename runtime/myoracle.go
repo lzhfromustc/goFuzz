@@ -29,7 +29,12 @@ type ChanInfo struct {
 	BoolMakeNotInSDK bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug  int32 // Use atomic int32 operations to mark if a bug is reported
 	Mu               mutex
+	SpecialFlag      int8
 }
+
+const (
+	TimeTicker int8 = 1
+)
 
 var MapChToChanInfo map[interface{}]PrimInfo
 var MuMapChToChanInfo mutex
@@ -52,6 +57,7 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 		StrDebug:         strLoc,
 		BoolMakeNotInSDK: Index(strLoc, strSDKPath) < 0,
 		IntFlagFoundBug:  0,
+		SpecialFlag:      0,
 	}
 	if BoolPrintDebugInfo {
 		println("===Debug Info:")
@@ -60,7 +66,22 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 	}
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
 
+	// If this channel is in some special API, set special flag
+	creationFunc := MyCaller(1)
+	if creationFunc == "time.NewTimer" || creationFunc == "time.NewTicker" {
+		newChInfo.SpecialFlag = TimeTicker
+	}
+
 	return newChInfo
+}
+
+func okToCheck(c *hchan) bool {
+	if c.chInfo != nil {
+		if c.chInfo.SpecialFlag == TimeTicker {
+			return false
+		}
+	}
+	return true
 }
 
 func (chInfo *ChanInfo) Lock() {
