@@ -4,10 +4,8 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"goFuzz/config"
 	"log"
 	"math/big"
-	"os"
 	"time"
 )
 
@@ -80,21 +78,13 @@ func RandomMutateInput(input *Input) (*Input, error) {
 	return reInput, nil
 }
 
-func SetDeadline() {
-	go func() {
-		time.Sleep(config.FuzzerDeadline)
-		fmt.Println("The checker has been running for", config.FuzzerDeadline, ". Now force exit")
-		os.Exit(1)
-	}()
-}
-
 // Fuzz is the main entry for fuzzing
 func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 	for _, test := range tests {
-		log.Printf("Tests going to be fuzzed: %v from package %s", test.Func, test.Package)
+		log.Printf("tests going to be fuzzed: %v from package %s", test.Func, test.Package)
 	}
-	log.Printf("Custom Commands going to be fuzzed: %s", customCmds)
-	log.Printf("Number of workers: %d", numOfWorkers)
+	log.Printf("custom commands going to be fuzzed: %s", customCmds)
+	log.Printf("# of workers: %d", numOfWorkers)
 	InitWorkers(numOfWorkers, fuzzerContext)
 
 	for _, test := range tests {
@@ -114,8 +104,8 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 			continue
 		}
 		if e == nil {
-			log.Println("Fuzzing queue is empty, waiting 5 seconds")
-			time.Sleep(5 * time.Second)
+			log.Println("queue is empty, wait 10 seconds and retry")
+			time.Sleep(10 * time.Second)
 			continue
 		}
 		err = HandleFuzzQueryEntry(e, fuzzerContext)
