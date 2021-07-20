@@ -103,7 +103,11 @@ func main() {
 			log.Printf("found packages: %v", packages)
 		}
 
+		// ListTestsInPackage utilized command `go test -list` which cannot be run in parallel if they share same go code file.
+		// Run parallel will cause `intput/output error` when `go test` tries to open file already opened by previous `go test` command.
+		// Using other methold like `find Test | grep` can find test name but cannot find package location
 		for _, pkg := range packages {
+
 			testsInPkg, err := fuzzer.ListTestsInPackage(fuzzer.TargetGoModDir, pkg)
 			if err != nil {
 				log.Printf("[ignored] failed to list tests at package %s: %v", pkg, err)
@@ -115,7 +119,9 @@ func main() {
 			}
 
 			testsToFuzz = append(testsToFuzz, testsInPkg...)
+
 		}
+
 	}
 
 	// Parse operation statistics if need
