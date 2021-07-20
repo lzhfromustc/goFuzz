@@ -120,7 +120,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		recordHash := HashOfRecord(retRecord)
 		currentFuzzEntry := runTask.entry
 		/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
-		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; exist == false {
+		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
 			curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
 			currentFuzzEntry.ExecutionCount = 1
 			currentFuzzEntry.BestScore = curScore
@@ -136,11 +136,11 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		// If we are handling the output from CalibStage
 		recordHash := HashOfRecord(retRecord)
 		currentEntry := runTask.entry
-		if FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) == false {
+		if !FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) {
 			currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
 		}
 
-		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; exist == false {
+		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
 			fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
 		}
 		curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
@@ -156,7 +156,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 	} else if stage == RandStage {
 		// If we are handling the output from RandStage
 		recordHash := HashOfRecord(retRecord)
-		if _, exist := fuzzerContext.allRecordHashMap[recordHash]; exist == false { // Found a new input with unique record!!!
+		if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
 			curScore := ComputeScore(fuzzerContext.mainRecord, retRecord)
 			newEntry := &FuzzQueryEntry{
 				IsFavored:           false,

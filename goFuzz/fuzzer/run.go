@@ -129,7 +129,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	if task.input.GoTestCmd != nil {
 		if TargetTestBin != "" {
 			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
-			cmd = exec.CommandContext(ctx, TargetTestBin, "test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+			cmd = exec.CommandContext(ctx, TargetTestBin, "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
 		} else {
 			var pkg = input.GoTestCmd.Package
 			if pkg == "" {
@@ -139,7 +139,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		}
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
-		cmd = exec.Command(cmds[0], cmds[1])
+		cmd = exec.CommandContext(ctx, cmds[0], cmds[1])
 	} else {
 		return nil, fmt.Errorf("either testname or custom command is required")
 	}
@@ -168,6 +168,12 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	cmd.Stdout = &stdOutBuf
 	cmd.Stderr = &stdErrBuf
 	runErr := cmd.Run()
+
+	if runErr != nil && runErr.Error() == "context deadline exceeded" {
+		// If timeout, return directly
+		return nil, runErr
+	}
+
 	// Save output to the file
 	outputF, err := os.Create(gfOutputFp)
 	if err != nil {
@@ -181,7 +187,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	// Save error to the file
 	errF, err := os.Create(gfErrFp)
 	if err != nil {
-		return nil, fmt.Errorf("create stdout: %s", err)
+		return nil, fmt.Errorf("create stderr: %s", err)
 	}
 	defer errF.Close()
 	errW := bufio.NewWriter(errF)
@@ -190,7 +196,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 
 	if runErr != nil {
 		// Go test failed might be intentional
-		log.Printf("[Task %s][ignored] go test command failed: %v", task.id, err)
+		log.Printf("[Task %s][ignored] go test command failed: %v", task.id, runErr)
 	}
 
 	// Read the newly printed input file if this is the first run
