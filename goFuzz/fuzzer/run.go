@@ -17,7 +17,9 @@ import (
 )
 
 type RunTask struct {
-	id    string
+	id string
+	// src represents minimal executable target name, like pkg + testname or custom binary name
+	src   string
 	stage FuzzStage
 	input *Input
 	entry *FuzzQueryEntry
@@ -64,6 +66,7 @@ func NewRunTask(input *Input, stage FuzzStage, entryIdx uint64, execCount int, e
 		input: input,
 		entry: entry,
 		stage: stage,
+		src:   mainName,
 		id:    fmt.Sprintf("%s-%s-%d-%d", mainName, stage, entryIdx, execCount),
 	}
 	return task, nil

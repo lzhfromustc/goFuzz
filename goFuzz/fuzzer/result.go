@@ -47,6 +47,37 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		fuzzCtx.IncNumOfBugsFound(uint64(numOfBugs))
 	}
 
+	// record & print case coverage
+
+	// If init stage, initailize track with total case combination
+	if stage == InitStage {
+
+		err := RecordTotalCases(testID2cases, runTask.src, result.RetInput.VecSelect)
+		if err != nil {
+			log.Printf("[Task %s][ignored] RecordTotalCases failed: %v", runTask.id, err)
+		}
+
+	}
+
+	var triggeredSelects []SelectInput
+	if stage == InitStage {
+		triggeredSelects = result.RetInput.VecSelect
+	} else {
+		triggeredSelects = runTask.input.VecSelect
+	}
+
+	err := RecordTriggeredCase(testID2cases, runTask.src, triggeredSelects)
+	if err != nil {
+		log.Printf("[Task %s][ignored] RecordTriggeredCase failed: %v", runTask.id, err)
+	} else {
+		cov, err := GetCumulativeTriggeredCaseCoverage(testID2cases, runTask.src)
+		if err != nil {
+			log.Printf("[Task %s][ignored] GetCumulativeTriggeredCaseCoverage failed: %v", runTask.id, err)
+		} else {
+			log.Printf("[Task %s] cumulative case coverage: %.2f%%", runTask.id, cov*100)
+		}
+	}
+
 	// echo primitive operation coverage if it has
 	if OpCover != "" {
 		// calculate and print how many operation happened in the single run
@@ -84,6 +115,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 			}
 		}
 	} else if stage == DeterStage {
+
 		// If we are handling the output from DeterStage
 		recordHash := HashOfRecord(retRecord)
 		currentFuzzEntry := runTask.entry
