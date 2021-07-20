@@ -3,6 +3,9 @@ from enum import Enum
 import time
 import datetime
 from typing import List
+import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
+from matplotlib import ticker
 
 total_worker_num: int = 5
 
@@ -32,6 +35,13 @@ lines = file_fd.readlines()
 
 worker_list = []
 
+make_chan_time = []
+make_chan_cov = []
+chan_op_time = []
+chan_op_cov = []
+other_op_time = []
+other_op_cov = []
+
 for i in range(total_worker_num):
     worker = WORKER()
     worker.id = i
@@ -41,8 +51,14 @@ init_stage = STAGE_INFO(STAGE.init)
 deter_stage = STAGE_INFO(STAGE.deter)
 rand_stage = STAGE_INFO(STAGE.rand)
 
+fuzzing_start_unix_time:int = 0
 
 for cur_line in lines:
+    if fuzzing_start_unix_time == 0:
+        cur_line_split = cur_line.split(" ")
+        time_str = cur_line_split[0] + " " + cur_line_split [1]
+        fuzzing_start_unix_time = int(datetime.datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S").timestamp())
+
     if "Working on" in cur_line: # This is the start of the task
         # get stage
         cur_line_split = cur_line.split(" ")
@@ -104,6 +120,40 @@ for cur_line in lines:
         else:
             os.error("Unexpected logic error. No Stage info detected in cur_line")
 
+    elif "cumulative channel make count" in cur_line:
+        time_str = cur_line_split[0] + " " + cur_line_split [1]
+        cur_time_int = int(datetime.datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S").timestamp()) - fuzzing_start_unix_time
+        cur_time_int = cur_time_int / 3600
+
+        cov_str = (cur_line.split("coverage ")[1])[:-2]
+        cov = float(cov_str)
+
+        make_chan_time.append(cur_time_int)
+        make_chan_cov.append(cov)
+
+    elif "cumulative channel op count" in cur_line:
+        time_str = cur_line_split[0] + " " + cur_line_split [1]
+        cur_time_int = int(datetime.datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S").timestamp()) - fuzzing_start_unix_time
+        cur_time_int = cur_time_int / 3600
+
+        cov_str = (cur_line.split("coverage ")[1])[:-2]
+        cov = float(cov_str)
+
+        chan_op_time.append(cur_time_int)
+        chan_op_cov.append(cov)
+
+    elif "cumulative other primitive op count" in cur_line:
+        time_str = cur_line_split[0] + " " + cur_line_split [1]
+        cur_time_int = int(datetime.datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S").timestamp()) - fuzzing_start_unix_time
+        cur_time_int = cur_time_int / 3600
+
+        cov_str = (cur_line.split("coverage ")[1])[:-2]
+        cov = float(cov_str)
+
+        other_op_time.append(cur_time_int)
+        other_op_cov.append(cov)
+
+
 print("In total, we have init: run_num: %d, run_time: %d, total_bugs: %d, total_unique_bugs: %d" \
     % (init_stage.total_run_num, init_stage.total_runtime, init_stage.total_found_bug, init_stage.total_found_uniq_bug))
 
@@ -113,3 +163,19 @@ print("In total, we have deter: run_num: %d, run_time: %d, total_bugs: %d, total
 print("In total, we have rand: run_num: %d, run_time: %d, total_bugs: %d, total_unique_bugs: %d" \
     % (rand_stage.total_run_num, rand_stage.total_runtime, rand_stage.total_found_bug, rand_stage.total_found_uniq_bug))
 
+plt.figure()
+ax = plt.subplot()
+
+ax.plot(make_chan_time, make_chan_cov)
+ax.plot(chan_op_time, chan_op_cov)
+ax.plot(other_op_time, other_op_cov)
+
+ax.yaxis.set_major_formatter(PercentFormatter())
+
+plt.xlabel("Time (h)", fontsize = 20)
+plt.ylabel('Coverage', fontsize = 20)
+plt.legend(['make_chan_cov', 'chan_op_cov', 'other_op_cov'])
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.tight_layout()
+plt.savefig('gofuzz_cov.png', dpi = 200)
