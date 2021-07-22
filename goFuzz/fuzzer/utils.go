@@ -2,12 +2,14 @@ package fuzzer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // ListPackages lists all packages in the current module
@@ -28,7 +30,7 @@ func ListPackages(goModRootPath string) ([]string, error) {
 	err := cmd.Run()
 
 	if err != nil {
-		return nil, fmt.Errorf("[go list ./...] %v: %s", err, out.String())
+		return nil, fmt.Errorf("[go list ./...] %v", err)
 	}
 
 	return parseGoCmdListOutput(out.String())
@@ -53,7 +55,11 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 		pkg = "./..."
 	}
 
-	cmd := exec.Command("go", "test", "-list", ".*", pkg)
+	// prepare timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "test", "-list", ".*", pkg)
 	if goModRootPath != "" {
 		cmd.Dir = goModRootPath
 	}
@@ -69,7 +75,7 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	err := cmd.Run()
 
 	if err != nil {
-		return nil, fmt.Errorf("[go test -list .* %s] %v: %s", pkg, err, out.String())
+		return nil, fmt.Errorf("[go test -list .* %s] %v", pkg, err)
 	}
 
 	testFuncs, err := parseGoCmdTestListOutput(out.String())
