@@ -47,8 +47,9 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		fuzzCtx.IncNumOfBugsFound(uint64(numOfBugs))
 	}
 
-	// record & print case coverage
+	fuzzCtx.UpdateTargetStage(runTask.src, stage)
 
+	// record & print case coverage
 	// If init stage, initailize track with total case combination
 	if stage == InitStage {
 

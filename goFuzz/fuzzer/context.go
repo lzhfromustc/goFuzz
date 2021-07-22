@@ -43,6 +43,9 @@ type FuzzContext struct {
 	numOfBugsFound      uint64
 	numOfRuns           uint64
 	numOfFuzzQueryEntry uint64
+	numOfTargets        uint64
+	targetStages        map[string]map[FuzzStage]time.Time
+	targetStagesLock    sync.RWMutex
 	startAt             time.Time
 }
 
@@ -54,6 +57,7 @@ func NewFuzzContext() *FuzzContext {
 		mainRecord:       EmptyRecord(),
 		allRecordHashMap: make(map[string]struct{}),
 		allBugID2Fp:      make(map[string]*BugMetrics),
+		targetStages:     make(map[string]map[FuzzStage]time.Time),
 		startAt:          time.Now(),
 	}
 }
@@ -102,10 +106,26 @@ func (c *FuzzContext) HasBugID(id string) bool {
 
 func (c *FuzzContext) AddBugID(bugID string, filepath string) {
 	c.bugID2FpLock.Lock()
+	defer c.bugID2FpLock.Unlock()
 	c.allBugID2Fp[bugID] = &BugMetrics{
 		FoundAt: time.Now(),
 		Stdout:  filepath,
 	}
-	c.bugID2FpLock.Unlock()
 
+}
+
+func (c *FuzzContext) UpdateTargetStage(target string, stage FuzzStage) {
+	c.targetStagesLock.Lock()
+	defer c.targetStagesLock.Unlock()
+
+	var track map[FuzzStage]time.Time
+	var exist bool
+	if track, exist = c.targetStages[target]; !exist {
+		track = make(map[FuzzStage]time.Time)
+		c.targetStages[target] = track
+	}
+
+	if _, exist := track[stage]; !exist {
+		track[stage] = time.Now()
+	}
 }

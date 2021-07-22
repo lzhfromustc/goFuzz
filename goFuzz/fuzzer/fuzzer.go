@@ -85,6 +85,10 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 	}
 	log.Printf("custom commands going to be fuzzed: %s", customCmds)
 	log.Printf("# of workers: %d", numOfWorkers)
+
+	// Update metrics
+	fuzzerContext.numOfTargets = uint64(len(tests) + len(customCmds))
+
 	InitWorkers(numOfWorkers, fuzzerContext)
 
 	for _, test := range tests {

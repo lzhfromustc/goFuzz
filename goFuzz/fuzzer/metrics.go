@@ -14,7 +14,13 @@ type FuzzerMetrics struct {
 	NumOfBugsFound      uint64
 	NumOfRuns           uint64
 	NumOfFuzzQueryEntry uint64
-	StartAt             time.Time
+	// How many test cases/binary need to be fuzzed
+	NumOfTotalTarget uint64
+	// How many test cases/binary triggered
+	NumOfExecutedTargets uint64
+	// When are they reach different stages
+	ExecutedTargets map[string]map[FuzzStage]time.Time
+	StartAt         time.Time
 	// Seconds
 	Duration uint64
 }
@@ -24,14 +30,14 @@ type BugMetrics struct {
 	Stdout  string
 }
 
-func StreamMetrics(filePath string, intervalSec time.Duration) {
+func StreamMetrics(filePath string, interval time.Duration) {
 	go func() {
 		f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatalf("failed to open metrics file: %v", err)
 		}
 		log.Printf("metrics file: %s", filePath)
-		ticker := time.NewTicker(intervalSec * time.Second)
+		ticker := time.NewTicker(interval * time.Second)
 
 		for {
 			<-ticker.C
@@ -66,11 +72,14 @@ func StreamMetrics(filePath string, intervalSec time.Duration) {
 
 func GetFuzzerMetrics(fuzzCtx *FuzzContext) *FuzzerMetrics {
 	return &FuzzerMetrics{
-		Bugs:                fuzzCtx.allBugID2Fp,
-		NumOfFuzzQueryEntry: fuzzCtx.numOfFuzzQueryEntry,
-		NumOfBugsFound:      fuzzCtx.numOfBugsFound,
-		NumOfRuns:           fuzzCtx.numOfRuns,
-		StartAt:             fuzzCtx.startAt,
-		Duration:            uint64(time.Now().Sub(fuzzCtx.startAt).Seconds()),
+		Bugs:                 fuzzCtx.allBugID2Fp,
+		NumOfFuzzQueryEntry:  fuzzCtx.numOfFuzzQueryEntry,
+		NumOfBugsFound:       fuzzCtx.numOfBugsFound,
+		NumOfRuns:            fuzzCtx.numOfRuns,
+		NumOfTotalTarget:     fuzzCtx.numOfTargets,
+		NumOfExecutedTargets: uint64(len(fuzzCtx.targetStages)),
+		ExecutedTargets:      fuzzCtx.targetStages,
+		StartAt:              fuzzCtx.startAt,
+		Duration:             uint64(time.Since(fuzzCtx.startAt).Seconds()),
 	}
 }

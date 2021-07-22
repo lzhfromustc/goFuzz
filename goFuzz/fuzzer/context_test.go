@@ -64,3 +64,57 @@ func TestHasBugIDHappy(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestUpdateTargetStageOnce(t *testing.T) {
+	c := NewFuzzContext()
+
+	c.UpdateTargetStage("abc-TestAAA", InitStage)
+
+	if _, exist := c.targetStages["abc-TestAAA"]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestAAA"][InitStage]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestAAA"][DeterStage]; exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestAAA"][CalibStage]; exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestAAA"][RandStage]; exist {
+		t.Fail()
+	}
+}
+
+func TestUpdateTargetStageMany(t *testing.T) {
+	c := NewFuzzContext()
+
+	c.UpdateTargetStage("abc-TestAAA", InitStage)
+	c.UpdateTargetStage("abc-TestAAA", DeterStage)
+	c.UpdateTargetStage("abc-TestBBB", InitStage)
+	if _, exist := c.targetStages["abc-TestAAA"]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestBBB"]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestAAA"][InitStage]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestAAA"][DeterStage]; !exist {
+		t.Fail()
+	}
+
+	if _, exist := c.targetStages["abc-TestBBB"][InitStage]; !exist {
+		t.Fail()
+	}
+
+}
