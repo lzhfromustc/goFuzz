@@ -15,11 +15,11 @@ type FuzzerMetrics struct {
 	NumOfRuns           uint64
 	NumOfFuzzQueryEntry uint64
 	// How many test cases/binary need to be fuzzed
-	NumOfTotalTarget uint64
+	NumOfTotalTargets uint64
 	// How many test cases/binary triggered
 	NumOfExecutedTargets uint64
 	// When are they reach different stages
-	ExecutedTargets map[string]map[FuzzStage]time.Time
+	ExecutedTargets map[string]*TargetMetrics
 	StartAt         time.Time
 	// Seconds
 	Duration uint64
@@ -28,6 +28,11 @@ type FuzzerMetrics struct {
 type BugMetrics struct {
 	FoundAt time.Time
 	Stdout  string
+}
+
+type TargetMetrics struct {
+	At         map[FuzzStage]time.Time
+	MaxCaseCov float32
 }
 
 func StreamMetrics(filePath string, interval time.Duration) {
@@ -76,7 +81,7 @@ func GetFuzzerMetrics(fuzzCtx *FuzzContext) *FuzzerMetrics {
 		NumOfFuzzQueryEntry:  fuzzCtx.numOfFuzzQueryEntry,
 		NumOfBugsFound:       fuzzCtx.numOfBugsFound,
 		NumOfRuns:            fuzzCtx.numOfRuns,
-		NumOfTotalTarget:     fuzzCtx.numOfTargets,
+		NumOfTotalTargets:    fuzzCtx.numOfTargets,
 		NumOfExecutedTargets: uint64(len(fuzzCtx.targetStages)),
 		ExecutedTargets:      fuzzCtx.targetStages,
 		StartAt:              fuzzCtx.startAt,

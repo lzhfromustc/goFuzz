@@ -74,19 +74,19 @@ func TestUpdateTargetStageOnce(t *testing.T) {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestAAA"][InitStage]; !exist {
+	if _, exist := c.targetStages["abc-TestAAA"].At[InitStage]; !exist {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestAAA"][DeterStage]; exist {
+	if _, exist := c.targetStages["abc-TestAAA"].At[DeterStage]; exist {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestAAA"][CalibStage]; exist {
+	if _, exist := c.targetStages["abc-TestAAA"].At[CalibStage]; exist {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestAAA"][RandStage]; exist {
+	if _, exist := c.targetStages["abc-TestAAA"].At[RandStage]; exist {
 		t.Fail()
 	}
 }
@@ -105,15 +105,15 @@ func TestUpdateTargetStageMany(t *testing.T) {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestAAA"][InitStage]; !exist {
+	if _, exist := c.targetStages["abc-TestAAA"].At[InitStage]; !exist {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestAAA"][DeterStage]; !exist {
+	if _, exist := c.targetStages["abc-TestAAA"].At[DeterStage]; !exist {
 		t.Fail()
 	}
 
-	if _, exist := c.targetStages["abc-TestBBB"][InitStage]; !exist {
+	if _, exist := c.targetStages["abc-TestBBB"].At[InitStage]; !exist {
 		t.Fail()
 	}
 

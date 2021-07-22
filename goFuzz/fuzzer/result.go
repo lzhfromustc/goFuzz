@@ -76,6 +76,7 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 			log.Printf("[Task %s][ignored] GetCumulativeTriggeredCaseCoverage failed: %v", runTask.id, err)
 		} else {
 			log.Printf("[Task %s] cumulative case coverage: %.2f%%", runTask.id, cov*100)
+			fuzzCtx.UpdateTargetMaxCaseCov(runTask.src, cov)
 		}
 	}
 

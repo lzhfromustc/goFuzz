@@ -44,7 +44,7 @@ type FuzzContext struct {
 	numOfRuns           uint64
 	numOfFuzzQueryEntry uint64
 	numOfTargets        uint64
-	targetStages        map[string]map[FuzzStage]time.Time
+	targetStages        map[string]*TargetMetrics
 	targetStagesLock    sync.RWMutex
 	startAt             time.Time
 }
@@ -57,7 +57,7 @@ func NewFuzzContext() *FuzzContext {
 		mainRecord:       EmptyRecord(),
 		allRecordHashMap: make(map[string]struct{}),
 		allBugID2Fp:      make(map[string]*BugMetrics),
-		targetStages:     make(map[string]map[FuzzStage]time.Time),
+		targetStages:     make(map[string]*TargetMetrics),
 		startAt:          time.Now(),
 	}
 }
@@ -118,14 +118,34 @@ func (c *FuzzContext) UpdateTargetStage(target string, stage FuzzStage) {
 	c.targetStagesLock.Lock()
 	defer c.targetStagesLock.Unlock()
 
-	var track map[FuzzStage]time.Time
+	var track *TargetMetrics
 	var exist bool
 	if track, exist = c.targetStages[target]; !exist {
-		track = make(map[FuzzStage]time.Time)
+		track = &TargetMetrics{
+			At: make(map[FuzzStage]time.Time),
+		}
 		c.targetStages[target] = track
 	}
 
-	if _, exist := track[stage]; !exist {
-		track[stage] = time.Now()
+	if _, exist := track.At[stage]; !exist {
+		track.At[stage] = time.Now()
+	}
+}
+
+func (c *FuzzContext) UpdateTargetMaxCaseCov(target string, caseCov float32) {
+	c.targetStagesLock.Lock()
+	defer c.targetStagesLock.Unlock()
+
+	var track *TargetMetrics
+	var exist bool
+	if track, exist = c.targetStages[target]; !exist {
+		track = &TargetMetrics{
+			At: make(map[FuzzStage]time.Time),
+		}
+		c.targetStages[target] = track
+	}
+
+	if caseCov > track.MaxCaseCov {
+		track.MaxCaseCov = caseCov
 	}
 }
