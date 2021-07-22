@@ -3,6 +3,8 @@ package fuzzer
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,14 +20,15 @@ func ListPackages(goModRootPath string) ([]string, error) {
 	cmd.Env = os.Environ()
 
 	var out bytes.Buffer
-	var errBuf bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &errBuf
+	w := io.MultiWriter(&out, log.Writer())
+	cmd.Stdout = w
+	cmd.Stderr = w
 
+	log.Printf("go list ./... in %s", goModRootPath)
 	err := cmd.Run()
 
 	if err != nil {
-		return nil, fmt.Errorf("[go list ./...] %v: %s", err, errBuf.String())
+		return nil, fmt.Errorf("[go list ./...] %v: %s", err, out.String())
 	}
 
 	return parseGoCmdListOutput(out.String())
@@ -57,14 +60,16 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	cmd.Env = os.Environ()
 
 	var out bytes.Buffer
-	var errBuf bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &errBuf
+	w := io.MultiWriter(&out, log.Writer())
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	log.Printf("go test -list .* %s", pkg)
 
 	err := cmd.Run()
 
 	if err != nil {
-		return nil, fmt.Errorf("[go test -list .* %s] %v: %s", pkg, err, errBuf.String())
+		return nil, fmt.Errorf("[go test -list .* %s] %v: %s", pkg, err, out.String())
 	}
 
 	testFuncs, err := parseGoCmdTestListOutput(out.String())

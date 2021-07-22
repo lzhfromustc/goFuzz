@@ -34,8 +34,8 @@ func InitWorkers(maxParallel int, fuzzCtx *FuzzContext) {
 							continue
 						}
 					case <-time.After(60 * time.Second):
-						log.Printf("[Worker %d] Timeout. Exiting.", i)
-						break
+						log.Printf("[Worker %d] Timeout. Exiting...", i)
+						return
 					}
 				}
 

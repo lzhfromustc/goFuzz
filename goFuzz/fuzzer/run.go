@@ -1,8 +1,6 @@
 package fuzzer
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -103,10 +101,10 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	gfErrFp, err := getErrFilePath(runOutputDir)
-	if err != nil {
-		return nil, err
-	}
+	// gfErrFp, err := getErrFilePath(runOutputDir)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	gfOpCovFp, err := getOpCovFilePath(runOutputDir)
 	if err != nil {
 		return nil, err
@@ -169,10 +167,25 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 
 	cmd.Env = env
 
+	// Save output to the file
+	outF, err := os.Create(gfOutputFp)
+	if err != nil {
+		return nil, fmt.Errorf("create stdout: %s", err)
+	}
+	defer outF.Close()
+
+	// Save error to the file
+	// errF, err := os.Create(gfErrFp)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("create stderr: %s", err)
+	// }
+	// defer errF.Close()
+
 	// setting up redirection
-	var stdErrBuf, stdOutBuf bytes.Buffer
-	cmd.Stdout = &stdOutBuf
-	cmd.Stderr = &stdErrBuf
+	//var stdErrBuf, stdOutBuf bytes.Buffer
+	cmd.Stdout = outF
+	cmd.Stderr = outF
+
 	runErr := cmd.Run()
 
 	if runErr != nil && runErr.Error() == "context deadline exceeded" {
@@ -180,25 +193,13 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		return nil, runErr
 	}
 
-	// Save output to the file
-	outputF, err := os.Create(gfOutputFp)
-	if err != nil {
-		return nil, fmt.Errorf("create stdout: %s", err)
-	}
-	defer outputF.Close()
-	outputW := bufio.NewWriter(outputF)
-	outputW.Write(stdOutBuf.Bytes())
-	outputW.Flush()
+	// outputW := bufio.NewWriter(outF)
+	// outputW.Write(stdOutBuf.Bytes())
+	// outputW.Flush()
 
-	// Save error to the file
-	errF, err := os.Create(gfErrFp)
-	if err != nil {
-		return nil, fmt.Errorf("create stderr: %s", err)
-	}
-	defer errF.Close()
-	errW := bufio.NewWriter(errF)
-	errW.Write(stdErrBuf.Bytes())
-	errW.Flush()
+	// errW := bufio.NewWriter(errF)
+	// errW.Write(stdErrBuf.Bytes())
+	// errW.Flush()
 
 	if runErr != nil {
 		// Go test failed might be intentional
@@ -239,9 +240,16 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 
 	// Read bug IDs from stdout
-	bugIDs, err := GetListOfBugIDFromStdoutContent(stdOutBuf.String())
+	var bugIDs []string
+	b, err = ioutil.ReadFile(gfOutputFp)
 	if err != nil {
-		return nil, err
+		// if error happened, log and ignore
+		log.Printf("[Task %s][ignored] cannot read output file %s: %v", task.id, gfOutputFp, err)
+	} else {
+		bugIDs, err = GetListOfBugIDFromStdoutContent(string(b))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Read executed operations from gfOpCovFp
