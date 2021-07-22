@@ -81,7 +81,7 @@ func (c *FuzzContext) EnqueueQueryEntry(e *FuzzQueryEntry) error {
 	c.fqLock.Lock()
 	c.fuzzingQueue.PushBack(e)
 	c.fqLock.Unlock()
-	log.Printf("enqueued entry: %+v", *e)
+	log.Printf("enqueued entry: %s", e)
 	return nil
 }
 

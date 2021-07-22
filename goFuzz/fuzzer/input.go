@@ -31,6 +31,16 @@ type Input struct {
 	VecSelect []SelectInput
 }
 
+func (i *Input) String() string {
+	if i.GoTestCmd != nil {
+		return fmt.Sprintf("[pkg %s][func %s]", i.GoTestCmd.Package, i.GoTestCmd.Func)
+	} else if i.CustomCmd != "" {
+		return i.CustomCmd
+	}
+
+	return "empty"
+}
+
 type GoTest struct {
 	// Test function name
 	Func string

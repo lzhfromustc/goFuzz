@@ -16,9 +16,12 @@ type FuzzQueryEntry struct {
 	IsFavored           bool
 	BestScore           int
 	ExecutionCount      int
-	IsCalibrateFail     bool
 	CurrInput           *Input
 	CurrRecordHashSlice []string
+}
+
+func (e *FuzzQueryEntry) String() string {
+	return fmt.Sprintf("[input %s][stage %s][idx %d]", e.CurrInput, e.Stage, e.Idx)
 }
 
 func NewInitStageFuzzQueryEntryWithGoTest(test *GoTest) *FuzzQueryEntry {
@@ -46,7 +49,7 @@ func NewInitStageFuzzQueryEntryWithCustomCmd(customCmd string) *FuzzQueryEntry {
 //   1. e is expected to be dequeue from fuzzCtx's fuzzingQueue
 func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 	// TODO: better way to print FuzzQueryEntry, maybe ID or string of input?
-	log.Printf("handle entry: %+v\n", *e)
+	log.Printf("handle entry: %s\n", e)
 
 	var runTasks []*RunTask
 
