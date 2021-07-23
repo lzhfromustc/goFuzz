@@ -107,3 +107,30 @@ created by google.golang.org/grpc.newCCBalancerWrapper
 		t.Fail()
 	}
 }
+
+func TestGetListOfBugIDFromStdoutCausedByPanic(t *testing.T) {
+	content := `
+panic: send on closed channel
+
+goroutine 7 [running]:
+fuzzer-toy/blocking/grpc/1353.(*roundRobin).watchAddrUpdates(0xc00001c810)
+	/fuzz/target/blocking/grpc/1353/grpc1353_test.go:84 +0x10f
+fuzzer-toy/blocking/grpc/1353.(*roundRobin).Start.func1(0xc00001c810)
+	/fuzz/target/blocking/grpc/1353/grpc1353_test.go:52 +0x35
+created by fuzzer-toy/blocking/grpc/1353.(*roundRobin).Start
+	/fuzz/target/blocking/grpc/1353/grpc1353_test.go:50 +0x91
+	`
+
+	bugIds, err := GetListOfBugIDFromStdoutContent(content)
+	if err != nil {
+		t.Fail()
+	}
+	if bugIds == nil {
+		t.Fail()
+	}
+
+	if !contains(bugIds, "/fuzz/target/blocking/grpc/1353/grpc1353_test.go:84") {
+		t.Fail()
+	}
+
+}

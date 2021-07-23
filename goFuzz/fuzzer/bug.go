@@ -14,6 +14,7 @@ import (
 // goroutine 3855 [running]:
 // github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 // /Users/xsh/code/prometheus/tsdb/wal/wal.go:372 +0x47a <------ "/Users/xsh/code/prometheus/tsdb/wal/wal.go:372" is Bug ID
+//
 func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 	lines := strings.Split(c, "\n")
 	ids := make([]string, 0)
@@ -45,18 +46,62 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 				break
 			}
 
+			targetLine := lines[idLineIdx]
+
+			id, err := getFileAndLineFromStacktraceLine(targetLine)
+
+			if err != nil {
+				return nil, err
+			}
+			ids = append(ids, id)
+		}
+
+		if strings.HasPrefix(line, "panic") {
+			// panic: send on closed channel
+			//
+			// goroutine 7 [running]:
+			// fuzzer-toy/blocking/grpc/1353.(*roundRobin).watchAddrUpdates(0xc00001c810)
+			//     /fuzz/target/blocking/grpc/1353/grpc1353_test.go:84 +0x10f <==== idLineIdx
+			// ....
+			idLineIdx := idx + 4
+
+			// Skip file location(s) that is belongs to my*.go until find the bug root cause
+			for {
+				if idLineIdx >= numOfLines {
+					return nil, fmt.Errorf("total line %d, target bug ID line at %d", numOfLines, idLineIdx)
+				}
+
+				if strings.Contains(lines[idLineIdx], "src/runtime/my") {
+					idLineIdx += 2
+				}
+
+				// if this line is not from our my*.go files, then it is where bug happened
+				break
+			}
 
 			targetLine := lines[idLineIdx]
 
-			targetLine = strings.TrimLeft(targetLine, " \t")
-			parts := strings.Split(targetLine, " ")
+			id, err := getFileAndLineFromStacktraceLine(targetLine)
 
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("malformed stacktrace, expected format: <file>:<line> <stack offset>, got %s", targetLine)
+			if err != nil {
+				return nil, err
 			}
-			ids = append(ids, parts[0])
+			ids = append(ids, id)
 		}
 	}
 
 	return ids, nil
+}
+
+// getFileAndLineFromStacktraceLine returns only <file>:<line>
+// from string with format <file>:<line> <stack offset>
+func getFileAndLineFromStacktraceLine(line string) (string, error) {
+	targetLine := strings.TrimLeft(line, " \t")
+	parts := strings.Split(targetLine, " ")
+
+	if len(parts) != 2 {
+		return "", fmt.Errorf("malformed stacktrace, expected format: <file>:<line> <stack offset>, got %s", targetLine)
+	}
+
+	return parts[0], nil
 }

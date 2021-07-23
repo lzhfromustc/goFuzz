@@ -31,10 +31,6 @@ func getOutputFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "stdout"))
 }
 
-func getErrFilePath(outputDir string) (string, error) {
-	return filepath.Abs(path.Join(outputDir, "stderr"))
-}
-
 func getOpCovFilePath(outputDir string) (string, error) {
 	return filepath.Abs(path.Join(outputDir, "opcov"))
 }
@@ -174,32 +170,10 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 	defer outF.Close()
 
-	// Save error to the file
-	// errF, err := os.Create(gfErrFp)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("create stderr: %s", err)
-	// }
-	// defer errF.Close()
-
-	// setting up redirection
-	//var stdErrBuf, stdOutBuf bytes.Buffer
 	cmd.Stdout = outF
 	cmd.Stderr = outF
 
 	runErr := cmd.Run()
-
-	if runErr != nil && runErr.Error() == "context deadline exceeded" {
-		// If timeout, return directly
-		return nil, runErr
-	}
-
-	// outputW := bufio.NewWriter(outF)
-	// outputW.Write(stdOutBuf.Bytes())
-	// outputW.Flush()
-
-	// errW := bufio.NewWriter(errF)
-	// errW.Write(stdErrBuf.Bytes())
-	// errW.Flush()
 
 	if runErr != nil {
 		// Go test failed might be intentional
@@ -229,14 +203,16 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 
 	// Read the printed record file
+	var record *Record
 	b, err := ioutil.ReadFile(gfRecordFp)
 	if err != nil {
-		return nil, err
-	}
-	retRecord, err := ParseRecordFile(string(b))
+		log.Printf("[Task %s][ignored] cannot read record file %s: %v", task.id, gfRecordFp, err)
+	} else {
+		record, err = ParseRecordFile(string(b))
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			log.Printf("[Task %s][ignored] failed to parse record file %s: %v", task.id, gfRecordFp, err)
+		}
 	}
 
 	// Read bug IDs from stdout
@@ -248,7 +224,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	} else {
 		bugIDs, err = GetListOfBugIDFromStdoutContent(string(b))
 		if err != nil {
-			return nil, err
+			log.Printf("[Task %s][ignored] failed to find bug from output %s: %v", task.id, gfOutputFp, err)
 		}
 	}
 
@@ -262,13 +238,11 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 
 	retOutput := &RunResult{
 		RetInput:       retInput,
-		RetRecord:      retRecord,
+		RetRecord:      record,
 		BugIDs:         bugIDs,
 		StdoutFilepath: gfOutputFp,
 		opIDs:          ids,
 	}
-	retOutput.RetInput = retInput
-	retOutput.RetRecord = retRecord
 
 	// Increment number of runs after a successfully run
 	fuzzCtx.IncNumOfRun()
