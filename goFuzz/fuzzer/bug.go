@@ -2,6 +2,7 @@ package fuzzer
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -51,12 +52,13 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			id, err := getFileAndLineFromStacktraceLine(targetLine)
 
 			if err != nil {
-				return nil, err
+				log.Printf("getFileAndLineFromStacktraceLine failed: %s", err)
+				continue
 			}
 			ids = append(ids, id)
 		}
 
-		if strings.HasPrefix(line, "panic") {
+		if strings.HasPrefix(line, "panic") || strings.HasPrefix(line, "fatal error") {
 			// panic: send on closed channel
 			//
 			// goroutine 7 [running]:
