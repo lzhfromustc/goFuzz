@@ -14,7 +14,7 @@ import (
 // -----New Blocking Bug:
 // goroutine 3855 [running]:
 // github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
-// /Users/xsh/code/prometheus/tsdb/wal/wal.go:372 +0x47a <------ "/Users/xsh/code/prometheus/tsdb/wal/wal.go:372" is Bug ID
+// 	/Users/xsh/code/prometheus/tsdb/wal/wal.go:372 +0x47a <------ "/Users/xsh/code/prometheus/tsdb/wal/wal.go:372" is Bug ID
 //
 func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 	lines := strings.Split(c, "\n")
@@ -27,13 +27,13 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 
 		// trim space and tab
 		line = strings.TrimLeft(line, " \t")
-		if strings.HasPrefix(line, "-----New Blocking Bug:") || strings.HasPrefix(line, "-----New NonBlocking Bug:") { // Note for Shihao: changed the format of bug report; now reporting the type of bug
+		if strings.HasPrefix(line, "-----New Blocking Bug:") || strings.HasPrefix(line, "-----New NonBlocking Bug:") ||
+			strings.HasPrefix(line, "panic") || strings.HasPrefix(line, "fatal error") {
 
-			// skip `goroutine 3855 [running]:` and package based function
-			// to get line contains filesystem location
-			idLineIdx := idx + 3
+			idLineIdx := idx + 1
 
 			// Skip file location(s) that is belongs to my*.go until find the bug root cause
+			// if this line is not from our my*.go files, then it is where bug happened
 			for {
 				if idLineIdx >= numOfLines {
 					return nil, fmt.Errorf("total line %d, target bug ID line at %d", numOfLines, idLineIdx)
@@ -41,10 +41,15 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 
 				if strings.Contains(lines[idLineIdx], "src/runtime/my") {
 					idLineIdx += 2
+					continue
 				}
 
-				// if this line is not from our my*.go files, then it is where bug happened
-				break
+				if strings.HasPrefix(lines[idLineIdx], "\t") {
+					// first line with filename + linenumer
+					break
+				}
+
+				idLineIdx += 1
 			}
 
 			targetLine := lines[idLineIdx]
@@ -54,39 +59,6 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			if err != nil {
 				log.Printf("getFileAndLineFromStacktraceLine failed: %s", err)
 				continue
-			}
-			ids = append(ids, id)
-		}
-
-		if strings.HasPrefix(line, "panic") || strings.HasPrefix(line, "fatal error") {
-			// panic: send on closed channel
-			//
-			// goroutine 7 [running]:
-			// fuzzer-toy/blocking/grpc/1353.(*roundRobin).watchAddrUpdates(0xc00001c810)
-			//     /fuzz/target/blocking/grpc/1353/grpc1353_test.go:84 +0x10f <==== idLineIdx
-			// ....
-			idLineIdx := idx + 4
-
-			// Skip file location(s) that is belongs to my*.go until find the bug root cause
-			for {
-				if idLineIdx >= numOfLines {
-					return nil, fmt.Errorf("total line %d, target bug ID line at %d", numOfLines, idLineIdx)
-				}
-
-				if strings.Contains(lines[idLineIdx], "src/runtime/my") {
-					idLineIdx += 2
-				}
-
-				// if this line is not from our my*.go files, then it is where bug happened
-				break
-			}
-
-			targetLine := lines[idLineIdx]
-
-			id, err := getFileAndLineFromStacktraceLine(targetLine)
-
-			if err != nil {
-				return nil, err
 			}
 			ids = append(ids, id)
 		}
