@@ -2,6 +2,7 @@ package fuzzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -37,6 +38,12 @@ type TargetMetrics struct {
 
 func StreamMetrics(filePath string, interval time.Duration) {
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("StreamMetrics: recovered from panic: %s", err)
+			}
+		}()
+
 		f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatalf("failed to open metrics file: %v", err)
@@ -46,8 +53,7 @@ func StreamMetrics(filePath string, interval time.Duration) {
 
 		for {
 			<-ticker.C
-			m := GetFuzzerMetrics(fuzzerContext)
-			b, err := json.MarshalIndent(m, "", " ")
+			b, err := GetFuzzerMetricsJsonBytes(fuzzerContext)
 			if err != nil {
 				log.Printf("failed to serialize metrics: %v", err)
 				continue
@@ -87,4 +93,18 @@ func GetFuzzerMetrics(fuzzCtx *FuzzContext) *FuzzerMetrics {
 		StartAt:              fuzzCtx.startAt,
 		Duration:             uint64(time.Since(fuzzCtx.startAt).Seconds()),
 	}
+}
+
+func GetFuzzerMetricsJsonBytes(fuzzCtx *FuzzContext) ([]byte, error) {
+	fuzzCtx.bugID2FpLock.RLock()
+	defer fuzzCtx.bugID2FpLock.RUnlock()
+	fuzzCtx.targetStagesLock.RLock()
+	defer fuzzCtx.targetStagesLock.RUnlock()
+
+	m := GetFuzzerMetrics(fuzzerContext)
+	b, err := json.MarshalIndent(m, "", " ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize metrics: %v", err)
+	}
+	return b, err
 }
