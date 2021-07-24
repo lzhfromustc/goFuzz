@@ -122,20 +122,20 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 
 	// prepare timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(3)*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd
 	if task.input.GoTestCmd != nil {
 		if TargetTestBin != "" {
 			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
-			cmd = exec.CommandContext(ctx, TargetTestBin, "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+			cmd = exec.CommandContext(ctx, TargetTestBin, "-test.timeout", "3m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
 		} else {
 			var pkg = input.GoTestCmd.Package
 			if pkg == "" {
 				pkg = "./..."
 			}
-			cmd = exec.CommandContext(ctx, "go", "test", "-v", "-run", input.GoTestCmd.Func, pkg)
+			cmd = exec.CommandContext(ctx, "go", "test", "-timeout", "3m", "-v", "-run", input.GoTestCmd.Func, pkg)
 		}
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
@@ -148,6 +148,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	// setting up environment variables
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("GF_RECORD_FILE=%s", gfRecordFp))
+	env = append(env, fmt.Sprintf("GF_OUTPUT_FILE=%s", gfOutputFp))
 	env = append(env, fmt.Sprintf("GF_INPUT_FILE=%s", gfInputFp))
 	env = append(env, fmt.Sprintf("GF_OP_COV_FILE=%s", gfOpCovFp))
 	env = append(env, fmt.Sprintf("BitGlobalTuple=%s", globalTuple))
@@ -170,6 +171,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 	defer outF.Close()
 
+	//var buf bytes.Buffer
 	cmd.Stdout = outF
 	cmd.Stderr = outF
 
@@ -227,6 +229,15 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 			log.Printf("[Task %s][ignored] failed to find bug from output %s: %v", task.id, gfOutputFp, err)
 		}
 	}
+
+	// bugIDs, err := GetListOfBugIDFromStdoutContent(buf.String())
+	// if err != nil {
+	// 	log.Printf("[Task %s][ignored] failed to find bug from output %s: %v", task.id, gfOutputFp, err)
+	// }
+
+	// outputW := bufio.NewWriter(outF)
+	// outputW.Write(buf.Bytes())
+	// outputW.Flush()
 
 	// Read executed operations from gfOpCovFp
 	b, err = ioutil.ReadFile(gfOpCovFp)
