@@ -187,7 +187,7 @@ func CheckBugRun(entry *OracleEntry) {
 }
 
 func CheckBugLate() {
-	time.Sleep(5 * time.Second) // Before the deadline we set for unit test in fuzzer/run.go, check once again
+	time.Sleep(2 * time.Minute) // Before the deadline we set for unit test in fuzzer/run.go, check once again
 
 	if runtime.BoolDebug {
 		fmt.Printf("Check bugs after 2 minutes\n")
@@ -215,6 +215,7 @@ func CheckBugLate() {
 		fmt.Println(str)
 	}
 
+	// print stdout
 	out, err := os.OpenFile(os.Getenv("GF_OUTPUT_FILE"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Println("Failed to create file:", FileNameOfRecord())
@@ -226,6 +227,22 @@ func CheckBugLate() {
 	defer w.Flush()
 
 	w.WriteString(str)
+
+
+	// print record
+	// create output file using runtime's global variable
+	CreateRecordFile()
+
+	// print op-cov
+	// dump operation records
+	opFile := os.Getenv("GF_OP_COV_FILE")
+	if opFile != "" {
+		err := dumpOpRecordsToFile(opFile, opRecords)
+		if err != nil {
+			// print to error
+			println(err)
+		}
+	}
 }
 
 // When unit test ends, do all delayed bug detect, and wait for the checking process to end
