@@ -15,9 +15,7 @@ import (
 )
 
 type RunTask struct {
-	id string
-	// src represents minimal executable target name, like pkg + testname or custom binary name
-	src   string
+	id    string
 	stage FuzzStage
 	input *Input
 	entry *FuzzQueryEntry
@@ -40,32 +38,28 @@ func getRecordFilePath(outputDir string) (string, error) {
 }
 
 func NewRunTask(input *Input, stage FuzzStage, entryIdx uint64, execCount int, entry *FuzzQueryEntry) (*RunTask, error) {
-	var mainName string
 
-	if input.GoTestCmd != nil {
-		if input.GoTestCmd.Package != "" {
-			// Whole package URL might be too long for filesystem, so only use last component of the package URL.
-			basePkg := path.Base(input.GoTestCmd.Package)
-			mainName = fmt.Sprintf("%s-%s", basePkg, input.GoTestCmd.Func)
-		} else {
-			mainName = input.GoTestCmd.Func
-		}
-	} else if input.CustomCmd != "" {
-		mainName = input.CustomCmd
-	} else {
+	if input.GoTestCmd == nil && input.CustomCmd == "" {
 		return nil, errors.New("malformed input, either GoTestCmd or CustomCmd is required")
 	}
+
+	src := input.Src()
 
 	task := &RunTask{
 		input: input,
 		entry: entry,
 		stage: stage,
-		src:   mainName,
-		id:    fmt.Sprintf("%s-%s-%d-%d", mainName, stage, entryIdx, execCount),
+		id:    fmt.Sprintf("%s-%s-%d-%d", src, stage, entryIdx, execCount),
 	}
 	return task, nil
 }
 
+func ShouldSkipRunTask(fuzzCtx *FuzzContext, task *RunTask) bool {
+	if task == nil {
+		return true
+	}
+	return ShouldSkipInput(fuzzCtx, task.input)
+}
 func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -122,20 +116,20 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 
 	// prepare timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(4)*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2)*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd
 	if task.input.GoTestCmd != nil {
 		if TargetTestBin != "" {
 			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
-			cmd = exec.CommandContext(ctx, TargetTestBin, "-test.timeout", "3m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+			cmd = exec.CommandContext(ctx, TargetTestBin, "-test.timeout", "1m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
 		} else {
 			var pkg = input.GoTestCmd.Package
 			if pkg == "" {
 				pkg = "./..."
 			}
-			cmd = exec.CommandContext(ctx, "go", "test", "-timeout", "3m", "-v", "-run", input.GoTestCmd.Func, pkg)
+			cmd = exec.CommandContext(ctx, "go", "test", "-timeout", "1m", "-v", "-run", input.GoTestCmd.Func, pkg)
 		}
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
@@ -177,9 +171,14 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 
 	runErr := cmd.Run()
 
+	var timeout bool = false
 	if runErr != nil {
 		// Go test failed might be intentional
 		log.Printf("[Task %s][ignored] go test command failed: %v", task.id, runErr)
+
+		if errors.Is(runErr, context.DeadlineExceeded) {
+			timeout = true
+		}
 	}
 
 	// Read the newly printed input file if this is the first run
@@ -224,20 +223,16 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		// if error happened, log and ignore
 		log.Printf("[Task %s][ignored] cannot read output file %s: %v", task.id, gfOutputFp, err)
 	} else {
-		bugIDs, err = GetListOfBugIDFromStdoutContent(string(b))
+		output := string(b)
+		bugIDs, err = GetListOfBugIDFromStdoutContent(output)
 		if err != nil {
 			log.Printf("[Task %s][ignored] failed to find bug from output %s: %v", task.id, gfOutputFp, err)
 		}
+
+		if strings.Contains(output, "panic: test timed out after") {
+			timeout = true
+		}
 	}
-
-	// bugIDs, err := GetListOfBugIDFromStdoutContent(buf.String())
-	// if err != nil {
-	// 	log.Printf("[Task %s][ignored] failed to find bug from output %s: %v", task.id, gfOutputFp, err)
-	// }
-
-	// outputW := bufio.NewWriter(outF)
-	// outputW.Write(buf.Bytes())
-	// outputW.Flush()
 
 	// Read executed operations from gfOpCovFp
 	b, err = ioutil.ReadFile(gfOpCovFp)
@@ -253,6 +248,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 		BugIDs:         bugIDs,
 		StdoutFilepath: gfOutputFp,
 		opIDs:          ids,
+		IsTimeout:      timeout,
 	}
 
 	// Increment number of runs after a successfully run

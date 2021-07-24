@@ -23,6 +23,10 @@ func InitWorkers(maxParallel int, fuzzCtx *FuzzContext) {
 					// Receive input
 					case task := <-fuzzCtx.runTaskCh:
 						log.Printf("[Worker %d] Working on %s\n", i, task.id)
+						if ShouldSkipRunTask(fuzzCtx, task) {
+							log.Printf("[Worker %d][Task %s] skipped\n", i, task.id)
+							continue
+						}
 						result, err := Run(fuzzCtx, task)
 						if err != nil {
 							log.Printf("[Worker %d] [Task %s] Error: %s\n", i, task.id, err)

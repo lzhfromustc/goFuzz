@@ -47,6 +47,11 @@ type FuzzContext struct {
 	targetStages        map[string]*TargetMetrics
 	targetStagesLock    sync.RWMutex
 	startAt             time.Time
+
+	// timeout counter: src => how many times timeout when running this src
+	// if more than 3, drop it in the queue
+	timeoutTargets     map[string]uint32
+	timeoutTargetsLock sync.RWMutex
 }
 
 // NewFuzzContext returns a new FuzzerContext
@@ -58,6 +63,7 @@ func NewFuzzContext() *FuzzContext {
 		allRecordHashMap: make(map[string]struct{}),
 		allBugID2Fp:      make(map[string]*BugMetrics),
 		targetStages:     make(map[string]*TargetMetrics),
+		timeoutTargets:   make(map[string]uint32),
 		startAt:          time.Now(),
 	}
 }
@@ -148,4 +154,11 @@ func (c *FuzzContext) UpdateTargetMaxCaseCov(target string, caseCov float32) {
 	if caseCov > track.MaxCaseCov {
 		track.MaxCaseCov = caseCov
 	}
+}
+
+func (c *FuzzContext) RecordTargetTimeoutOnce(target string) {
+	c.timeoutTargetsLock.Lock()
+	defer c.timeoutTargetsLock.Unlock()
+
+	c.timeoutTargets[target] += 1
 }

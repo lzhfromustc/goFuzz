@@ -30,9 +30,10 @@ var StrTestFile string
 var chEnforceCheck chan struct{}
 var chDelayCheckSign chan struct{}
 var intDelayCheckCounter int
+
 const (
 	DelayCheckModPerTime int = 0 // Check bugs every DelayCheckMS Milliseconds
-	DelayCheckModCount int = 1 // Check bugs when runtime.EnqueueCheckEntry is called DelayCheckCountMax times
+	DelayCheckModCount   int = 1 // Check bugs when runtime.EnqueueCheckEntry is called DelayCheckCountMax times
 )
 
 // config
@@ -187,7 +188,7 @@ func CheckBugRun(entry *OracleEntry) {
 }
 
 func CheckBugLate() {
-	time.Sleep(2 * time.Minute) // Before the deadline we set for unit test in fuzzer/run.go, check once again
+	time.Sleep(45 * time.Second) // Before the deadline we set for unit test in fuzzer/run.go, check once again
 
 	if runtime.BoolDebug {
 		fmt.Printf("Check bugs after 2 minutes\n")
@@ -228,7 +229,6 @@ func CheckBugLate() {
 
 	w.WriteString(str)
 
-
 	// print record
 	// create output file using runtime's global variable
 	CreateRecordFile()
@@ -261,7 +261,6 @@ func CheckBugEnd(entry *OracleEntry) {
 		}
 	}
 }
-
 
 func DelayCheckCounterFN() {
 	if DelayCheckMod == DelayCheckModCount {

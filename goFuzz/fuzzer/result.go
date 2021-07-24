@@ -12,7 +12,8 @@ type RunResult struct {
 	StdoutFilepath string
 	BugIDs         []string
 	// Executed operation ID
-	opIDs []string
+	opIDs     []string
+	IsTimeout bool
 }
 
 func CheckBugFromStdout(content string) (numBug int) {
@@ -31,6 +32,12 @@ func CheckBugFromStdout(content string) (numBug int) {
 // HandleRunResult handle the result for the given runTask
 func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) error {
 	log.Printf("[Task %s] handling result", runTask.id)
+	src := runTask.input.Src()
+
+	if result.IsTimeout {
+		fuzzCtx.RecordTargetTimeoutOnce(src)
+	}
+
 	retRecord := result.RetRecord
 	stage := runTask.stage
 
@@ -47,17 +54,21 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		fuzzCtx.IncNumOfBugsFound(uint64(numOfBugs))
 	}
 
-	fuzzCtx.UpdateTargetStage(runTask.src, stage)
+	fuzzCtx.UpdateTargetStage(src, stage)
 
 	// record & print case coverage
 	// If init stage, initailize track with total case combination
 	if stage == InitStage {
 
-		err := RecordTotalCases(testID2cases, runTask.src, result.RetInput.VecSelect)
+		err := RecordTotalCases(testID2cases, src, result.RetInput.VecSelect)
 		if err != nil {
 			log.Printf("[Task %s][ignored] RecordTotalCases failed: %v", runTask.id, err)
 		}
 
+	}
+
+	if retRecord != nil {
+		log.Printf("[Task %s] number of tuple: %d", runTask.id, len(result.RetRecord.MapTupleRecord))
 	}
 
 	var triggeredSelects []SelectInput
@@ -67,16 +78,16 @@ func HandleRunResult(runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) 
 		triggeredSelects = runTask.input.VecSelect
 	}
 
-	err := RecordTriggeredCase(testID2cases, runTask.src, triggeredSelects)
+	err := RecordTriggeredCase(testID2cases, src, triggeredSelects)
 	if err != nil {
 		log.Printf("[Task %s][ignored] RecordTriggeredCase failed: %v", runTask.id, err)
 	} else {
-		cov, err := GetCumulativeTriggeredCaseCoverage(testID2cases, runTask.src)
+		cov, err := GetCumulativeTriggeredCaseCoverage(testID2cases, src)
 		if err != nil {
 			log.Printf("[Task %s][ignored] GetCumulativeTriggeredCaseCoverage failed: %v", runTask.id, err)
 		} else {
 			log.Printf("[Task %s] cumulative case coverage: %.2f%%", runTask.id, cov*100)
-			fuzzCtx.UpdateTargetMaxCaseCov(runTask.src, cov)
+			fuzzCtx.UpdateTargetMaxCaseCov(src, cov)
 		}
 	}
 

@@ -51,6 +51,10 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 	// TODO: better way to print FuzzQueryEntry, maybe ID or string of input?
 	log.Printf("handle entry: %s\n", e)
 
+	if shouldDropFuzzQueryEntry(fuzzCtx, e) {
+		return nil
+	}
+
 	var runTasks []*RunTask
 
 	if e.Stage == InitStage {
@@ -74,9 +78,10 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 		}
 		runTasks = append(runTasks, t)
 	} else if e.Stage == RandStage {
+
 		randNum := rand.Int31n(101)
 		if e.BestScore < int(randNum) {
-			log.Printf("[%+v] randomly skipped", *e)
+			log.Printf("[%s] randomly skipped", e)
 			// if skip, simply add entry to the tail
 			fuzzCtx.EnqueueQueryEntry(e)
 			return nil
@@ -109,4 +114,9 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 
 	return nil
 
+}
+
+// shouldDropFuzzQueryEntry return true if given fuzz entry need to be dropped
+func shouldDropFuzzQueryEntry(fuzzCtx *FuzzContext, e *FuzzQueryEntry) bool {
+	return ShouldSkipInput(fuzzCtx, e.CurrInput)
 }

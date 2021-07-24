@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"strings"
@@ -143,4 +144,10 @@ func GetGoEnv(key string) (string, error) {
 	}
 
 	return strings.TrimRight(out.String(), "\n"), nil
+}
+
+const float64EqualityThreshold = 1e-9
+
+func equal64(a, b float64) bool {
+	return math.Abs(a-b) <= float64EqualityThreshold
 }

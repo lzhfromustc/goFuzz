@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -39,6 +41,56 @@ func (i *Input) String() string {
 	}
 
 	return "empty"
+}
+
+// Src returns the which source, either pkg + test or custom command, the input will trigger
+func (i *Input) Src() string {
+	var src string
+
+	if i.GoTestCmd != nil {
+		if i.GoTestCmd.Package != "" {
+			// Whole package URL might be too long for filesystem, so only use last component of the package URL.
+			basePkg := path.Base(i.GoTestCmd.Package)
+			src = fmt.Sprintf("%s-%s", basePkg, i.GoTestCmd.Func)
+		} else {
+			src = i.GoTestCmd.Func
+		}
+	} else if i.CustomCmd != "" {
+		src = i.CustomCmd
+	}
+
+	return src
+}
+
+func ShouldSkipInput(fuzzCtx *FuzzContext, i *Input) bool {
+	if i == nil {
+		return true
+	}
+	src := i.Src()
+
+	// drop it if it's source already achieved 100% case coverage
+	fuzzCtx.targetStagesLock.RLock()
+	track, exist := fuzzCtx.targetStages[src]
+	fuzzCtx.targetStagesLock.RUnlock()
+	if exist {
+		if equal64(float64(track.MaxCaseCov), 1) {
+			log.Printf("drop %s since it achieved 100%% case coverage", i)
+			return true
+		}
+	}
+
+	// drop it if it's source already timeout more than 3 times
+	fuzzCtx.timeoutTargetsLock.RLock()
+	timeoutCnt, exist := fuzzCtx.timeoutTargets[src]
+	fuzzCtx.timeoutTargetsLock.RUnlock()
+	if exist {
+		if timeoutCnt > 3 {
+			log.Printf("drop %s since it has timeout more than 3 times", i)
+			return true
+		}
+	}
+
+	return false
 }
 
 type GoTest struct {

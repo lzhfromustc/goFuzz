@@ -118,3 +118,18 @@ func TestUpdateTargetStageMany(t *testing.T) {
 	}
 
 }
+
+func TestRecordTargetTimeout(t *testing.T) {
+	c := NewFuzzContext()
+	c.RecordTargetTimeoutOnce("abc")
+
+	if c.timeoutTargets["abc"] != 1 {
+		t.Fail()
+	}
+
+	c.RecordTargetTimeoutOnce("abc")
+
+	if c.timeoutTargets["abc"] != 2 {
+		t.Fail()
+	}
+}
