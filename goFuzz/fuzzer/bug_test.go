@@ -134,3 +134,31 @@ created by fuzzer-toy/blocking/grpc/1353.(*roundRobin).Start
 	}
 
 }
+
+func TestGetListOfBugIDFromStdoutSkipPrimitive(t *testing.T) {
+	content := `
+-----New Blocking Bug:
+goroutine 27 [running]:
+sync.(*Mutex).Lock(0xc0000d6340)
+	/usr/local/go/src/sync/mutex.go:77 +0x37
+go.etcd.io/etcd/mvcc/backend.(*batchTx).safePending(0xc0000d6340, 0x0)
+	/fuzz/target/mvcc/backend/batch_tx.go:231 +0x47
+go.etcd.io/etcd/mvcc/backend.(*backend).run(0xc00011a090)
+	/fuzz/target/mvcc/backend/backend.go:431 +0x265
+created by go.etcd.io/etcd/mvcc/backend.newBackend
+	/fuzz/target/mvcc/backend/backend.go:186 +0x511
+	`
+
+	bugIds, err := GetListOfBugIDFromStdoutContent(content)
+	if err != nil {
+		t.Fail()
+	}
+	if bugIds == nil {
+		t.Fail()
+	}
+
+	if !contains(bugIds, "/fuzz/target/mvcc/backend/batch_tx.go:231") {
+		t.Fail()
+	}
+
+}

@@ -56,7 +56,7 @@ func ListTestsInPackage(goModRootPath string, pkg string) ([]*GoTest, error) {
 	}
 
 	// prepare timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5)*time.Minute)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "test", "-list", ".*", pkg)

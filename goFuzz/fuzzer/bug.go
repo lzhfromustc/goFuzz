@@ -30,6 +30,9 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 		if strings.HasPrefix(line, "-----New Blocking Bug:") || strings.HasPrefix(line, "-----New NonBlocking Bug:") ||
 			strings.HasPrefix(line, "panic") || strings.HasPrefix(line, "fatal error") {
 
+			if strings.HasPrefix(line, "panic: test timed out after") {
+				continue
+			}
 			idLineIdx := idx + 1
 
 			// Skip file location(s) that is belongs to my*.go until find the bug root cause
@@ -39,7 +42,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 					return nil, fmt.Errorf("total line %d, target bug ID line at %d", numOfLines, idLineIdx)
 				}
 
-				if strings.Contains(lines[idLineIdx], "src/runtime/my") {
+				if strings.Contains(lines[idLineIdx], "src/runtime/my") || strings.Contains(lines[idLineIdx], "src/sync") {
 					idLineIdx += 2
 					continue
 				}
