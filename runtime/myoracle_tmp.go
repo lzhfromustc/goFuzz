@@ -3,7 +3,7 @@ package runtime
 // A temporary oracle for fuzzer
 
 type mystruct struct {
-	mpGoID2Bytes map[int64][]byte
+	mpGoID2Info map[int64]string
 }
 
 var mys mystruct
@@ -14,7 +14,7 @@ var muMap mutex
 
 func init() {
 
-	mys.mpGoID2Bytes = make(map[int64][]byte)
+	mys.mpGoID2Info = make(map[int64]string)
 	ReportedPlace = make(map[string]struct{})
 	MapSelectInfo = make(map[string]SelectInfo)
 	//MapInput = make(map[string]SelectInput)
@@ -31,7 +31,7 @@ func TmpBeforeBlock() {
 	buf := make([]byte, size)
 	buf = buf[:Stack(buf, false)]
 	lock(&muMap)
-	mys.mpGoID2Bytes[gid] = buf
+	mys.mpGoID2Info[gid] = string(buf)
 	unlock(&muMap)
 }
 
@@ -42,7 +42,7 @@ func TmpAfterBlock() {
 	}
 	gid := GoID()
 	lock(&muMap)
-	delete(mys.mpGoID2Bytes, gid)
+	delete(mys.mpGoID2Info, gid)
 	unlock(&muMap)
 }
 
@@ -55,9 +55,9 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 	SleepMS(500)
 	lock(&muMap)
 	outer:
-	for gid, sliceByte := range mys.mpGoID2Bytes {
+	for gid, strInfo := range mys.mpGoID2Info {
 		if gid != 1 { // No need to print the main goroutine
-			str := string(sliceByte)
+			str := string(strInfo)
 			switch true {
 			case Index(str, "tools/cache/shared_informer.go:628") >= 0:
 				continue
