@@ -219,19 +219,17 @@ func CheckBugLate() {
 // When unit test ends, do all delayed bug detect, and wait for the checking process to end
 func CheckBugEnd(entry *OracleEntry) {
 	if runtime.BoolDelayCheck {
-		go func() {
-			runtime.SetCurrentGoCheckBug()
-			if runtime.BoolDebug {
-				println("End of unit test. Check bugs")
-			}
-			close(chEnforceCheck)
-			entry.WgCheckBug.Wait() // let's not use send of channel, to make the code clearer
-			// print bug info
-			str, foundBug := runtime.TmpDumpBlockingInfo()
-			if foundBug {
-				fmt.Println(str)
-			}
-		}()
+		runtime.SetCurrentGoCheckBug()
+		if runtime.BoolDebug {
+			println("End of unit test. Check bugs")
+		}
+		close(chEnforceCheck)
+		entry.WgCheckBug.Wait() // let's not use send of channel, to make the code clearer
+		// print bug info
+		str, foundBug := runtime.TmpDumpBlockingInfo()
+		if foundBug {
+			fmt.Println(str)
+		}
 	}
 }
 
