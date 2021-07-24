@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -39,17 +40,21 @@ var DelayCheckMod int = DelayCheckModPerTime
 var DelayCheckMS int = 1000
 var DelayCheckCountMax int = 10
 
-func BeforeRun() {
+type OracleEntry struct {
+	WgCheckBug *sync.WaitGroup
+}
+
+func BeforeRun() *OracleEntry {
 	StrTestMod = os.Getenv("TestMod")
 	switch StrTestMod {
 	case "TestOnce": // Run all unit tests once, and print a file containing each test's name, # of select visited
-		BeforeRunTestOnce()
+		return BeforeRunTestOnce()
 	default: // Normal fuzzing
-		BeforeRunFuzz()
+		return BeforeRunFuzz()
 	}
 }
 
-func BeforeRunTestOnce() {
+func BeforeRunTestOnce() *OracleEntry {
 	StrTestPath = os.Getenv("TestPath")
 	StrTestName = runtime.MyCaller(1)
 	if indexDot := strings.Index(StrTestName, "."); indexDot > -1 {
@@ -57,9 +62,11 @@ func BeforeRunTestOnce() {
 	}
 	_, StrTestFile, _, _ = runtime.Caller(2)
 	runtime.BoolSelectCount = true
+	return &OracleEntry{WgCheckBug: &sync.WaitGroup{}}
 }
 
-func BeforeRunFuzz() {
+func BeforeRunFuzz() (result *OracleEntry) {
+	result = &OracleEntry{WgCheckBug: &sync.WaitGroup{}}
 	StrBitGlobalTuple := os.Getenv("BitGlobalTuple")
 	if StrBitGlobalTuple == "1" {
 		runtime.BoolRecordPerCh = false
@@ -100,42 +107,78 @@ func BeforeRunFuzz() {
 		fmt.Println("Error when parsing input during text start: MapInput is nil")
 	}
 
+	CheckBugStart(result)
+	return
+}
+
+// Only enables oracle
+func LightBeforeRun() *OracleEntry {
+	entry := &OracleEntry{WgCheckBug: &sync.WaitGroup{}}
+	CheckBugStart(entry)
+	return entry
+}
+
+// Start the endless loop that checks bug. Should be called at the beginning of unit test
+func CheckBugStart(entry *OracleEntry) {
+	go CheckBugLate()
 	if runtime.BoolDelayCheck {
 		chEnforceCheck = make(chan struct{})
 		chDelayCheckSign = make(chan struct{}, 10)
 		if DelayCheckMod == DelayCheckModCount {
 			runtime.FnCheckCount = DelayCheckCounterFN
 		}
-		go CheckBugClient()
-		go CheckBugServer()
+		go CheckBugRun(entry)
 	}
 }
 
-// An endless loop that checks bug
-func CheckBugServer() {
-	defer close(chEnforceCheck)
+// An endless loop that checks bug. Exits when the unit test ends
+func CheckBugRun(entry *OracleEntry) {
+	entry.WgCheckBug.Add(1)
+	defer entry.WgCheckBug.Done()
+
+	boolBreakLoop := false
 	for {
-		boolBreakLoop := false
 		switch DelayCheckMod {
 		case DelayCheckModPerTime:
 			select {
 			case <-time.After(time.Millisecond * time.Duration(DelayCheckMS)):
 			case <-chEnforceCheck:
+				if runtime.BoolDebug {
+					fmt.Printf("Check bugs at the end of unit test\n")
+				}
 				boolBreakLoop = true
 			}
 		case DelayCheckModCount:
 			select {
 			case <-chDelayCheckSign:
 			case <-chEnforceCheck:
+				if runtime.BoolDebug {
+					fmt.Printf("Check bugs at the end of unit test\n")
+				}
 				boolBreakLoop = true
 			}
 		}
 
+		enqueueAgain := [][]runtime.PrimInfo{}
 		for len(runtime.VecCheckEntry) > 0 {
 			checkEntry := runtime.DequeueCheckEntry()
-			if atomic.LoadUint32(&checkEntry.Uint32NeedCheck) == 1 {
-				runtime.CheckBlockBug(checkEntry.CS)
+			if runtime.BoolDebug {
+				print("Dequeueing:")
+				for _, C := range checkEntry.CS {
+					if ch, ok := C.(*runtime.ChanInfo); ok {
+						print("\t", ch.StrDebug)
+					}
+				}
+				println()
 			}
+			if atomic.LoadUint32(&checkEntry.Uint32NeedCheck) == 1 {
+				if runtime.CheckBlockBug(checkEntry.CS) == false { // CS needs to be checked again in the future
+					enqueueAgain = append(enqueueAgain, checkEntry.CS)
+				}
+			}
+		}
+		for _, CS := range enqueueAgain {
+			runtime.EnqueueCheckEntry(CS)
 		}
 		if boolBreakLoop {
 			break
@@ -143,9 +186,55 @@ func CheckBugServer() {
 	}
 }
 
-func CheckBugClient() {
+func CheckBugLate() {
+	time.Sleep(2 * time.Minute) // Before the deadline we set for unit test in fuzzer/run.go, check once again
 
+	if runtime.BoolDebug {
+		fmt.Printf("Check bugs after 2 minutes\n")
+	}
+
+	for len(runtime.VecCheckEntry) > 0 {
+		checkEntry := runtime.DequeueCheckEntry()
+		if runtime.BoolDebug {
+			print("Dequeueing:")
+			for _, C := range checkEntry.CS {
+				if ch, ok := C.(*runtime.ChanInfo); ok {
+					print("\t", ch.StrDebug)
+				}
+			}
+			println()
+		}
+		if atomic.LoadUint32(&checkEntry.Uint32NeedCheck) == 1 {
+			if runtime.CheckBlockBug(checkEntry.CS) == false { // CS needs to be checked again in the future
+			}
+		}
+	}
+	// print bug info
+	str, foundBug := runtime.TmpDumpBlockingInfo()
+	if foundBug {
+		fmt.Println(str)
+	}
 }
+
+// When unit test ends, do all delayed bug detect, and wait for the checking process to end
+func CheckBugEnd(entry *OracleEntry) {
+	if runtime.BoolDelayCheck {
+		go func() {
+			runtime.SetCurrentGoCheckBug()
+			if runtime.BoolDebug {
+				println("End of unit test. Check bugs")
+			}
+			close(chEnforceCheck)
+			entry.WgCheckBug.Wait() // let's not use send of channel, to make the code clearer
+			// print bug info
+			str, foundBug := runtime.TmpDumpBlockingInfo()
+			if foundBug {
+				fmt.Println(str)
+			}
+		}()
+	}
+}
+
 
 func DelayCheckCounterFN() {
 	if DelayCheckMod == DelayCheckModCount {
@@ -160,16 +249,16 @@ func DelayCheckCounterFN() {
 	}
 }
 
-func AfterRun() {
+func AfterRun(entry *OracleEntry) {
 	switch StrTestMod {
 	case "TestOnce": // Run all unit tests once, and print a file containing each test's name, # of select visited
-		AfterRunTestOnce()
+		AfterRunTestOnce(entry)
 	default: // Normal fuzzing
-		AfterRunFuzz()
+		AfterRunFuzz(entry)
 	}
 }
 
-func AfterRunTestOnce() {
+func AfterRunTestOnce(entry *OracleEntry) {
 	strOutputPath := os.Getenv("OutputFullPath")
 	out, err := os.OpenFile(strOutputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -188,13 +277,8 @@ func StrTestNameAndSelectCount() string {
 	return "\n" + StrTestFile + ":" + StrTestName + ":" + strconv.Itoa(int(runtime.ReadSelectCount()))
 }
 
-func AfterRunFuzz() {
+func AfterRunFuzz(entry *OracleEntry) {
 	PrintNumTimeoutSelect() // Print the number of selects, number of timeout selects and not in input selects
-
-	if runtime.BoolDelayCheck { // This is the end of program, need to do all delayed bug detection
-		chEnforceCheck <- struct{}{}
-		<-chEnforceCheck // wait for checking to finish
-	}
 
 	// if this is the first run, create input file using runtime's global variable
 	if BoolFirstRun {
@@ -204,11 +288,7 @@ func AfterRunFuzz() {
 	// create output file using runtime's global variable
 	CreateRecordFile()
 
-	// print bug info
-	str, foundBug := runtime.TmpDumpBlockingInfo()
-	if foundBug {
-		fmt.Println(str)
-	}
+	CheckBugEnd(entry)
 
 	// dump operation records
 	opFile := os.Getenv("GF_OP_COV_FILE")
@@ -219,4 +299,9 @@ func AfterRunFuzz() {
 			println(err)
 		}
 	}
+}
+
+// Only enables oracle
+func LightAfterRun(entry *OracleEntry) {
+	CheckBugEnd(entry)
 }

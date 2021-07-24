@@ -128,12 +128,6 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		SelectCount()
 	}
 
-	///MYCODE
-	if BoolDebug && LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
-		TmpBeforeBlock()
-		defer TmpAfterBlock()
-	}
-
 	//Note: the return value casei doesn't represent the order of cases in original select. Need experiments
 
 	// NOTE: In order to maintain a lean stack size, the number of scases
@@ -256,6 +250,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	///MYCODE
 	var lastC *hchan
 	var currentGo *GoInfo
+	boolInvolveChNotOK := false
 	CS := []PrimInfo{}
 
 	// pass 1 - look for something already waiting
@@ -304,6 +299,21 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	///MYCODE
+	for _, o := range lockorder {
+		c0 := scases[o].c
+		if okToCheck(c0) == false {
+			boolInvolveChNotOK = true
+			break
+		}
+	}
+	if boolInvolveChNotOK {
+		goto outOfOracle
+	}
+	if LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
+		TmpBeforeBlock()
+		defer TmpAfterBlock()
+	}
+
 	if GlobalEnableOracle && LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
 		currentGo = CurrentGoInfo()
 		for _, o := range lockorder {
@@ -326,7 +336,6 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 			} else {
 				CheckBlockBug(CS)
 			}
-			CheckBlockBug(CS)
 		}
 		defer currentGo.WithdrawBlock(checkEntry)
 	}

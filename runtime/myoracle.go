@@ -16,6 +16,7 @@ type PrimInfo interface {
 	MapRef() map[*GoInfo]struct{}
 	AddGoroutine(*GoInfo)
 	RemoveGoroutine(*GoInfo)
+	StringDebug() string
 }
 
 //// Part 1.1: data struct for each channel
@@ -67,12 +68,16 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 	AddRefGoroutine(newChInfo, CurrentGoInfo())
 
 	// If this channel is in some special API, set special flag
-	creationFunc := MyCaller(1)
-	if creationFunc == "time.NewTimer" || creationFunc == "time.NewTicker" {
+	//creationFunc := MyCaller(1)
+	if Index(strLoc, "time") >= 0 {
 		newChInfo.SpecialFlag = TimeTicker
 	}
 
 	return newChInfo
+}
+
+func (chInfo *ChanInfo) StringDebug() string {
+	return chInfo.StrDebug
 }
 
 func okToCheck(c *hchan) bool {
@@ -143,6 +148,19 @@ func RemoveRefGoroutine(chInfo PrimInfo, goInfo *GoInfo) {
 	goInfo.RemovePrime(chInfo)
 }
 
+// When this goroutine is checking bug, set goInfo.BitCheckBugAtEnd to be 1
+func SetCurrentGoCheckBug() {
+	getg().goInfo.SetCheckBug()
+}
+
+func (goInfo *GoInfo) SetCheckBug() {
+	atomic.StoreUint32(&goInfo.BitCheckBugAtEnd, 1)
+}
+
+func (goInfo *GoInfo) SetNotCheckBug() {
+	atomic.StoreUint32(&goInfo.BitCheckBugAtEnd, 0)
+}
+
 // This means the goroutine mapped with goInfo holds the reference to chInfo.Chan
 func (chInfo *ChanInfo) AddGoroutine(goInfo *GoInfo) {
 	if chInfo == nil {
@@ -175,19 +193,26 @@ var FnCheckCount = func () {} // this is defined in gooracle/gooracle.go
 
 func DequeueCheckEntry() *CheckEntry {
 	lock(&MuCheckEntry)
-	defer unlock(&MuCheckEntry)
 	if len(VecCheckEntry) == 0 {
+		unlock(&MuCheckEntry)
 		return nil
 	} else {
 		result := VecCheckEntry[0]
 		VecCheckEntry = VecCheckEntry[1:]
+		unlock(&MuCheckEntry)
 		return result
 	}
 }
 
 func EnqueueCheckEntry(CS []PrimInfo) *CheckEntry {
 	lock(&MuCheckEntry)
-	defer unlock(&MuCheckEntry)
+
+	if len(CS) == 1 {
+		if CS[0].StringDebug() == "/data/ziheng/shared/gotest/stubs/etcd/pkg/mod/github.com/prometheus/client_golang@v1.0.0/prometheus/registry.go:266" {
+			print()
+		}
+	}
+
 	FnCheckCount()
 	newCheckEntry := &CheckEntry{
 		CS:              CS,
@@ -195,10 +220,25 @@ func EnqueueCheckEntry(CS []PrimInfo) *CheckEntry {
 	}
 	for _, entry := range VecCheckEntry {
 		if BoolCheckEntryEqual(entry, newCheckEntry) {
+			unlock(&MuCheckEntry)
 			return nil // It's OK to return nil
 		}
 	}
+	if BoolDebug {
+		if len(CS) == 1 {
+			if CS[0].StringDebug() == "/data/ziheng/shared/gotest/stubs/etcd/pkg/mod/github.com/prometheus/client_golang@v1.0.0/prometheus/registry.go:266" {
+				print()
+			}
+		}
+		print("Enqueueing:")
+		for _, c := range CS {
+			print("\t", c.StringDebug())
+		}
+		println()
+	}
+
 	VecCheckEntry = append(VecCheckEntry, newCheckEntry)
+	unlock(&MuCheckEntry)
 	return newCheckEntry
 }
 
@@ -222,52 +262,101 @@ func BoolCheckEntryEqual(a, b *CheckEntry) bool {
 }
 
 // A blocking bug is detected, if all goroutines that hold the reference to a channel are blocked at an operation of the channel
-func CheckBlockBug(CS []PrimInfo) {
+// finished is true when we are sure that CS doesn't need to be checked again
+func CheckBlockBug(CS []PrimInfo) (finished bool) {
 	mapCS := make(map[PrimInfo]struct{})
 	mapGS := make(map[*GoInfo]struct{}) // all goroutines that hold reference to primitives in mapCS
+	finished = false
 
-	for _, chI := range CS {
-		if chI == (*ChanInfo)(nil) {
-			continue
+	if BoolDebug {
+		print("Checking primtives:")
+		for _, chI := range CS {
+			print("\t", chI.StringDebug())
 		}
-		if chanInfo, ok := chI.(*ChanInfo); ok {
-			if chanInfo.BoolMakeNotInSDK == false {
-				return
-			}
-		}
-		chI.Lock()
-		for goInfo, _ := range chI.MapRef() {
-			mapGS[goInfo] = struct{}{}
-		}
-		chI.Unlock()
-		mapCS[chI] = struct{}{}
+		println()
 	}
 
+	for _, primI := range CS {
+		if primI == (*ChanInfo)(nil) {
+			continue
+		}
+		if Index(primI.StringDebug(), strSDKPath) >= 0 {
+			if BoolDebug {
+				println("Abort checking because this prim is in SDK:", primI.StringDebug())
+			}
+			finished = true
+			return
+		}
+		primI.Lock()
+		for goInfo, _ := range primI.MapRef() {
+			mapGS[goInfo] = struct{}{}
+		}
+		primI.Unlock()
+		mapCS[primI] = struct{}{}
+	}
+
+
+	boolAtLeastOneBlocking := false
 	loopGS:
+	if BoolDebug {
+		println("Going through mapGS whose length is:", len(mapGS))
+	}
 	for goInfo, _ := range mapGS {
+		if atomic.LoadUint32(&goInfo.BitCheckBugAtEnd) == 1 { // The goroutine is checking bug at the end of unit test
+			if BoolDebug {
+				println("\tGoID", goInfo.G.goid, "is checking bug at the end of unit test")
+			}
+			continue
+		}
 		lock(&goInfo.Mu)
 		if len(goInfo.VecBlockInfo) == 0 { // The goroutine is executing non-blocking operations
+			if BoolDebug {
+				println("\tGoID", goInfo.G.goid, "is executing non-blocking operations")
+				println("Aborting checking")
+			}
 			unlock(&goInfo.Mu)
 			return
 		}
 
-		for _, blockInfo := range goInfo.VecBlockInfo { // if it is blocked at select, VecBlockInfo contains multiple channels
-			chI := blockInfo.Prim
-			if _, exist := mapCS[chI]; !exist {
-				mapCS[chI] = struct{}{} // update CS
-				chI.Lock()
-				for goInfo, _ := range chI.MapRef() { // update GS
+		boolAtLeastOneBlocking = true
+
+		if BoolDebug {
+			println("\tGoID", goInfo.G.goid, "is executing blocking operations")
+		}
+
+		for _, blockInfo := range goInfo.VecBlockInfo { // if it is blocked at select, VecBlockInfo contains multiple primitives
+
+			primI := blockInfo.Prim
+			if _, exist := mapCS[primI]; !exist {
+				if BoolDebug {
+					println("\t\tNot existing prim in CS:", blockInfo.Prim.StringDebug())
+				}
+				mapCS[primI] = struct{}{} // update CS
+				primI.Lock()
+				for goInfo, _ := range primI.MapRef() { // update GS
 					mapGS[goInfo] = struct{}{}
 				}
-				chI.Unlock()
+				primI.Unlock()
 				unlock(&goInfo.Mu)
+				if BoolDebug {
+					println("Goto mapGS loop again")
+				}
 				goto loopGS // since mapGS is updated, we should run this loop once again
+			} else {
+				if BoolDebug {
+					println("\t\tExisting prim in CS:", blockInfo.Prim.StringDebug())
+				}
 			}
 		}
 		unlock(&goInfo.Mu)
 	}
 
-	ReportBug(mapCS)
+	if boolAtLeastOneBlocking {
+		ReportBug(mapCS)
+		finished = true
+	}
+
+	return
 }
 
 //func (chInfo *ChanInfo) CheckBlockBug() {
@@ -428,6 +517,10 @@ func NewWgInfo() *WgInfo {
 	return wg
 }
 
+func (w *WgInfo) StringDebug() string {
+	return w.StrDebug
+}
+
 // FindChanInfo can retrieve a initialized ChanInfo for a given channel
 func FindWgInfo(wg interface{}) *WgInfo {
 	lock(&MuMapChToChanInfo)
@@ -496,6 +589,10 @@ func NewMuInfo() *MuInfo {
 	return mu
 }
 
+func (m *MuInfo) StringDebug() string {
+	return m.StrDebug
+}
+
 // FindChanInfo can retrieve a initialized ChanInfo for a given channel
 func FindMuInfo(mu interface{}) *MuInfo {
 	lock(&MuMapChToChanInfo)
@@ -556,6 +653,10 @@ func NewRWMuInfo() *RWMuInfo {
 		Mu:              mutex{},
 	}
 	return mu
+}
+
+func (m *RWMuInfo) StringDebug() string {
+	return m.StrDebug
 }
 
 // FindChanInfo can retrieve a initialized ChanInfo for a given channel
@@ -620,6 +721,10 @@ func NewCondInfo() *CondInfo {
 	return cond
 }
 
+func (c *CondInfo) StringDebug() string {
+	return c.StrDebug
+}
+
 // FindChanInfo can retrieve a initialized ChanInfo for a given channel
 func FindCondInfo(cond interface{}) *CondInfo {
 	lock(&MuMapChToChanInfo)
@@ -671,8 +776,9 @@ type GoInfo struct {
 	VecBlockInfo []BlockInfo // Nil when normally running. When blocked at an operation of ChanInfo, store
 	// one ChanInfo and the operation. When blocked at select, store multiple ChanInfo and
 	// operation. Default in select is also also stored in map, which is DefaultCaseChanInfo
-	MapPrimeInfo map[PrimInfo]struct{} // Stores all channels that this goroutine still hold reference to
-	Mu mutex // protects VecBlockInfo and MapPrimeInfo
+	BitCheckBugAtEnd uint32                // 0 when normally running. 1 when this goroutine is checking bug.
+	MapPrimeInfo     map[PrimInfo]struct{} // Stores all channels that this goroutine still hold reference to
+	Mu               mutex                 // protects VecBlockInfo and MapPrimeInfo
 }
 
 type BlockInfo struct {

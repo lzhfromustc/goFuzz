@@ -65,15 +65,11 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 				continue
 			case Index(str, "k8s.io/kubernetes/vendor/k8s.io/klog/v2/klog.go:1169") >= 0:
 				continue
-			case Index(str, "testing.go") >= 0:
-				continue
 			case Index(str, "k8s.io/apimachinery/pkg/watch/mux.go:247") >= 0:
 				continue
 			case Index(str, "k8s.io/apimachinery/pkg/util/wait/wait.go:167") >= 0:
 				continue
 			case Index(str, "scheduler/internal/cache/debugger/debugger.go:63") >= 0:
-				continue
-			case Index(str, "testing.go") >= 0:
 				continue
 			case Index(str, "k8s.io/client-go/tools/cache/shared_informer.go:772") >= 0:
 				continue
@@ -131,15 +127,17 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 				nextFuncLine := stackSingleGo.VecFuncLine[1]
 
 
-				if nextFuncFile != "/usr/local/go/src/sync/mutex.go" {
+				if nextFuncFile != strSDKPath + "/src/sync/mutex.go" {
 					// case 1: from channel op
 					if _, reported := ReportedPlace[nextFuncFile + nextFuncLine]; reported {
 						continue outer
 					} else {
 						ReportedPlace[nextFuncFile + nextFuncLine] = struct{}{}
 					}
-					if indexSDK := Index(nextFuncFile, "/usr/local/go/src"); indexSDK > -1 { // In SDK, don't report
-						continue outer
+					if indexSDK := Index(nextFuncFile, strSDKPath); indexSDK > -1 {
+						if indexSync := Index(nextFuncFile, strSDKPath + "/src/sync"); indexSync == -1 { // In SDK and not in our hacked sync, don't report
+							continue outer
+						}
 					}
 				} else {
 					// case 2: from Lock op
@@ -161,7 +159,7 @@ func TmpDumpBlockingInfo() (retStr string, foundBug bool) {
 			}
 			// delete the BeforeBlock function
 			for {
-				indexTBB := Index(str, "runtime.TmpBeforeBlock()\n\t/usr/local/go/src/runtime/myoracle_tmp.go:")
+				indexTBB := Index(str, "runtime.TmpBeforeBlock()\n\t" + strSDKPath + "/src/runtime/myoracle_tmp.go:")
 				if indexTBB == -1 {
 					break
 				} else {

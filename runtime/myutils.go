@@ -537,3 +537,19 @@ func MyCaller(skip int) string {
 	// Skip GetCallerFunctionName and the function to get the caller of
 	return getFrame(skip + 2).Function
 }
+
+func PrintCurrentStack() {
+	const size = 64 << 10
+	buf := make([]byte, size)
+	buf = buf[:Stack(buf, false)]
+	println(string(buf))
+}
+
+func PrintAllStack() {
+	lock(&muMap)
+	const size = 64 << 10
+	buf := make([]byte, size)
+	buf = buf[:Stack(buf, true)]
+	println(string(buf))
+	unlock(&muMap)
+}

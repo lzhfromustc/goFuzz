@@ -530,7 +530,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	///MYCODE
-	if BoolDebug && okToCheck(c) {
+	if okToCheck(c) {
 		TmpBeforeBlock()
 		defer TmpAfterBlock()
 	}

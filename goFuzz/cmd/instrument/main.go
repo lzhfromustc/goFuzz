@@ -167,10 +167,34 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 		}
 	}()
 	if additionalNode != nil && c.Node() == additionalNode {
-		newBeforeTestCall := NewArgCallExpr("gooracle", "BeforeRun", nil)
-		c.InsertBefore(newBeforeTestCall)
+		newAssign := &ast.AssignStmt{
+			Lhs:    nil,
+			TokPos: 0,
+			Tok:    token.DEFINE,
+			Rhs:    nil,
+		}
+		newObject := &ast.Object{
+			Kind: ast.Var,
+			Name: "oracleEntry",
+			Decl: newAssign,
+			Data: nil,
+			Type: nil,
+		}
+		newIdent := &ast.Ident{
+			Name:    "oracleEntry",
+			Obj:     newObject,
+		}
+		newAssign.Lhs = []ast.Expr {
+			newIdent,
+		}
+		newAssign.Rhs = []ast.Expr {
+			NewArgCall("gooracle", "BeforeRun", nil),
+		}
+		c.InsertBefore(newAssign)
 
-		newAfterTestCall := NewArgCall("gooracle", "AfterRun", nil)
+		newAfterTestCall := NewArgCall("gooracle", "AfterRun", []ast.Expr{
+			newIdent,
+		})
 		newDefer := &ast.DeferStmt{
 			Defer: 0,
 			Call:  newAfterTestCall,
@@ -440,10 +464,10 @@ func preOnlySelect(c *astutil.Cursor) bool {
 		// The number of switch case is (the number of non-default select cases + 1)
 		for i, stmtOp := range oriSelect.VecOp {
 
-			// if the case's expression is nil, this is a default case.
+			// if the case's expression is nil, we don't intrument this select
 			// We ignore it here, because the switch will have a default anyway
 			if stmtOp == nil {
-				continue
+				return true
 			}
 
 			newCaseClause := &ast.CaseClause{
