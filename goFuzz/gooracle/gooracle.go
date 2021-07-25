@@ -27,10 +27,6 @@ var StrTestMod string
 var StrTestName string
 var StrTestFile string
 
-var chEnforceCheck chan struct{}
-var chDelayCheckSign chan struct{}
-var intDelayCheckCounter int
-
 const (
 	DelayCheckModPerTime int = 0 // Check bugs every DelayCheckMS Milliseconds
 	DelayCheckModCount   int = 1 // Check bugs when runtime.EnqueueCheckEntry is called DelayCheckCountMax times
@@ -39,10 +35,12 @@ const (
 // config
 var DelayCheckMod int = DelayCheckModPerTime
 var DelayCheckMS int = 1000
-var DelayCheckCountMax int = 10
+var DelayCheckCountMax uint32 = 10
 
 type OracleEntry struct {
-	WgCheckBug *sync.WaitGroup
+	WgCheckBug              *sync.WaitGroup
+	ChEnforceCheck          chan struct{}
+	Uint32DelayCheckCounter uint32
 }
 
 func BeforeRun() *OracleEntry {
@@ -63,11 +61,19 @@ func BeforeRunTestOnce() *OracleEntry {
 	}
 	_, StrTestFile, _, _ = runtime.Caller(2)
 	runtime.BoolSelectCount = true
-	return &OracleEntry{WgCheckBug: &sync.WaitGroup{}}
+	return &OracleEntry{
+		WgCheckBug:              &sync.WaitGroup{},
+		ChEnforceCheck:          make(chan struct{}),
+		Uint32DelayCheckCounter: 0,
+	}
 }
 
 func BeforeRunFuzz() (result *OracleEntry) {
-	result = &OracleEntry{WgCheckBug: &sync.WaitGroup{}}
+	result = &OracleEntry{
+		WgCheckBug:              &sync.WaitGroup{},
+		ChEnforceCheck:          make(chan struct{}),
+		Uint32DelayCheckCounter: 0,
+	}
 	StrBitGlobalTuple := os.Getenv("BitGlobalTuple")
 	if StrBitGlobalTuple == "1" {
 		runtime.BoolRecordPerCh = false
@@ -114,7 +120,11 @@ func BeforeRunFuzz() (result *OracleEntry) {
 
 // Only enables oracle
 func LightBeforeRun() *OracleEntry {
-	entry := &OracleEntry{WgCheckBug: &sync.WaitGroup{}}
+	entry := &OracleEntry{
+		WgCheckBug:              &sync.WaitGroup{},
+		ChEnforceCheck:          make(chan struct{}),
+		Uint32DelayCheckCounter: 0,
+	}
 	CheckBugStart(entry)
 	return entry
 }
@@ -123,10 +133,9 @@ func LightBeforeRun() *OracleEntry {
 func CheckBugStart(entry *OracleEntry) {
 	go CheckBugLate()
 	if runtime.BoolDelayCheck {
-		chEnforceCheck = make(chan struct{})
-		chDelayCheckSign = make(chan struct{}, 10)
 		if DelayCheckMod == DelayCheckModCount {
 			runtime.FnCheckCount = DelayCheckCounterFN
+			runtime.PtrCheckCounter = &entry.Uint32DelayCheckCounter // TODO: potential data race here
 		}
 		go CheckBugRun(entry)
 	}
@@ -143,20 +152,28 @@ func CheckBugRun(entry *OracleEntry) {
 		case DelayCheckModPerTime:
 			select {
 			case <-time.After(time.Millisecond * time.Duration(DelayCheckMS)):
-			case <-chEnforceCheck:
+			case <-entry.ChEnforceCheck:
 				if runtime.BoolDebug {
 					fmt.Printf("Check bugs at the end of unit test\n")
 				}
 				boolBreakLoop = true
 			}
 		case DelayCheckModCount:
-			select {
-			case <-chDelayCheckSign:
-			case <-chEnforceCheck:
-				if runtime.BoolDebug {
-					fmt.Printf("Check bugs at the end of unit test\n")
+			if atomic.LoadUint32(&entry.Uint32DelayCheckCounter) >= DelayCheckCountMax {
+				atomic.StoreUint32(&entry.Uint32DelayCheckCounter, 0)
+				// check
+			} else {
+				select {
+				case <-time.After(time.Millisecond * time.Duration(DelayCheckMS)): // set a timeout to check Uint32DelayCheckCounter again later
+					//don't check, go back to see if counter >= DelayCheckCountMax
+					continue
+				case <-entry.ChEnforceCheck:
+					if runtime.BoolDebug {
+						fmt.Printf("Check bugs at the end of unit test\n")
+					}
+					boolBreakLoop = true
+					// check
 				}
-				boolBreakLoop = true
 			}
 		}
 
@@ -252,7 +269,7 @@ func CheckBugEnd(entry *OracleEntry) {
 		if runtime.BoolDebug {
 			println("End of unit test. Check bugs")
 		}
-		close(chEnforceCheck)
+		close(entry.ChEnforceCheck)
 		entry.WgCheckBug.Wait() // let's not use send of channel, to make the code clearer
 		// print bug info
 		str, foundBug := runtime.TmpDumpBlockingInfo()
@@ -262,16 +279,9 @@ func CheckBugEnd(entry *OracleEntry) {
 	}
 }
 
-func DelayCheckCounterFN() {
+func DelayCheckCounterFN(ptrCounter *uint32) {
 	if DelayCheckMod == DelayCheckModCount {
-		intDelayCheckCounter++ // no need to worry about data race, since runtime.MuCheckEntry is held
-		if intDelayCheckCounter > DelayCheckCountMax {
-			intDelayCheckCounter = 0
-			select { // the channel has buffer, so default should be rarely chosen
-			case chDelayCheckSign <- struct{}{}:
-			default:
-			}
-		}
+		atomic.AddUint32(ptrCounter, 1) // no need to worry about data race, since runtime.MuCheckEntry is held
 	}
 }
 

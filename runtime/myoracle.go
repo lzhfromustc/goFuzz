@@ -189,7 +189,8 @@ type CheckEntry struct {
 
 var VecCheckEntry []*CheckEntry
 var MuCheckEntry mutex
-var FnCheckCount = func () {} // this is defined in gooracle/gooracle.go
+var FnCheckCount = func (*uint32) {} // this is defined in gooracle/gooracle.go
+var PtrCheckCounter *uint32
 
 func DequeueCheckEntry() *CheckEntry {
 	lock(&MuCheckEntry)
@@ -213,7 +214,7 @@ func EnqueueCheckEntry(CS []PrimInfo) *CheckEntry {
 		}
 	}
 
-	FnCheckCount()
+	FnCheckCount(PtrCheckCounter)
 	newCheckEntry := &CheckEntry{
 		CS:              CS,
 		Uint32NeedCheck: 1,
