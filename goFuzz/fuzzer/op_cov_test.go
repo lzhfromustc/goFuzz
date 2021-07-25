@@ -37,7 +37,7 @@ func TestGetCurrOpIDCoverageReportHappy(t *testing.T) {
 		"1",
 		"2",
 	}
-	report := GetCurrOpIDCoverageReport(chs, records)
+	report := getCurrOpIDCoverageReport(chs, records)
 
 	if report.numOfChOp != 2 {
 		t.Fail()
@@ -64,7 +64,7 @@ func TestGetTriggeredOperationCoverageHappy(t *testing.T) {
 		"2": true,
 		"4": true,
 	}
-	report := GetTriggeredOpIDCoverageReport(chs, records)
+	report := getTriggeredOpIDCoverageReport(chs, records)
 
 	if report.numOfChOp != 2 {
 		t.Fail()
@@ -86,7 +86,7 @@ func TestUpdateTriggeredOpID(t *testing.T) {
 		"3",
 		"9",
 	}
-	UpdateTriggeredOpID(record, ids)
+	updateTriggeredOpID(record, ids)
 	if _, exist := record["1"]; !exist {
 		t.Fail()
 	}

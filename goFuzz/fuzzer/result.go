@@ -97,12 +97,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	// echo primitive operation coverage if it has
 	if OpCover != "" {
 		// calculate and print how many operation happened in the single run
-		report := GetCurrOpIDCoverageReport(opID2Type, result.opIDs)
+		report := GetCurrOpIDCoverageReport(result.opIDs)
 		PrintCurrOpIDCovReport(totalReport, report)
 
 		// calculate and print how many operation happened in the total
-		UpdateTriggeredOpID(triggeredOpID, result.opIDs)
-		cumulativeReport := GetTriggeredOpIDCoverageReport(opID2Type, triggeredOpID)
+		UpdateTriggeredOpID(result.opIDs)
+		cumulativeReport := GetTriggeredOpIDCoverageReport()
 		PrintTriggeredOpIDCovReport(totalReport, cumulativeReport)
 	}
 
