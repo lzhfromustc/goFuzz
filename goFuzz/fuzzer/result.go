@@ -63,7 +63,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	// If init stage, initailize track with total case combination
 	if stage == InitStage {
 
-		err := RecordTotalCases(testID2cases, src, result.RetInput.VecSelect)
+		err := RecordTotalCases(src, result.RetInput.VecSelect)
 		if err != nil {
 			log.Printf("[Worker %s][Task %s][ignored] RecordTotalCases failed: %v", workerID, runTask.id, err)
 		}
@@ -81,11 +81,11 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 		triggeredSelects = runTask.input.VecSelect
 	}
 
-	err := RecordTriggeredCase(testID2cases, src, triggeredSelects)
+	err := RecordTriggeredCase(src, triggeredSelects)
 	if err != nil {
 		log.Printf("[Worker %s][Task %s][ignored] RecordTriggeredCase failed: %v", workerID, runTask.id, err)
 	} else {
-		cov, err := GetCumulativeTriggeredCaseCoverage(testID2cases, src)
+		cov, err := GetCumulativeTriggeredCaseCoverage(src)
 		if err != nil {
 			log.Printf("[Worker %s][Task %s][ignored] GetCumulativeTriggeredCaseCoverage failed: %v", workerID, runTask.id, err)
 		} else {
