@@ -108,6 +108,7 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 			continue
 		}
 		if e == nil {
+			// TODO: if no running task, simply exit the fuzzing
 			log.Println("queue is empty, wait 10 seconds and retry")
 			time.Sleep(10 * time.Second)
 			continue

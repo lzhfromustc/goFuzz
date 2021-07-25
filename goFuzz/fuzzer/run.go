@@ -60,12 +60,14 @@ func ShouldSkipRunTask(fuzzCtx *FuzzContext, task *RunTask) bool {
 	}
 	return ShouldSkipInput(fuzzCtx, task.input)
 }
-func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
+func Run(ctx context.Context, fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[Task %s] recovered from panic in fuzzer", task.id)
 		}
 	}()
+
+	workerID := ctx.Value("workerID").(string)
 
 	var err error
 	input := task.input
@@ -116,24 +118,24 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	}
 
 	// prepare timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2)*time.Minute)
+	runCtx, cancel := context.WithTimeout(ctx, time.Duration(2)*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd
 	if task.input.GoTestCmd != nil {
 		if TargetTestBin != "" {
 			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
-			cmd = exec.CommandContext(ctx, TargetTestBin, "-test.timeout", "1m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+			cmd = exec.CommandContext(runCtx, TargetTestBin, "-test.timeout", "1m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
 		} else {
 			var pkg = input.GoTestCmd.Package
 			if pkg == "" {
 				pkg = "./..."
 			}
-			cmd = exec.CommandContext(ctx, "go", "test", "-timeout", "1m", "-v", "-run", input.GoTestCmd.Func, pkg)
+			cmd = exec.CommandContext(runCtx, "go", "test", "-timeout", "1m", "-v", "-run", input.GoTestCmd.Func, pkg)
 		}
 	} else if task.input.CustomCmd != "" {
 		cmds := strings.SplitN(task.input.CustomCmd, " ", 2)
-		cmd = exec.CommandContext(ctx, cmds[0], cmds[1])
+		cmd = exec.CommandContext(runCtx, cmds[0], cmds[1])
 	} else {
 		return nil, fmt.Errorf("either testname or custom command is required")
 	}
@@ -174,7 +176,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	var timeout bool = false
 	if runErr != nil {
 		// Go test failed might be intentional
-		log.Printf("[Task %s][ignored] go test command failed: %v", task.id, runErr)
+		log.Printf("[Worker %s][Task %s][ignored] go test command failed: %v", workerID, task.id, runErr)
 
 		if errors.Is(runErr, context.DeadlineExceeded) {
 			timeout = true
@@ -184,7 +186,7 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	// Read the newly printed input file if this is the first run
 	var retInput *Input
 	if boolFirstRun {
-		log.Printf("[Task %s] first run, reading input file %s", task.id, gfInputFp)
+		log.Printf("[Worker %s][Task %s] first run, reading input file %s", workerID, task.id, gfInputFp)
 		bytes, err := ioutil.ReadFile(gfInputFp)
 		if err != nil {
 			return nil, err
@@ -207,12 +209,12 @@ func Run(fuzzCtx *FuzzContext, task *RunTask) (*RunResult, error) {
 	var record *Record
 	b, err := ioutil.ReadFile(gfRecordFp)
 	if err != nil {
-		log.Printf("[Task %s][ignored] cannot read record file %s: %v", task.id, gfRecordFp, err)
+		log.Printf("[Worker %s][Task %s][ignored] cannot read record file %s: %v", workerID, task.id, gfRecordFp, err)
 	} else {
 		record, err = ParseRecordFile(string(b))
 
 		if err != nil {
-			log.Printf("[Task %s][ignored] failed to parse record file %s: %v", task.id, gfRecordFp, err)
+			log.Printf("[Worker %s][Task %s][ignored] failed to parse record file %s: %v", workerID, task.id, gfRecordFp, err)
 		}
 	}
 

@@ -21,6 +21,7 @@ type FuzzerMetrics struct {
 	NumOfExecutedTargets uint64
 	// When are they reach different stages
 	ExecutedTargets map[string]*TargetMetrics
+	TimeoutTargets  map[string]uint32
 	StartAt         time.Time
 	// Seconds
 	Duration uint64
@@ -89,6 +90,7 @@ func GetFuzzerMetrics(fuzzCtx *FuzzContext) *FuzzerMetrics {
 		NumOfRuns:            fuzzCtx.numOfRuns,
 		NumOfTotalTargets:    fuzzCtx.numOfTargets,
 		NumOfExecutedTargets: uint64(len(fuzzCtx.targetStages)),
+		TimeoutTargets:       fuzzCtx.timeoutTargets,
 		ExecutedTargets:      fuzzCtx.targetStages,
 		StartAt:              fuzzCtx.startAt,
 		Duration:             uint64(time.Since(fuzzCtx.startAt).Seconds()),
@@ -100,6 +102,8 @@ func GetFuzzerMetricsJsonBytes(fuzzCtx *FuzzContext) ([]byte, error) {
 	defer fuzzCtx.bugID2FpLock.RUnlock()
 	fuzzCtx.targetStagesLock.RLock()
 	defer fuzzCtx.targetStagesLock.RUnlock()
+	fuzzCtx.timeoutTargetsLock.RLock()
+	defer fuzzCtx.timeoutTargetsLock.RUnlock()
 
 	m := GetFuzzerMetrics(fuzzerContext)
 	b, err := json.MarshalIndent(m, "", " ")
