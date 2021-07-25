@@ -162,3 +162,67 @@ created by go.etcd.io/etcd/mvcc/backend.newBackend
 	}
 
 }
+
+func TestGetListOfBugIDFromStdoutSkipTimeout(t *testing.T) {
+	content := `
+-----New Blocking Bug:
+goroutine 27 [running]:
+sync.(*Mutex).Lock(0xc0000d6340)
+	/usr/local/go/src/sync/mutex.go:77 +0x37
+go.etcd.io/etcd/mvcc/backend.(*batchTx).safePending(0xc0000d6340, 0x0)
+	/fuzz/target/mvcc/backend/batch_tx.go:231 +0x47
+go.etcd.io/etcd/mvcc/backend.(*backend).run(0xc00011a090)
+	/fuzz/target/mvcc/backend/backend.go:431 +0x265
+created by go.etcd.io/etcd/mvcc/backend.newBackend
+	/fuzz/target/mvcc/backend/backend.go:186 +0x511
+
+panic: test timed out after 1m0s
+
+goroutine 468 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:1700 +0xe5
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:180 +0x45
+	`
+
+	bugIds, err := GetListOfBugIDFromStdoutContent(content)
+	if err != nil {
+		t.Fail()
+	}
+	if bugIds == nil {
+		t.Fail()
+	}
+
+	if !contains(bugIds, "/fuzz/target/mvcc/backend/batch_tx.go:231") {
+		t.Fail()
+	}
+
+}
+
+func TestGetListOfBugIDFromStdoutNoOffset(t *testing.T) {
+	content := `
+-----New Blocking Bug:
+goroutine 388 [running]:
+github.com/soheilhy/cmux.muxListener.Accept(...)
+	/go/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:229
+net/http.(*Server).Serve(0xc0003467e0, 0x11bf5b0, 0xc00043c7e0, 0x0, 0x0)
+	/usr/local/go/src/net/http/server.go:2981 +0x285
+net/http/httptest.(*Server).goServe.func1(0xc0002f06e0)
+	/usr/local/go/src/net/http/httptest/server.go:308 +0x6e
+created by net/http/httptest.(*Server).goServe
+	/usr/local/go/src/net/http/httptest/server.go:306 +0x5c
+	`
+
+	bugIds, err := GetListOfBugIDFromStdoutContent(content)
+	if err != nil {
+		t.Fail()
+	}
+	if bugIds == nil {
+		t.Fail()
+	}
+
+	if !contains(bugIds, "/go/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:229") {
+		t.Fail()
+	}
+
+}
