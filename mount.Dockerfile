@@ -20,8 +20,10 @@ RUN chmod +x scripts/patch-go-runtime.sh \
 
 WORKDIR /gofuzz/goFuzz
 
-RUN groupadd gfgroup
-RUN useradd --create-home -r -u 1001 -g gfgroup gfuser
-RUN chown gfuser:gfgroup ./scripts/fuzz.sh && chmod +x ./scripts/fuzz.sh
-USER gfuser
+# RUN groupadd gfgroup
+# RUN useradd --create-home -r -u 1001 -g gfgroup gfuser
+# RUN chown gfuser:gfgroup ./scripts/fuzz.sh && chmod +x ./scripts/fuzz.sh
+# USER gfuser
+
+RUN chmod +x ./scripts/fuzz.sh
 ENTRYPOINT [ "scripts/fuzz.sh" ] 
