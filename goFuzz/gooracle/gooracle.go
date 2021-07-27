@@ -73,6 +73,12 @@ func BeforeRunTestOnce() *OracleEntry {
 }
 
 func BeforeRunFuzz() (result *OracleEntry) {
+	var err error
+	time.DurDivideBy, err = strconv.Atoi(os.Getenv("GF_TIME_DIVIDE"))
+	if err != nil {
+		fmt.Println("Failed to set time.DurDivideBy. time.DurDivideBy is set to 1. Err:", err)
+	}
+
 	result = &OracleEntry{
 		WgCheckBug:              &sync.WaitGroup{},
 		ChEnforceCheck:          make(chan struct{}),

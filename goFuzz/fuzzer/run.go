@@ -148,6 +148,7 @@ func Run(ctx context.Context, fuzzCtx *FuzzContext, task *RunTask) (*RunResult, 
 	env = append(env, fmt.Sprintf("GF_INPUT_FILE=%s", gfInputFp))
 	env = append(env, fmt.Sprintf("GF_OP_COV_FILE=%s", gfOpCovFp))
 	env = append(env, fmt.Sprintf("BitGlobalTuple=%s", globalTuple))
+	env = append(env, fmt.Sprintf("GF_TIME_DIVIDE=%d", TimeDivide))
 	if ScoreSdk {
 		env = append(env, "GF_SCORE_SDK=1")
 	}
