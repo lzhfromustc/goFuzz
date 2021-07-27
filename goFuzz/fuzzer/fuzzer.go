@@ -16,7 +16,7 @@ func Deterministic_enumerate_input(input *Input) (reInputSlice []*Input) {
 			tmp_input := copyInput(input)
 			tmp_input.Note = ""
 			tmp_input.VecSelect[idx_vec_select].IntPrioCase = i
-			tmp_input.SelectDelayMS = 500 // TODO:: We may need to tune the number here
+			tmp_input.SelectDelayMS = 500 * TimeDivide // TODO:: We may need to tune the number here
 			reInputSlice = append(reInputSlice, tmp_input)
 		}
 	}
@@ -40,9 +40,9 @@ func RandomMutateInput(input *Input) (*Input, error) {
 		return nil, errors.New("cannot randomly mutate an input with empty VecSelect")
 	}
 	reInput := copyInput(input)
-	reInput.SelectDelayMS += 500 // TODO:: we may need to tune the two numbers here
-	if reInput.SelectDelayMS > 5000 {
-		reInput.SelectDelayMS = 500
+	reInput.SelectDelayMS += 500 * TimeDivide // TODO:: we may need to tune the two numbers here
+	if reInput.SelectDelayMS > 5000 * TimeDivide {
+		reInput.SelectDelayMS = 500 * TimeDivide
 	}
 	mutateMethod := Get_Random_Int_With_Max(2)
 
