@@ -24,7 +24,7 @@ func TestRecordTotalCasesHappy(t *testing.T) {
 			IntNumCase:  3,
 		},
 	}
-	err := RecordTotalCases(testID2cases, "TestAbc", selects)
+	err := recordTotalCases(testID2cases, "TestAbc", selects)
 
 	if err != nil {
 		t.Fail()
@@ -69,13 +69,13 @@ func TestRecordTriggeredCaseHappy(t *testing.T) {
 		},
 	}
 
-	err := RecordTotalCases(testID2cases, "TestAbc", selects)
+	err := recordTotalCases(testID2cases, "TestAbc", selects)
 
 	if err != nil {
 		t.Fail()
 	}
 
-	err = RecordTriggeredCase(testID2cases, "TestAbc", selects)
+	err = recordTriggeredCase(testID2cases, "TestAbc", selects)
 
 	if err != nil {
 		t.Fail()
@@ -108,7 +108,7 @@ func TestRecordTriggeredCaseHappy(t *testing.T) {
 		},
 	}
 
-	err = RecordTriggeredCase(testID2cases, "TestAbc", moreSelects)
+	err = recordTriggeredCase(testID2cases, "TestAbc", moreSelects)
 
 	if err != nil {
 		t.Fail()
@@ -146,7 +146,7 @@ func TestGetCumulativeTriggeredCaseCoverageHappy(t *testing.T) {
 		},
 	}
 
-	err := RecordTotalCases(testID2cases, "TestAbc", selects)
+	err := recordTotalCases(testID2cases, "TestAbc", selects)
 
 	if err != nil {
 		t.Fail()
@@ -175,12 +175,12 @@ func TestGetCumulativeTriggeredCaseCoverageHappy(t *testing.T) {
 		},
 	}
 
-	err = RecordTriggeredCase(testID2cases, "TestAbc", moreSelects)
+	err = recordTriggeredCase(testID2cases, "TestAbc", moreSelects)
 	if err != nil {
 		t.Fail()
 	}
 
-	cov, err := GetCumulativeTriggeredCaseCoverage(testID2cases, "TestAbc")
+	cov, err := getCumulativeTriggeredCaseCoverage(testID2cases, "TestAbc")
 	if err != nil {
 		t.Fail()
 	}

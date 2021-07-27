@@ -1,7 +1,9 @@
 package fuzzer
 
 import (
+	"context"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -27,12 +29,13 @@ func InitWorkers(maxParallel int, fuzzCtx *FuzzContext) {
 							log.Printf("[Worker %d][Task %s] skipped\n", i, task.id)
 							continue
 						}
-						result, err := Run(fuzzCtx, task)
+						ctx := context.WithValue(context.Background(), "workerID", strconv.Itoa(i))
+						result, err := Run(ctx, fuzzCtx, task)
 						if err != nil {
 							log.Printf("[Worker %d] [Task %s] Error: %s\n", i, task.id, err)
 							continue
 						}
-						err = HandleRunResult(task, result, fuzzCtx)
+						err = HandleRunResult(ctx, task, result, fuzzCtx)
 						if err != nil {
 							log.Printf("[Worker %d] [Task %s] Error: %s\n", i, task.id, err)
 							continue

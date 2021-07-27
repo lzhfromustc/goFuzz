@@ -13,8 +13,7 @@ func Deterministic_enumerate_input(input *Input) (reInputSlice []*Input) {
 
 	for idx_vec_select, select_input := range input.VecSelect {
 		for i := 0; i < select_input.IntNumCase; i++ {
-			var tmp_input *Input
-			tmp_input = copyInput(input)
+			tmp_input := copyInput(input)
 			tmp_input.Note = ""
 			tmp_input.VecSelect[idx_vec_select].IntPrioCase = i
 			tmp_input.SelectDelayMS = 500 // TODO:: We may need to tune the number here
@@ -108,6 +107,7 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 			continue
 		}
 		if e == nil {
+			// TODO: if no running task, simply exit the fuzzing
 			log.Println("queue is empty, wait 10 seconds and retry")
 			time.Sleep(10 * time.Second)
 			continue

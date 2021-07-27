@@ -232,16 +232,17 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 }
 
 // getFileAndLineFromStacktraceLine returns only <file>:<line>
-// from string with format <file>:<line> <stack offset>
+// from string with format <file>:<line> [<stack offset>]
 func getFileAndLineFromStacktraceLine(line string) (string, error) {
 	targetLine := strings.TrimLeft(line, " \t")
 	parts := strings.Split(targetLine, " ")
+	fileAndLine := parts[0]
 
-	if len(parts) != 2 {
-		return "", fmt.Errorf("malformed stacktrace, expected format: <file>:<line> <stack offset>, got %s", targetLine)
+	if len(strings.Split(fileAndLine, ":")) != 2 {
+		return "", fmt.Errorf("malformed stacktrace, expected format: <file>:<line> [<stack offset>], got %s", targetLine)
 	}
 
-	return parts[0], nil
+	return fileAndLine, nil
 }
 
 func findSucLineEqual(idx int, lines []string, strTarget string) (int, error) {

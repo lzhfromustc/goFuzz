@@ -2,10 +2,12 @@ package fuzzer
 
 import (
 	"fmt"
+	"sync"
 )
 
 var (
-	testID2cases map[string]CaseCoverageTrack = make(map[string]CaseCoverageTrack)
+	testID2cases     map[string]CaseCoverageTrack = make(map[string]CaseCoverageTrack)
+	testID2casesLock sync.RWMutex
 )
 
 type CaseCoverageTrack struct {
@@ -13,7 +15,14 @@ type CaseCoverageTrack struct {
 	triggeredCases map[string]bool
 }
 
-func RecordTotalCases(testID2cases map[string]CaseCoverageTrack, testID string, selects []SelectInput) error {
+func RecordTotalCases(testID string, selects []SelectInput) error {
+	testID2casesLock.Lock()
+	defer testID2casesLock.Unlock()
+	err := recordTotalCases(testID2cases, testID, selects)
+	return err
+}
+
+func recordTotalCases(testID2cases map[string]CaseCoverageTrack, testID string, selects []SelectInput) error {
 	if _, exist := testID2cases[testID]; exist {
 		return fmt.Errorf("duplicated record cases for %s", testID)
 	}
@@ -35,7 +44,14 @@ func RecordTotalCases(testID2cases map[string]CaseCoverageTrack, testID string, 
 	return nil
 }
 
-func RecordTriggeredCase(testID2cases map[string]CaseCoverageTrack, testID string, selects []SelectInput) error {
+func RecordTriggeredCase(testID string, selects []SelectInput) error {
+	testID2casesLock.Lock()
+	defer testID2casesLock.Unlock()
+	err := recordTriggeredCase(testID2cases, testID, selects)
+	return err
+}
+
+func recordTriggeredCase(testID2cases map[string]CaseCoverageTrack, testID string, selects []SelectInput) error {
 
 	track, exist := testID2cases[testID]
 	if !exist {
@@ -50,7 +66,14 @@ func RecordTriggeredCase(testID2cases map[string]CaseCoverageTrack, testID strin
 	return nil
 }
 
-func GetCumulativeTriggeredCaseCoverage(testID2cases map[string]CaseCoverageTrack, testID string) (float32, error) {
+func GetCumulativeTriggeredCaseCoverage(testID string) (float32, error) {
+	testID2casesLock.RLock()
+	defer testID2casesLock.RUnlock()
+	cov, err := getCumulativeTriggeredCaseCoverage(testID2cases, testID)
+	return cov, err
+}
+
+func getCumulativeTriggeredCaseCoverage(testID2cases map[string]CaseCoverageTrack, testID string) (float32, error) {
 	track, exist := testID2cases[testID]
 	if !exist {
 		return 0, fmt.Errorf("cannot find case track for %s", testID)

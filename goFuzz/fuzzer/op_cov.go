@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"sync"
 )
 
 type OpCovReport struct {
@@ -14,15 +15,18 @@ type OpCovReport struct {
 
 var (
 	// opID2Type is the map from operation ID to operation type (chmake, chsend, etc..)
-	opID2Type     map[string]string
-	totalReport   OpCovReport
-	triggeredOpID map[string]bool
+	opID2Type   map[string]string
+	totalReport OpCovReport
+
+	// operation triggered during whole fuzzing
+	triggeredOpIDs     map[string]bool
+	triggeredOpIDsLock sync.RWMutex
 )
 
 // InitOperationStats open and parse the file contains operation statistics
 // It returns the number of operation ID
 func InitOperationStats(chStatFile string) (int, error) {
-	triggeredOpID = make(map[string]bool)
+	triggeredOpIDs = make(map[string]bool)
 	bytes, err := ioutil.ReadFile(chStatFile)
 	if err != nil {
 		return 0, err
@@ -38,7 +42,7 @@ func InitOperationStats(chStatFile string) (int, error) {
 		ids = append(ids, id)
 	}
 
-	totalReport = GetCurrOpIDCoverageReport(opID2Type, ids)
+	totalReport = getCurrOpIDCoverageReport(opID2Type, ids)
 
 	// since 0 cannot be divided
 	if totalReport.numOfChOp == 0 {
@@ -76,7 +80,12 @@ func parseOperationCoverageFileContent(content string) (map[string]string, error
 	return id2type, nil
 }
 
-func UpdateTriggeredOpID(triggeredIDs map[string]bool, ids []string) {
+func UpdateTriggeredOpID(ids []string) {
+	triggeredOpIDsLock.Lock()
+	defer triggeredOpIDsLock.Unlock()
+	updateTriggeredOpID(triggeredOpIDs, ids)
+}
+func updateTriggeredOpID(triggeredIDs map[string]bool, ids []string) {
 	if triggeredIDs == nil {
 		return
 	}
@@ -87,7 +96,14 @@ func UpdateTriggeredOpID(triggeredIDs map[string]bool, ids []string) {
 	}
 }
 
-func GetTriggeredOpIDCoverageReport(totalID2Type map[string]string, triggeredIDinTotal map[string]bool) OpCovReport {
+func GetTriggeredOpIDCoverageReport() OpCovReport {
+	triggeredOpIDsLock.RLock()
+	defer triggeredOpIDsLock.RUnlock()
+	report := getTriggeredOpIDCoverageReport(opID2Type, triggeredOpIDs)
+	return report
+}
+
+func getTriggeredOpIDCoverageReport(totalID2Type map[string]string, triggeredIDinTotal map[string]bool) OpCovReport {
 	totalNumOfCh := len(totalID2Type)
 	report := OpCovReport{}
 
@@ -113,7 +129,11 @@ func GetTriggeredOpIDCoverageReport(totalID2Type map[string]string, triggeredIDi
 	return report
 }
 
-func GetCurrOpIDCoverageReport(totalID2Type map[string]string, ids []string) OpCovReport {
+func GetCurrOpIDCoverageReport(ids []string) OpCovReport {
+	return getCurrOpIDCoverageReport(opID2Type, ids)
+}
+
+func getCurrOpIDCoverageReport(totalID2Type map[string]string, ids []string) OpCovReport {
 	totalNumOfCh := len(totalID2Type)
 	report := OpCovReport{}
 
