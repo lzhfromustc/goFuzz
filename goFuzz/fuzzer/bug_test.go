@@ -120,7 +120,9 @@ created by github.com/prometheus/prometheus/tsdb/wal.NewSize
 	}
 }
 
+// Deprecated: our bug format is changed
 func TestGetListOfBugIDFromStdoutContentBad(t *testing.T) {
+	t.SkipNow()
 	content := `-----New Blocking Bug:
 goroutine 3855 [running]:
 github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
@@ -135,7 +137,9 @@ github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
 	}
 }
 
+// Deprecated: our bug format now doesn't contain the oracle
 func TestGetListOfBugIDFromStdoutContentSkipGoOracle(t *testing.T) {
+	t.SkipNow()
 	content := `-----New Blocking Bug:
 goroutine 11 [running]:
 runtime.TmpBeforeBlock()
@@ -198,7 +202,9 @@ created by fuzzer-toy/blocking/grpc/1353.(*roundRobin).Start
 
 }
 
+// Deprecated: our bug format now doesn't contain lines like mutex.go:77
 func TestGetListOfBugIDFromStdoutSkipPrimitive(t *testing.T) {
+	t.SkipNow()
 	content := `
 -----New Blocking Bug:
 goroutine 27 [running]:
@@ -229,15 +235,13 @@ created by go.etcd.io/etcd/mvcc/backend.newBackend
 func TestGetListOfBugIDFromStdoutSkipTimeout(t *testing.T) {
 	content := `
 -----New Blocking Bug:
-goroutine 27 [running]:
-sync.(*Mutex).Lock(0xc0000d6340)
-	/usr/local/go/src/sync/mutex.go:77 +0x37
-go.etcd.io/etcd/mvcc/backend.(*batchTx).safePending(0xc0000d6340, 0x0)
-	/fuzz/target/mvcc/backend/batch_tx.go:231 +0x47
-go.etcd.io/etcd/mvcc/backend.(*backend).run(0xc00011a090)
-	/fuzz/target/mvcc/backend/backend.go:431 +0x265
-created by go.etcd.io/etcd/mvcc/backend.newBackend
-	/fuzz/target/mvcc/backend/backend.go:186 +0x511
+---Blocking location:
+/data/ziheng/shared/gotest/stubs/etcd/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:229
+---Primitive location:
+/data/ziheng/shared/gotest/stubs/etcd/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:135
+---Primitive pointer:
+0xc001affc40
+-----End Bug
 
 panic: test timed out after 1m0s
 
@@ -256,13 +260,15 @@ created by time.goFunc
 		t.Fail()
 	}
 
-	if !contains(bugIds, "/fuzz/target/mvcc/backend/batch_tx.go:231") {
+	if !contains(bugIds, "/data/ziheng/shared/gotest/stubs/etcd/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:229") {
 		t.Fail()
 	}
 
 }
 
+// Deprecated: our bug format now doesn't contain offset
 func TestGetListOfBugIDFromStdoutNoOffset(t *testing.T) {
+	t.SkipNow()
 	content := `
 -----New Blocking Bug:
 goroutine 388 [running]:
