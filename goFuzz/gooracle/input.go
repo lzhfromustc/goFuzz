@@ -10,7 +10,7 @@ import (
 )
 
 var MapInput map[string]runtime.SelectInfo
-var SelectDelayMS int
+var SelectDelayMS int = 500
 
 func FileNameOfInput() string {
 	return os.Getenv("GF_INPUT_FILE")

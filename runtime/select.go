@@ -252,6 +252,8 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	var currentGo *GoInfo
 	boolInvolveChNotOK := false
 	CS := []PrimInfo{}
+	vecHChan := []*hchan{}
+	vecPrimInfo := []PrimInfo{}
 
 	// pass 1 - look for something already waiting
 	var casi int
@@ -301,18 +303,26 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	///MYCODE
 	for _, o := range lockorder {
 		c0 := scases[o].c
+		if c0.chInfo != nil {
+			Monitor(c0.chInfo)
+		}
 		if okToCheck(c0) == false {
 			boolInvolveChNotOK = true
-			break
 		}
+		vecHChan = append(vecHChan, c0)
 	}
-	if boolInvolveChNotOK {
+	if boolInvolveChNotOK{
 		goto outOfOracle
 	}
-	if LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
-		TmpBeforeBlock()
-		defer TmpAfterBlock()
+	if LastMySwitchChoice() == -1 || true { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
+		for _, hc := range vecHChan {
+			vecPrimInfo = append(vecPrimInfo, hc.chInfo)
+		}
+		blockEntry := EnqueueBlockEntry(vecPrimInfo, Select)
+		defer DequeueBlockEntry(blockEntry)
 	}
+
+
 
 	if GlobalEnableOracle && LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
 		currentGo = CurrentGoInfo()
@@ -320,11 +330,12 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 			c0 := scases[o].c
 			if c0 != lastC {
 				lastC = c0
-				if lastC.chInfo.BoolMakeNotInSDK == false {
+				if lastC.chInfo.OKToCheck == false {
+					currentGo.WithdrawBlock(nil)
 					goto outOfOracle
 				}
 				AddRefGoroutine(c.chInfo, currentGo)
-				currentGo.SetBlockAt(lastC.chInfo, BSelect)
+				currentGo.SetBlockAt(lastC.chInfo, Select)
 				CS = append(CS, lastC.chInfo)
 			}
 		}

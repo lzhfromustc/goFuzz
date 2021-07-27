@@ -184,8 +184,11 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 
 	///MYCODE
 	if okToCheck(c) {
-		TmpBeforeBlock()
-		defer TmpAfterBlock()
+		blockEntry := EnqueueBlockEntry([]PrimInfo{c.chInfo}, Send)
+		defer DequeueBlockEntry(blockEntry)
+	}
+	if c.chInfo != nil {
+		Monitor(c.chInfo)
 	}
 
 	if debugChan {
@@ -224,7 +227,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	lock(&c.lock)
 
 	///MYCODE
-	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK && okToCheck(c) {
+	if GlobalEnableOracle && c.chInfo.OKToCheck && okToCheck(c) {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
 		currentGo.SetBlockAt(c.chInfo, Send)
@@ -408,6 +411,9 @@ func closechan(c *hchan) {
 
 		panic(plainError("close of nil channel"))
 	}
+	if c.chInfo != nil {
+		Monitor(c.chInfo)
+	}
 
 	lock(&c.lock)
 
@@ -531,10 +537,12 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 
 	///MYCODE
 	if okToCheck(c) {
-		TmpBeforeBlock()
-		defer TmpAfterBlock()
+		blockEntry := EnqueueBlockEntry([]PrimInfo{c.chInfo}, Recv)
+		defer DequeueBlockEntry(blockEntry)
 	}
-
+	if c.chInfo != nil {
+		Monitor(c.chInfo)
+	}
 
 	// Fast path: check for failed non-blocking operation without acquiring the lock.
 	if !block && empty(c) {
@@ -577,7 +585,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	lock(&c.lock)
 
 	///MYCODE
-	if GlobalEnableOracle && c.chInfo.BoolMakeNotInSDK && okToCheck(c) {
+	if GlobalEnableOracle && c.chInfo.OKToCheck && okToCheck(c) {
 		currentGo := CurrentGoInfo()
 		AddRefGoroutine(c.chInfo, currentGo)
 		currentGo.SetBlockAt(c.chInfo, Recv)

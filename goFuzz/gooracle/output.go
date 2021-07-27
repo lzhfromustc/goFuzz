@@ -101,3 +101,7 @@ func CreateRecordFile() {
 
 	w.WriteString(str)
 }
+
+func StrPointer(v interface{}) string {
+	return fmt.Sprintf("%p", v)
+}

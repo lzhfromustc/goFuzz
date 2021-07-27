@@ -29,6 +29,7 @@ type Mutex struct {
 
 	//MYCODE:
 	Record TradRecord
+	Info runtime.MuInfo
 }
 
 // A Locker represents an object that can be locked and unlocked.
@@ -75,8 +76,9 @@ const (
 // blocks until the mutex is available.
 func (m *Mutex) Lock() {
 	///MYCODE:
-	runtime.TmpBeforeBlock()
-	defer runtime.TmpAfterBlock()
+	blockEntry := runtime.EnqueueBlockEntry([]runtime.PrimInfo{&m.Info}, runtime.MuLock)
+	defer runtime.DequeueBlockEntry(blockEntry)
+	runtime.Monitor(&m.Info)
 
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&m.Record.PreLoc)
@@ -190,6 +192,7 @@ func (m *Mutex) lockSlow() {
 // arrange for another goroutine to unlock it.
 func (m *Mutex) Unlock() {
 	///MYCODE:
+	runtime.Monitor(&m.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&m.Record.PreLoc)
 	}

@@ -35,6 +35,7 @@ type RWMutex struct {
 
 	///MYCODE
 	Record TradRecord
+	Info runtime.RWMuInfo
 }
 
 const rwmutexMaxReaders = 1 << 30
@@ -59,8 +60,9 @@ const rwmutexMaxReaders = 1 << 30
 // documentation on the RWMutex type.
 func (rw *RWMutex) RLock() {
 	///MYCODE:
-	runtime.TmpBeforeBlock()
-	defer runtime.TmpAfterBlock()
+	blockEntry := runtime.EnqueueBlockEntry([]runtime.PrimInfo{&rw.Info}, runtime.MuLock)
+	defer runtime.DequeueBlockEntry(blockEntry)
+	runtime.Monitor(&rw.Info)
 
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&rw.Record.PreLoc)
@@ -86,6 +88,7 @@ func (rw *RWMutex) RLock() {
 // on entry to RUnlock.
 func (rw *RWMutex) RUnlock() {
 	///MYCODE:
+	runtime.Monitor(&rw.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&rw.Record.PreLoc)
 	}
@@ -121,8 +124,9 @@ func (rw *RWMutex) rUnlockSlow(r int32) {
 // Lock blocks until the lock is available.
 func (rw *RWMutex) Lock() {
 	///MYCODE:
-	runtime.TmpBeforeBlock()
-	defer runtime.TmpAfterBlock()
+	blockEntry := runtime.EnqueueBlockEntry([]runtime.PrimInfo{&rw.Info}, runtime.MuLock)
+	defer runtime.DequeueBlockEntry(blockEntry)
+	runtime.Monitor(&rw.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&rw.Record.PreLoc)
 	}
@@ -154,6 +158,7 @@ func (rw *RWMutex) Lock() {
 // arrange for another goroutine to RUnlock (Unlock) it.
 func (rw *RWMutex) Unlock() {
 	///MYCODE:
+	runtime.Monitor(&rw.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&rw.Record.PreLoc)
 	}

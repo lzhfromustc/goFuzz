@@ -30,6 +30,7 @@ type WaitGroup struct {
 
 	///MYCODE
 	Record TradRecord
+	Info runtime.WgInfo
 }
 
 // state returns pointers to the state and sema fields stored within wg.state1.
@@ -56,6 +57,7 @@ func (wg *WaitGroup) state() (statep *uint64, semap *uint32) {
 // See the WaitGroup example.
 func (wg *WaitGroup) Add(delta int) {
 	///MYCODE:
+	runtime.Monitor(&wg.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&wg.Record.PreLoc)
 	}
@@ -111,8 +113,9 @@ func (wg *WaitGroup) Done() {
 // Wait blocks until the WaitGroup counter is zero.
 func (wg *WaitGroup) Wait() {
 	///MYCODE:
-	runtime.TmpBeforeBlock()
-	defer runtime.TmpAfterBlock()
+	blockEntry := runtime.EnqueueBlockEntry([]runtime.PrimInfo{&wg.Info}, runtime.MuLock)
+	defer runtime.DequeueBlockEntry(blockEntry)
+	runtime.Monitor(&wg.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&wg.Record.PreLoc)
 	}

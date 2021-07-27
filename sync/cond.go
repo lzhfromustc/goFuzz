@@ -30,6 +30,7 @@ type Cond struct {
 
 	///MYCODE:
 	Record TradRecord
+	Info runtime.CondInfo
 }
 
 // NewCond returns a new Cond with Locker l.
@@ -55,8 +56,9 @@ func NewCond(l Locker) *Cond {
 //
 func (c *Cond) Wait() {
 	///MYCODE:
-	runtime.TmpBeforeBlock()
-	defer runtime.TmpAfterBlock()
+	blockEntry := runtime.EnqueueBlockEntry([]runtime.PrimInfo{&c.Info}, runtime.MuLock)
+	defer runtime.DequeueBlockEntry(blockEntry)
+	runtime.Monitor(&c.Info)
 
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&c.Record.PreLoc)
@@ -75,6 +77,7 @@ func (c *Cond) Wait() {
 // during the call.
 func (c *Cond) Signal() {
 	///MYCODE:
+	runtime.Monitor(&c.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&c.Record.PreLoc)
 	}
@@ -89,6 +92,7 @@ func (c *Cond) Signal() {
 // during the call.
 func (c *Cond) Broadcast() {
 	///MYCODE:
+	runtime.Monitor(&c.Info)
 	if runtime.BoolRecordTrad {
 		runtime.RecordTradOp(&c.Record.PreLoc)
 	}

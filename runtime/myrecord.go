@@ -39,7 +39,7 @@ var BoolPrintDebugInfo bool = false
 func RecordChMake(capBuf int, c *hchan) {
 
 	if BoolRecordSDK == false {
-		if c.chInfo.BoolMakeNotInSDK == false {
+		if c.chInfo.BoolInSDK == false {
 			return
 		}
 	}
@@ -68,7 +68,7 @@ func RecordChOp(c *hchan) {
 		return
 	}
 	if BoolRecordSDK == false {
-		if c.chInfo.BoolMakeNotInSDK == false {
+		if c.chInfo.BoolInSDK == false {
 			if BoolPrintDebugInfo {
 				println("For the channel", c.chInfo.StrDebug, ", we don't record its operation")
 			}

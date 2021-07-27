@@ -43,6 +43,10 @@ type OracleEntry struct {
 	Uint32DelayCheckCounter uint32
 }
 
+func init() {
+	runtime.FnPointer2String = StrPointer
+}
+
 func BeforeRun() *OracleEntry {
 	StrTestMod = os.Getenv("TestMod")
 	switch StrTestMod {
@@ -137,13 +141,13 @@ func CheckBugStart(entry *OracleEntry) {
 			runtime.FnCheckCount = DelayCheckCounterFN
 			runtime.PtrCheckCounter = &entry.Uint32DelayCheckCounter // TODO: potential data race here
 		}
+		entry.WgCheckBug.Add(1)
 		go CheckBugRun(entry)
 	}
 }
 
 // An endless loop that checks bug. Exits when the unit test ends
 func CheckBugRun(entry *OracleEntry) {
-	entry.WgCheckBug.Add(1)
 	defer entry.WgCheckBug.Done()
 
 	boolBreakLoop := false
@@ -178,8 +182,17 @@ func CheckBugRun(entry *OracleEntry) {
 		}
 
 		enqueueAgain := [][]runtime.PrimInfo{}
-		for len(runtime.VecCheckEntry) > 0 {
+		for {
+			runtime.LockCheckEntry()
+			if len(runtime.VecCheckEntry) == 0 {
+				runtime.UnlockCheckEntry()
+				break
+			}
+			runtime.UnlockCheckEntry()
 			checkEntry := runtime.DequeueCheckEntry()
+			if checkEntry == nil {
+				continue
+			}
 			if runtime.BoolDebug {
 				print("Dequeueing:")
 				for _, C := range checkEntry.CS {
@@ -207,11 +220,15 @@ func CheckBugRun(entry *OracleEntry) {
 func CheckBugLate() {
 	time.Sleep(45 * time.Second) // Before the deadline we set for unit test in fuzzer/run.go, check once again
 
-	if runtime.BoolDebug {
-		fmt.Printf("Check bugs after 2 minutes\n")
-	}
+	fmt.Printf("Check bugs after 45 seconds\n")
 
-	for len(runtime.VecCheckEntry) > 0 {
+	for {
+		runtime.LockCheckEntry()
+		if len(runtime.VecCheckEntry) == 0 {
+			runtime.UnlockCheckEntry()
+			break
+		}
+		runtime.UnlockCheckEntry()
 		checkEntry := runtime.DequeueCheckEntry()
 		if runtime.BoolDebug {
 			print("Dequeueing:")
@@ -228,15 +245,13 @@ func CheckBugLate() {
 		}
 	}
 	// print bug info
-	str, foundBug := runtime.TmpDumpBlockingInfo()
-	if foundBug {
-		fmt.Println(str)
-	}
+	str, _ := runtime.CheckBlockEntry()
 
 	// print stdout
 	out, err := os.OpenFile(os.Getenv("GF_OUTPUT_FILE"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Println("Failed to create file:", FileNameOfRecord())
+		print(str)
 		return
 	}
 	defer out.Close()
@@ -245,6 +260,7 @@ func CheckBugLate() {
 	defer w.Flush()
 
 	w.WriteString(str)
+	w.WriteString(runtime.StrWithdraw)
 
 	// print record
 	// create output file using runtime's global variable
@@ -266,16 +282,26 @@ func CheckBugLate() {
 func CheckBugEnd(entry *OracleEntry) {
 	if runtime.BoolDelayCheck {
 		runtime.SetCurrentGoCheckBug()
-		if runtime.BoolDebug {
-			println("End of unit test. Check bugs")
-		}
+		println("End of unit test. Check bugs")
 		close(entry.ChEnforceCheck)
 		entry.WgCheckBug.Wait() // let's not use send of channel, to make the code clearer
-		// print bug info
-		str, foundBug := runtime.TmpDumpBlockingInfo()
-		if foundBug {
-			fmt.Println(str)
+
+		str, _ := runtime.CheckBlockEntry()
+
+		// print stdout
+		out, err := os.OpenFile(os.Getenv("GF_OUTPUT_FILE"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			fmt.Println("Failed to create file:", FileNameOfRecord())
+			print(str)
+			return
 		}
+		defer out.Close()
+
+		w := bufio.NewWriter(out)
+		defer w.Flush()
+
+		w.WriteString(str)
+		w.WriteString(runtime.StrWithdraw)
 	}
 }
 
