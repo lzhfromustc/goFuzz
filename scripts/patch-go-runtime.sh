@@ -14,3 +14,4 @@ cp runtime/runtime2.go $RUNTIME/runtime2.go
 cp runtime/proc.go $RUNTIME/proc.go
 cp -r goFuzz/gooracle $RUNTIME/..
 cp -r sync $RUNTIME/..
+cp -r `time` $RUNTIME/..
