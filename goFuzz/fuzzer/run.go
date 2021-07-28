@@ -118,7 +118,7 @@ func Run(ctx context.Context, fuzzCtx *FuzzContext, task *RunTask) (*RunResult, 
 	}
 
 	// prepare timeout context
-	runCtx, cancel := context.WithTimeout(ctx, time.Duration(2)*time.Minute)
+	runCtx, cancel := context.WithTimeout(ctx, time.Duration(3)*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd

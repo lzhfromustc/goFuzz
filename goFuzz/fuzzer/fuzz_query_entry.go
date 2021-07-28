@@ -86,16 +86,25 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 			fuzzCtx.EnqueueQueryEntry(e)
 			return nil
 		}
-		currentFuzzingEnergy := e.BestScore
+		// energy is too large
+		currentFuzzingEnergy := (e.BestScore / 10) + 1
+		generatedSelectsHash := make(map[string]bool)
 		execCount := e.ExecutionCount
 		log.Printf("[%+v] randomly mutate with energy %d", *e, currentFuzzingEnergy)
 		for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
-			currentMutatedInput, err := RandomMutateInput(e.CurrInput)
+			randomInput, err := RandomMutateInput(e.CurrInput)
 			if err != nil {
-				log.Printf("[%+v] randomly mutate input fail: %s, continue", *e, err)
+				log.Printf("[%s] randomly mutate input fail: %s, continue", e, err)
 				continue
 			}
-			t, err := NewRunTask(currentMutatedInput, e.Stage, e.Idx, execCount, e)
+			selectsHash := GetHashOfSelects(randomInput.VecSelect)
+			if _, exist := generatedSelectsHash[selectsHash]; exist {
+				log.Printf("[%s][%d] skip generated input because of duplication", e, randFuzzIdx)
+				continue
+			}
+			generatedSelectsHash[selectsHash] = true
+			log.Printf("[%s][%d] successfully generate input", e, randFuzzIdx)
+			t, err := NewRunTask(randomInput, e.Stage, e.Idx, execCount, e)
 			if err != nil {
 				return err
 			}
@@ -118,5 +127,9 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 
 // shouldDropFuzzQueryEntry return true if given fuzz entry need to be dropped
 func shouldDropFuzzQueryEntry(fuzzCtx *FuzzContext, e *FuzzQueryEntry) bool {
+	// only check when it is in rand stage
+	if e.Stage != RandStage {
+		return false
+	}
 	return ShouldSkipInput(fuzzCtx, e.CurrInput)
 }
