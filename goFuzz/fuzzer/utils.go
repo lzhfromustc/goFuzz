@@ -43,6 +43,9 @@ func parseGoCmdListOutput(output string) ([]string, error) {
 	lines := strings.Split(output, "\n")
 	filtered := make([]string, 0, len(lines))
 	for _, line := range lines {
+		if strings.HasPrefix(line, "go: downloading") {
+			continue
+		}
 		if line != "" {
 			filtered = append(filtered, line)
 		}
