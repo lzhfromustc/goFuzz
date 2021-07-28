@@ -198,12 +198,14 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 						break
 					}
 				}
-				if bug.id == "" {
-					bug.id = bug.strStack
-				}
+				//if bug.id == "" { // let's not do this, strStack can't provide any useful information
+				//	bug.id = bug.strStack
+				//}
 			}
 
-			mapBlockingBug[bug] = struct{}{}
+			if bug.id != "" {
+				mapBlockingBug[bug] = struct{}{}
+			}
 
 		} else if strings.HasPrefix(line, "-----Withdraw prim:") {
 			// We need to delete all bugs in mapBlockingBug whose vecPrimStr contains this ptr

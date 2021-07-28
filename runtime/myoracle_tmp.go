@@ -168,8 +168,8 @@ func EnqueueBlockEntry(vecPrim []PrimInfo, op string) *BlockEntry {
 
 	_, strFile, intLine, _ := Caller(layer)
 	entry.StrOpPosition = strFile + ":" + Itoa(intLine)
-	if entry.StrOpPosition == "/data/ziheng/shared/gotest/stubs/etcd/src/go.etcd.io/etcd/clientv3/client.go:456" {
-		print()
+	if entry.StrOpPosition == "/data/ziheng/shared/gotest/stubs/etcd/src/go.etcd.io/etcd/client/client.go:708" {
+		//println("enqueue blockentry for 708:", entry)
 	}
 
 	lock(&MuBlockEntry)
@@ -181,8 +181,8 @@ func EnqueueBlockEntry(vecPrim []PrimInfo, op string) *BlockEntry {
 
 func DequeueBlockEntry(entry *BlockEntry) {
 	lock(&MuBlockEntry)
-	if entry.StrOpPosition == "/data/ziheng/shared/gotest/stubs/etcd/src/go.etcd.io/etcd/clientv3/client.go:456" {
-		print()
+	if entry.StrOpPosition == "/data/ziheng/shared/gotest/stubs/etcd/src/go.etcd.io/etcd/client/client.go:708" {
+		//println("dequeue blockentry for 708:", entry)
 	}
 	delete(MapBlockEntry, entry)
 	unlock(&MuBlockEntry)
@@ -218,6 +218,7 @@ func CheckBlockEntry() (strReturn string, foundBug bool) {
 			continue
 		}
 		foundBug = true
+		lock(&MuReportBug)
 		strReturn += "-----New Blocking Bug:\n"
 		strReturn += "---Blocking location:\n" + entry.StrOpPosition + "\n"
 		strReturn += "---Primitive location:\n"
@@ -230,6 +231,7 @@ func CheckBlockEntry() (strReturn string, foundBug bool) {
 			strReturn += FnPointer2String(prim) + "\n"
 		}
 		strReturn += "-----End Bug\n"
+		unlock(&MuReportBug)
 	}
 	unlock(&MuBlockEntry)
 	return

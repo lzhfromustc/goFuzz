@@ -12,6 +12,7 @@ COPY goFuzz ./goFuzz
 COPY sync ./sync
 COPY runtime ./runtime
 COPY scripts ./scripts
+COPY time ./time
 RUN cd goFuzz && make build
 
 # target directory expected to be the Golang source code folder

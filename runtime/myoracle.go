@@ -6,9 +6,11 @@ func init() {
 	MapChToChanInfo = make(map[interface{}]PrimInfo)
 }
 
-var GlobalEnableOracle = false
-var BoolReportBug = false
+var GlobalEnableOracle = true
+var BoolReportBug = true
 var BoolDelayCheck = true
+
+var MuReportBug mutex
 
 type PrimInfo interface {
 	Lock()
@@ -514,6 +516,7 @@ func ReportBug(mapCS map[PrimInfo]struct{}) {
 	if BoolReportBug == false {
 		return
 	}
+	lock(&MuReportBug)
 	print("-----New Blocking Bug:\n")
 	const size = 64 << 10
 	buf := make([]byte, size)
@@ -529,6 +532,7 @@ func ReportBug(mapCS map[PrimInfo]struct{}) {
 	}
 	print("---Stack:\n", string(buf), "\n")
 	print("-----End Bug\n")
+	unlock(&MuReportBug)
 }
 
 func ReportNonBlockingBug() {
