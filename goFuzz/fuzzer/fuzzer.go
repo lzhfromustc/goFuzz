@@ -41,7 +41,7 @@ func RandomMutateInput(input *Input) (*Input, error) {
 	}
 	reInput := copyInput(input)
 	reInput.SelectDelayMS += 500 * TimeDivide // TODO:: we may need to tune the two numbers here
-	if reInput.SelectDelayMS > 5000 * TimeDivide {
+	if reInput.SelectDelayMS > 5000*TimeDivide {
 		reInput.SelectDelayMS = 500 * TimeDivide
 	}
 	mutateMethod := Get_Random_Int_With_Max(2)
@@ -88,8 +88,7 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 	// Update metrics
 	fuzzerContext.numOfTargets = uint64(len(tests) + len(customCmds))
 
-	InitWorkers(numOfWorkers, fuzzerContext)
-
+	ShuffleGoTests(tests)
 	for _, test := range tests {
 		e := NewInitStageFuzzQueryEntryWithGoTest(test)
 		fuzzerContext.EnqueueQueryEntry(e)
@@ -99,6 +98,8 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 		e := NewInitStageFuzzQueryEntryWithCustomCmd(cmd)
 		fuzzerContext.EnqueueQueryEntry(e)
 	}
+
+	InitWorkers(numOfWorkers, fuzzerContext)
 
 	for {
 		e, err := fuzzerContext.DequeueQueryEntry()

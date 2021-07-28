@@ -85,11 +85,11 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	if err != nil {
 		log.Printf("[Worker %s][Task %s][ignored] RecordTriggeredCase failed: %v", workerID, runTask.id, err)
 	} else {
-		cov, err := GetCumulativeTriggeredCaseCoverage(src)
+		cov, combCov, err := GetCumulativeTriggeredCaseCoverage(src)
 		if err != nil {
 			log.Printf("[Worker %s][Task %s][ignored] GetCumulativeTriggeredCaseCoverage failed: %v", workerID, runTask.id, err)
 		} else {
-			log.Printf("[Worker %s][Task %s] cumulative case coverage: %.2f%%", workerID, runTask.id, cov*100)
+			log.Printf("[Worker %s][Task %s] cumulative case coverage: %.2f%%, case combination coverage %.2f%%", workerID, runTask.id, cov*100, combCov*100)
 			fuzzCtx.UpdateTargetMaxCaseCov(src, cov)
 		}
 	}

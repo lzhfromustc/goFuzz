@@ -11,8 +11,12 @@ var (
 )
 
 type CaseCoverageTrack struct {
-	totalCases     map[string]bool
-	triggeredCases map[string]bool
+	// total number of case combination
+	totalCaseComb uint64
+	// hash of a list of inputs(case combination) triggered
+	triggeredCaseCombHashs map[string]uint32
+	totalCases             map[string]bool
+	triggeredCases         map[string]bool
 }
 
 func RecordTotalCases(testID string, selects []SelectInput) error {
@@ -28,8 +32,10 @@ func recordTotalCases(testID2cases map[string]CaseCoverageTrack, testID string, 
 	}
 
 	track := CaseCoverageTrack{
-		totalCases:     make(map[string]bool),
-		triggeredCases: make(map[string]bool),
+		totalCases:             make(map[string]bool),
+		triggeredCaseCombHashs: make(map[string]uint32),
+		triggeredCases:         make(map[string]bool),
+		totalCaseComb:          1,
 	}
 
 	for _, s := range selects {
@@ -38,6 +44,7 @@ func recordTotalCases(testID2cases map[string]CaseCoverageTrack, testID string, 
 			selectID := fmt.Sprintf("%s:%d", base, i)
 			track.totalCases[selectID] = true
 		}
+		track.totalCaseComb = uint64(s.IntNumCase) * track.totalCaseComb
 	}
 
 	testID2cases[testID] = track
@@ -63,24 +70,44 @@ func recordTriggeredCase(testID2cases map[string]CaseCoverageTrack, testID strin
 		track.triggeredCases[selectID] = true
 	}
 
+	hash := GetHashOfSelects(selects)
+	track.triggeredCaseCombHashs[hash] += 1
+
 	return nil
 }
 
-func GetCumulativeTriggeredCaseCoverage(testID string) (float32, error) {
-	testID2casesLock.RLock()
-	defer testID2casesLock.RUnlock()
-	cov, err := getCumulativeTriggeredCaseCoverage(testID2cases, testID)
-	return cov, err
-}
-
-func getCumulativeTriggeredCaseCoverage(testID2cases map[string]CaseCoverageTrack, testID string) (float32, error) {
+func GetCountsOfSelects(testID string, selects []SelectInput) uint32 {
+	testID2casesLock.Lock()
+	defer testID2casesLock.Unlock()
 	track, exist := testID2cases[testID]
 	if !exist {
-		return 0, fmt.Errorf("cannot find case track for %s", testID)
+		return 0
+	}
+	hash := GetHashOfSelects(selects)
+
+	count, exist := track.triggeredCaseCombHashs[hash]
+	if !exist {
+		return 0
+	}
+	return count
+}
+
+func GetCumulativeTriggeredCaseCoverage(testID string) (float32, float32, error) {
+	testID2casesLock.RLock()
+	defer testID2casesLock.RUnlock()
+	cov, combCov, err := getCumulativeTriggeredCaseCoverage(testID2cases, testID)
+	return cov, combCov, err
+}
+
+// getCumulativeTriggeredCaseCoverage returns the (case coverage, case comb coverage)
+func getCumulativeTriggeredCaseCoverage(testID2cases map[string]CaseCoverageTrack, testID string) (float32, float32, error) {
+	track, exist := testID2cases[testID]
+	if !exist {
+		return 0, 0, fmt.Errorf("cannot find case track for %s", testID)
 	}
 	total := len(track.totalCases)
 	if total == 0 {
-		return 0, nil
+		return 0, 0, nil
 	}
 
 	count := 0
@@ -90,5 +117,7 @@ func getCumulativeTriggeredCaseCoverage(testID2cases map[string]CaseCoverageTrac
 		}
 	}
 
-	return float32(count) / float32(total), nil
+	combCount := len(track.triggeredCaseCombHashs)
+
+	return float32(count) / float32(total), float32(combCount) / float32(track.totalCaseComb), nil
 }

@@ -180,8 +180,13 @@ func TestGetCumulativeTriggeredCaseCoverageHappy(t *testing.T) {
 		t.Fail()
 	}
 
-	cov, err := getCumulativeTriggeredCaseCoverage(testID2cases, "TestAbc")
+	cov, combCov, err := getCumulativeTriggeredCaseCoverage(testID2cases, "TestAbc")
 	if err != nil {
+		t.Fail()
+	}
+
+	if !(math.Abs(float64(combCov-float32(1)/float32(15))) < 0.0000001) {
+		fmt.Printf("expect cov is %0.2f, actual %0.2f\n", float32(1)/float32(15), cov)
 		t.Fail()
 	}
 

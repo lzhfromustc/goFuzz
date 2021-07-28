@@ -68,15 +68,10 @@ func ShouldSkipInput(fuzzCtx *FuzzContext, i *Input) bool {
 	}
 	src := i.Src()
 
-	// drop it if it's source already achieved 100% case coverage
-	fuzzCtx.targetStagesLock.RLock()
-	track, exist := fuzzCtx.targetStages[src]
-	fuzzCtx.targetStagesLock.RUnlock()
-	if exist {
-		if equal64(float64(track.MaxCaseCov), 1) {
-			log.Printf("drop %s since it achieved 100%% case coverage", i)
-			return true
-		}
+	// drop it if list of selects has been run more than 3 times
+	if GetCountsOfSelects(src, i.VecSelect) > 5 {
+		log.Printf("drop %s since the select inputs run more than 3 times", i)
+		return false
 	}
 
 	// drop it if it's source already timeout more than 3 times
@@ -106,6 +101,12 @@ type SelectInput struct {
 	IntLineNum  int
 	IntNumCase  int
 	IntPrioCase int
+}
+
+func GetHashOfSelects(selects []SelectInput) string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", selects)))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 const (
