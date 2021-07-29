@@ -15,7 +15,17 @@ func IsInterestingType(kind reflect.Kind) bool {
 }
 
 // TODO: shared struct updated in one goroutine;
-func CurrentGoAddValue(v interface{}, vecScanned []interface{}) {
+func CurrentGoAddValue(v interface{}, vecScanned []interface{}, layer int) {
+	defer func() {
+		if r := recover(); r != nil {
+
+		}
+	}()
+
+	layer++
+	if layer > 5 {
+		return
+	}
 
 	if vecScanned == nil {
 		vecScanned = []interface{}{}
@@ -40,7 +50,7 @@ func CurrentGoAddValue(v interface{}, vecScanned []interface{}) {
 			if fieldKind == reflect.Chan {
 				runtime.AddRefGoroutine(runtime.FindChanInfo(fieldValue), runtime.CurrentGoInfo())
 			} else if IsInterestingType(fieldKind) {
-				CurrentGoAddValue(fieldValue, vecScanned)
+				CurrentGoAddValue(fieldValue, vecScanned, layer)
 			}
 		}
 	case reflect.Map:
@@ -56,7 +66,7 @@ func CurrentGoAddValue(v interface{}, vecScanned []interface{}) {
 		} else if IsInterestingType(kindKey) {
 			for _, key := range reflectValue.MapKeys() {
 				keyValue := key.Interface()
-				CurrentGoAddValue(keyValue, vecScanned)
+				CurrentGoAddValue(keyValue, vecScanned, layer)
 			}
 		}
 		kindElem := reflectType.Elem().Kind()
@@ -70,7 +80,7 @@ func CurrentGoAddValue(v interface{}, vecScanned []interface{}) {
 			for _, key := range reflectValue.MapKeys() {
 				elem := reflectValue.MapIndex(key)
 				elemValue := elem.Interface()
-				CurrentGoAddValue(elemValue, vecScanned)
+				CurrentGoAddValue(elemValue, vecScanned, layer)
 			}
 		}
 
@@ -91,7 +101,7 @@ func CurrentGoAddValue(v interface{}, vecScanned []interface{}) {
 			for i := 0; i < reflectValue.Len(); i++ {
 				elem := reflectValue.Index(i)
 				elemValue := elem.Interface()
-				CurrentGoAddValue(elemValue, vecScanned)
+				CurrentGoAddValue(elemValue, vecScanned, layer)
 			}
 		}
 	case reflect.Ptr:
@@ -105,8 +115,12 @@ func CurrentGoAddValue(v interface{}, vecScanned []interface{}) {
 			runtime.AddRefGoroutine(runtime.FindChanInfo(elemValue), runtime.CurrentGoInfo())
 		} else if IsInterestingType(kind) {
 			elem := reflectValue.Elem()
-			elemValue := elem.Interface()
-			CurrentGoAddValue(elemValue, vecScanned)
+			if kind == reflect.Array || kind == reflect.Slice || kind == reflect.Map {
+				if elem.Len() < 1000 { // if too long, it will consume all the memory
+					elemValue := elem.Interface()
+					CurrentGoAddValue(elemValue, vecScanned, layer)
+				}
+			}
 		}
 	case reflect.Chan:
 		runtime.AddRefGoroutine(runtime.FindChanInfo(v), runtime.CurrentGoInfo())

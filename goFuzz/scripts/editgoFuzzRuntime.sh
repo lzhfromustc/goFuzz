@@ -14,4 +14,5 @@ cp $RUNTIME/runtime2.go ../../runtime/runtime2.go
 cp $RUNTIME/proc.go ../../runtime/proc.go
 cp $GOROOT/src/gooracle/* ../gooracle
 cp $GOROOT/src/time/sleep.go ../../time/sleep.go
+cp $GOROOT/src/reflect/value.go ../../reflect/value.go
 cp $GOROOT/src/sync/* ../../sync

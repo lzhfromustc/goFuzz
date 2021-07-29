@@ -201,6 +201,10 @@ func (chInfo *ChanInfo) AddGoroutine(goInfo *GoInfo) {
 		return
 	}
 	chInfo.Lock()
+	if chInfo.MapRefGoroutine == nil {
+		chInfo.Unlock()
+		return
+	}
 	chInfo.MapRefGoroutine[goInfo] = struct{}{}
 	chInfo.Unlock()
 }
@@ -210,6 +214,10 @@ func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
 		return
 	}
 	chInfo.Lock()
+	if chInfo.MapRefGoroutine == nil {
+		chInfo.Unlock()
+		return
+	}
 	delete(chInfo.MapRefGoroutine, goInfo)
 	chInfo.Unlock()
 }

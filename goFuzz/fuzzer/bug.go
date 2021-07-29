@@ -106,6 +106,12 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 				continue
 			}
 			ids[id] = struct{}{}
+
+			// if this is a fatal bug, ignore all other bugs found in this unit test, because fatal program can cause lots of strange things
+			if strings.HasPrefix(line, "fatal error") {
+				return []string{id}, nil
+			}
+
 		} else if strings.HasPrefix(line, "-----New Blocking Bug:") {
 			// find "-----End Bug"
 			idEnd, err := findSucLineEqual(idx, lines, "-----End Bug")

@@ -203,6 +203,31 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 		additionalNode = nil
 		boolNeedInstrument = true
 	}
+
+	if cStmt, ok := c.Node().(ast.Stmt); ok {
+		for _, recvAndFirstStmt := range vecRecvAndFirstStmt {
+			if recvAndFirstStmt.firstStmt == cStmt {
+				newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
+					&ast.Ident{
+						Name:    recvAndFirstStmt.recvName,
+						Obj:     recvAndFirstStmt.recvObj,
+					},
+					&ast.Ident{
+						Name:    "nil",
+						Obj:     nil,
+					},
+					&ast.BasicLit{
+						ValuePos: 0,
+						Kind:     token.INT,
+						Value:    "0",
+					},
+				})
+				c.InsertBefore(newCall)
+				boolNeedInstrument = true // We need to import gooracle
+			}
+		}
+	}
+
 	switch concrete := c.Node().(type) {
 
 	case *ast.SendStmt: // This is a send operation
@@ -393,6 +418,21 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 				boolNeedInstrument = true // We need to import gooracle
 			}
 
+		} else if concrete.Recv != nil && concrete.Body != nil {
+			if len(concrete.Recv.List) == 1 && len(concrete.Body.List) > 0 {
+				recvField := concrete.Recv.List[0]
+				if len(recvField.Names) == 1 {
+					ident := recvField.Names[0]
+					if ident.Name != "" {
+						recvAndFirstStmt := &RecvAndFirstStmt{
+							recvName:  ident.Name,
+							firstStmt: concrete.Body.List[0],
+							recvObj:   ident.Obj,
+						}
+						vecRecvAndFirstStmt = append(vecRecvAndFirstStmt, recvAndFirstStmt)
+					}
+				}
+			}
 		}
 
 	default:
@@ -400,6 +440,14 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 
 	return true
 }
+
+type RecvAndFirstStmt struct {
+	recvName string
+	firstStmt ast.Stmt
+	recvObj *ast.Object
+}
+
+var vecRecvAndFirstStmt []*RecvAndFirstStmt
 
 func preOnlySelect(c *astutil.Cursor) bool {
 	defer func() {
@@ -464,10 +512,10 @@ func preOnlySelect(c *astutil.Cursor) bool {
 		// The number of switch case is (the number of non-default select cases + 1)
 		for i, stmtOp := range oriSelect.VecOp {
 
-			// if the case's expression is nil, we don't intrument this select
-			// We ignore it here, because the switch will have a default anyway
+			// if the case's expression is nil, it means this case is a default. We don't intrument this case
+			// but we instrument other cases
 			if stmtOp == nil {
-				return true
+				continue
 			}
 
 			newCaseClause := &ast.CaseClause{
