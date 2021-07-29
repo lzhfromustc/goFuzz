@@ -15,3 +15,4 @@ cp runtime/proc.go $RUNTIME/proc.go
 cp -r goFuzz/gooracle $RUNTIME/..
 cp -r time $RUNTIME/..
 cp -r sync $RUNTIME/..
+cp reflect/value.go $RUNTIME/../reflect/value.go

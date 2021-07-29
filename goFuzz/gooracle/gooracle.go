@@ -47,6 +47,9 @@ func init() {
 	runtime.FnPointer2String = StrPointer
 }
 
+var BoolOracleStarted bool = false // This variable is used to avoid this problem: a test invokes multiple tests, and so our
+// BeforeRun and AfterRun is also invoked multiple times, bringing unexpected problems to fuzzer
+
 func BeforeRun() *OracleEntry {
 	StrTestMod = os.Getenv("TestMod")
 	switch StrTestMod {
@@ -73,11 +76,15 @@ func BeforeRunTestOnce() *OracleEntry {
 }
 
 func BeforeRunFuzz() (result *OracleEntry) {
+	if BoolOracleStarted {
+		return nil
+	} else {
+		BoolOracleStarted = true
+	}
 	var err error
 	time.DurDivideBy, err = strconv.Atoi(os.Getenv("GF_TIME_DIVIDE"))
 	if err != nil {
 		fmt.Println("Failed to set time.DurDivideBy. time.DurDivideBy is set to 1. Err:", err)
-		time.DurDivideBy = 1
 	}
 
 	result = &OracleEntry{
@@ -131,6 +138,11 @@ func BeforeRunFuzz() (result *OracleEntry) {
 
 // Only enables oracle
 func LightBeforeRun() *OracleEntry {
+	if BoolOracleStarted {
+		return nil
+	} else {
+		BoolOracleStarted = true
+	}
 	entry := &OracleEntry{
 		WgCheckBug:              &sync.WaitGroup{},
 		ChEnforceCheck:          make(chan struct{}),
@@ -347,6 +359,9 @@ func StrTestNameAndSelectCount() string {
 }
 
 func AfterRunFuzz(entry *OracleEntry) {
+	if entry == nil {
+		return
+	}
 	PrintNumTimeoutSelect() // Print the number of selects, number of timeout selects and not in input selects
 
 	// if this is the first run, create input file using runtime's global variable
@@ -372,5 +387,8 @@ func AfterRunFuzz(entry *OracleEntry) {
 
 // Only enables oracle
 func LightAfterRun(entry *OracleEntry) {
+	if entry == nil {
+		return
+	}
 	CheckBugEnd(entry)
 }
