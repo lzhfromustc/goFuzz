@@ -86,6 +86,9 @@ func BeforeRunFuzz() (result *OracleEntry) {
 	if err != nil {
 		fmt.Println("Failed to set time.DurDivideBy. time.DurDivideBy is set to 1. Err:", err)
 	}
+	if time.DurDivideBy == 0 {
+		time.DurDivideBy = 1
+	}
 
 	result = &OracleEntry{
 		WgCheckBug:              &sync.WaitGroup{},
