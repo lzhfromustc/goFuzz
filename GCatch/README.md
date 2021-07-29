@@ -1,44 +1,24 @@
-# GCatch: Automatically Detecting Concurrency Bugs in Go
+This is a modified GCatch that can analyze an application and print (append mode) into an output file: all structs that contain any sync primitive, directly or indirectly.
 
-## Descriptions
+The output of this tool can be used to make gooracle/reflect.go faster.
 
-GCatch contains a suite of static detectors aiming to identify concurrency bugs in large, real Go software systems. Concurrency bugs covered by the current version of GCatch include blocking misuse-of-channel (BMOC) bugs, deadlocks caused by misuse of mutexes (\eg, lock-with-unlock, double lock), races on struct fields, and races due to errors when using the testing package. The technical details of GCatch are presented in Section 3 of our ASPLOS paper [1]. 
+Output format:
+`v2store:watcher
+v2store:watcherHub
+v2store:store
+v2store:EventHistory
+v2store:node
+v2store:ttlKeyHeap`
+Each line is `pkgName:structName`. We don't print the full path of pkg, and don't care if the pkg is third party or not. structName is also purely a name.
 
-## Installation and Demonstration
-
-GCatch leverages Z3 for constraint solving. If you have already installed Z3, you can use the `install.sh` script is to install GCatch. You can also install Z3 together with GCatch using the `installZ3.sh` script. 
-
-After the installation, you can run the `run.sh` script to execute GCatch on a buggy version of gRPC. 
-
-## Directories
-
-1. Directory `analysis` contains static analysis routines shared by multiple checkers (e.g., computing post-dominator). 
-
-2. Directory `checkers` contains code for implementing the checking functionalities.
-
-3. Directory `cmd` is the entry point of GCatch.
-
-4. Directory `config` contains configuration files of GCatch. 
-
-5. Directory `instinfo` contains code for analyzing Go SSA instructions. 
-
-6. Directory `output` contains code for printing the detection results. 
-
-7. Directory `path` contains code for computation conducted on CFG.
-
-8. Directory `ssabuild` contains code for transforming input programs into SSA. 
-
-9. Directory `syncgraph` contains code for interaction with call graph, alias analysis, and Z3. 
-
-10. Directory `testdata` contains a buggy version of gRPC. 
-
-11. Directory `tests` contains toy programs to test traditional checkers. 
-
-12. Directory `tools` contains copies of external packages. 
-
-13. Directory `util` contains utility code shared by different components of GCatch. 
-
-Please refer to the demonstration scripts to figure out how to use GCatch’s code. 
-
-
-[1] Ziheng Liu, Shuofei Zhu, Boqin Qin, Hao Chen and Linhai Song. “Automatically Detecting and Fixing Concurrency Bugs in Go Software Systems.” In ASPLOS’2020. 
+How to run this tool:
+export GOPATH=/GOPATH/To/This/Tool
+cd GCatch/cmd/GCatch
+go install
+cd $GOPATH/bin
+export GOPATH=/Path/To/App
+export GO111MODULE=off
+./GCatch -path=/data/ziheng/shared/gotest/stubs/etcd/src/go.etcd.io/etcd -include=go.etcd.io/etcd 
+ -output=/data/ziheng/shared/gotest/stubs/etcd/src/go.etcd.io/etcd/struct.txt 
+ # you can add -r flag to recursively scan all child pkg in -path, but this may take lots of time and the output will have redundant lines
+ 
