@@ -120,61 +120,6 @@ created by github.com/prometheus/prometheus/tsdb/wal.NewSize
 	}
 }
 
-// Deprecated: our bug format is changed
-func TestGetListOfBugIDFromStdoutContentBad(t *testing.T) {
-	t.SkipNow()
-	content := `-----New Blocking Bug:
-goroutine 3855 [running]:
-github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0002e7c20)
-`
-
-	bugIds, err := GetListOfBugIDFromStdoutContent(content)
-	if err == nil {
-		t.Fail()
-	}
-	if bugIds != nil {
-		t.Fail()
-	}
-}
-
-// Deprecated: our bug format now doesn't contain the oracle
-func TestGetListOfBugIDFromStdoutContentSkipGoOracle(t *testing.T) {
-	t.SkipNow()
-	content := `-----New Blocking Bug:
-goroutine 11 [running]:
-runtime.TmpBeforeBlock()
-	/home/luy70/go/src/runtime/myoracle_tmp.go:32 +0x90
-google.golang.org/grpc.(*addrConn).resetTransport(0xc0004a3080)
-	/home/luy70/goFuzz/src/grpc/clientconn.go:1482 +0xac6
-created by google.golang.org/grpc.(*addrConn).connect
-	/home/luy70/goFuzz/src/grpc/clientconn.go:1082 +0x12a
------New Blocking Bug:
-goroutine 10 [running]:
-runtime.TmpBeforeBlock()
-	/home/luy70/go/src/runtime/myoracle_tmp.go:32 +0x90
-google.golang.org/grpc.(*ccBalancerWrapper).watcher(0xc0001ad270)
-	/home/luy70/goFuzz/src/grpc/balancer_conn_wrappers.go:152 +0x815
-created by google.golang.org/grpc.newCCBalancerWrapper
-	/home/luy70/goFuzz/src/grpc/balancer_conn_wrappers.go:63 +0x1de
-	`
-
-	bugIds, err := GetListOfBugIDFromStdoutContent(content)
-	if err != nil {
-		t.Fail()
-	}
-	if bugIds == nil {
-		t.Fail()
-	}
-
-	if !contains(bugIds, "/home/luy70/goFuzz/src/grpc/balancer_conn_wrappers.go:152") {
-		t.Fail()
-	}
-
-	if !contains(bugIds, "/home/luy70/goFuzz/src/grpc/clientconn.go:1482") {
-		t.Fail()
-	}
-}
-
 func TestGetListOfBugIDFromStdoutCausedByPanic(t *testing.T) {
 	content := `
 panic: send on closed channel
@@ -197,36 +142,6 @@ created by fuzzer-toy/blocking/grpc/1353.(*roundRobin).Start
 	}
 
 	if !contains(bugIds, "/fuzz/target/blocking/grpc/1353/grpc1353_test.go:84") {
-		t.Fail()
-	}
-
-}
-
-// Deprecated: our bug format now doesn't contain lines like mutex.go:77
-func TestGetListOfBugIDFromStdoutSkipPrimitive(t *testing.T) {
-	t.SkipNow()
-	content := `
------New Blocking Bug:
-goroutine 27 [running]:
-sync.(*Mutex).Lock(0xc0000d6340)
-	/usr/local/go/src/sync/mutex.go:77 +0x37
-go.etcd.io/etcd/mvcc/backend.(*batchTx).safePending(0xc0000d6340, 0x0)
-	/fuzz/target/mvcc/backend/batch_tx.go:231 +0x47
-go.etcd.io/etcd/mvcc/backend.(*backend).run(0xc00011a090)
-	/fuzz/target/mvcc/backend/backend.go:431 +0x265
-created by go.etcd.io/etcd/mvcc/backend.newBackend
-	/fuzz/target/mvcc/backend/backend.go:186 +0x511
-	`
-
-	bugIds, err := GetListOfBugIDFromStdoutContent(content)
-	if err != nil {
-		t.Fail()
-	}
-	if bugIds == nil {
-		t.Fail()
-	}
-
-	if !contains(bugIds, "/fuzz/target/mvcc/backend/batch_tx.go:231") {
 		t.Fail()
 	}
 
@@ -266,21 +181,28 @@ created by time.goFunc
 
 }
 
-// Deprecated: our bug format now doesn't contain offset
-func TestGetListOfBugIDFromStdoutNoOffset(t *testing.T) {
-	t.SkipNow()
+func TestGetListOfBugIDFromPanicWithPanicStackTrace(t *testing.T) {
+
 	content := `
------New Blocking Bug:
-goroutine 388 [running]:
-github.com/soheilhy/cmux.muxListener.Accept(...)
-	/go/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:229
-net/http.(*Server).Serve(0xc0003467e0, 0x11bf5b0, 0xc00043c7e0, 0x0, 0x0)
-	/usr/local/go/src/net/http/server.go:2981 +0x285
-net/http/httptest.(*Server).goServe.func1(0xc0002f06e0)
-	/usr/local/go/src/net/http/httptest/server.go:308 +0x6e
-created by net/http/httptest.(*Server).goServe
-	/usr/local/go/src/net/http/httptest/server.go:306 +0x5c
-	`
+panic: runtime error: invalid memory address or nil pointer dereference [recovered]
+	panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x58 pc=0x900610]
+
+goroutine 19 [running]:
+testing.tRunner.func1.2(0x9df6c0, 0xe4a060)
+	/usr/local/go/src/testing/testing.go:1143 +0x335
+testing.tRunner.func1(0xc00034d180)
+	/usr/local/go/src/testing/testing.go:1146 +0x4c2
+panic(0x9df6c0, 0xe4a060)
+	/usr/local/go/src/runtime/panic.go:965 +0x1b9
+github.com/docker/docker/client.(*Client).ClientVersion(...)
+	/go/src/github.com/docker/docker/client/client.go:197
+github.com/docker/docker/client.TestNewClientWithOpsFromEnv(0xc00034d180)
+	/go/src/github.com/docker/docker/client/client_test.go:100 +0x690
+testing.tRunner(0xc00034d180, 0xaa34b8)
+	/usr/local/go/src/testing/testing.go:1193 +0xef
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1238 +0x2b5`
 
 	bugIds, err := GetListOfBugIDFromStdoutContent(content)
 	if err != nil {
@@ -290,7 +212,7 @@ created by net/http/httptest.(*Server).goServe
 		t.Fail()
 	}
 
-	if !contains(bugIds, "/go/pkg/mod/github.com/soheilhy/cmux@v0.1.4/cmux.go:229") {
+	if !contains(bugIds, "/go/src/github.com/docker/docker/client/client.go:197") {
 		t.Fail()
 	}
 

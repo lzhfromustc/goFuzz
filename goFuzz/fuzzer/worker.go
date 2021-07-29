@@ -40,7 +40,7 @@ func InitWorkers(maxParallel int, fuzzCtx *FuzzContext) {
 							log.Printf("[Worker %d] [Task %s] Error: %s\n", i, task.id, err)
 							continue
 						}
-					case <-time.After(60 * time.Second):
+					case <-time.After(3 * time.Minute):
 						log.Printf("[Worker %d] Timeout. Exiting...", i)
 						return
 					}

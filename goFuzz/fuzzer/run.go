@@ -123,9 +123,9 @@ func Run(ctx context.Context, fuzzCtx *FuzzContext, task *RunTask) (*RunResult, 
 
 	var cmd *exec.Cmd
 	if task.input.GoTestCmd != nil {
-		if TargetTestBin != "" {
+		if task.input.GoTestCmd.Bin != "" {
 			// Since golang's compiled test can only be one per package, so we just assume the test func must exist in the given binary
-			cmd = exec.CommandContext(runCtx, TargetTestBin, "-test.timeout", "1m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
+			cmd = exec.CommandContext(runCtx, task.input.GoTestCmd.Bin, "-test.timeout", "1m", "-test.parallel", "1", "-test.v", "-test.run", input.GoTestCmd.Func)
 		} else {
 			var pkg = input.GoTestCmd.Package
 			if pkg == "" {

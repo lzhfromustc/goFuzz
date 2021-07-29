@@ -1,0 +1,162 @@
+?   	github.com/ethereum/go-ethereum	[no test files]
+327ok  	github.com/ethereum/go-ethereum/accounts	0.014s	coverage: 41.3% of statements
+328ok  	github.com/ethereum/go-ethereum/accounts/abi	0.041s	coverage: 90.2% of statements
+329ok  	github.com/ethereum/go-ethereum/accounts/abi/bind	4.347s	coverage: 48.3% of statements
+330ok  	github.com/ethereum/go-ethereum/accounts/abi/bind/backends	0.119s	coverage: 72.1% of statements
+331?   	github.com/ethereum/go-ethereum/accounts/external	[no test files]
+332ok  	github.com/ethereum/go-ethereum/accounts/keystore	18.434s	coverage: 79.3% of statements
+333?   	github.com/ethereum/go-ethereum/accounts/scwallet	[no test files]
+334?   	github.com/ethereum/go-ethereum/accounts/usbwallet	[no test files]
+335?   	github.com/ethereum/go-ethereum/accounts/usbwallet/trezor	[no test files]
+336?   	github.com/ethereum/go-ethereum/cmd/abidump	[no test files]
+337?   	github.com/ethereum/go-ethereum/cmd/abigen	[no test files]
+338?   	github.com/ethereum/go-ethereum/cmd/bootnode	[no test files]
+339?   	github.com/ethereum/go-ethereum/cmd/checkpoint-admin	[no test files]
+340?   	github.com/ethereum/go-ethereum/cmd/clef	[no test files]
+341ok  	github.com/ethereum/go-ethereum/cmd/devp2p	0.018s	coverage: 8.5% of statements
+342ok  	github.com/ethereum/go-ethereum/cmd/devp2p/internal/ethtest	16.531s	coverage: 68.1% of statements
+343?   	github.com/ethereum/go-ethereum/cmd/devp2p/internal/v4test	[no test files]
+344?   	github.com/ethereum/go-ethereum/cmd/devp2p/internal/v5test	[no test files]
+345ok  	github.com/ethereum/go-ethereum/cmd/ethkey	0.214s	coverage: 2.0% of statements
+346?   	github.com/ethereum/go-ethereum/cmd/evm	[no test files]
+347?   	github.com/ethereum/go-ethereum/cmd/evm/internal/compiler	[no test files]
+348?   	github.com/ethereum/go-ethereum/cmd/evm/internal/t8ntool	[no test files]
+349ok  	github.com/ethereum/go-ethereum/cmd/faucet	0.022s	coverage: 0.0% of statements
+350ok  	github.com/ethereum/go-ethereum/cmd/geth	7.419s	coverage: 2.5% of statements
+351?   	github.com/ethereum/go-ethereum/cmd/p2psim	[no test files]
+352ok  	github.com/ethereum/go-ethereum/cmd/puppeth	0.017s	coverage: 9.0% of statements
+353?   	github.com/ethereum/go-ethereum/cmd/rlpdump	[no test files]
+354ok  	github.com/ethereum/go-ethereum/cmd/utils	0.029s	coverage: 2.4% of statements
+355ok  	github.com/ethereum/go-ethereum/common	0.005s	coverage: 50.4% of statements
+356ok  	github.com/ethereum/go-ethereum/common/bitutil	0.004s	coverage: 95.7% of statements
+357ok  	github.com/ethereum/go-ethereum/common/compiler	0.005s	coverage: 0.0% of statements
+358ok  	github.com/ethereum/go-ethereum/common/fdlimit	0.002s	coverage: 73.7% of statements
+359ok  	github.com/ethereum/go-ethereum/common/hexutil	0.002s	coverage: 80.9% of statements
+360ok  	github.com/ethereum/go-ethereum/common/math	0.002s	coverage: 82.1% of statements
+361ok  	github.com/ethereum/go-ethereum/common/mclock	0.002s	coverage: 79.6% of statements
+362ok  	github.com/ethereum/go-ethereum/common/prque	1.411s	coverage: 88.2% of statements
+363?   	github.com/ethereum/go-ethereum/consensus	[no test files]
+364ok  	github.com/ethereum/go-ethereum/consensus/clique	0.118s	coverage: 49.6% of statements
+365ok  	github.com/ethereum/go-ethereum/consensus/ethash	10.000s	coverage: 69.7% of statements
+366ok  	github.com/ethereum/go-ethereum/consensus/misc	0.014s	coverage: 56.9% of statements
+367ok  	github.com/ethereum/go-ethereum/console	0.528s	coverage: 42.5% of statements
+368?   	github.com/ethereum/go-ethereum/console/prompt	[no test files]
+369ok  	github.com/ethereum/go-ethereum/contracts/checkpointoracle	1.063s	coverage: 0.0% of statements
+370?   	github.com/ethereum/go-ethereum/contracts/checkpointoracle/contract	[no test files]
+371ok  	github.com/ethereum/go-ethereum/core	46.502s	coverage: 73.5% of statements
+372ok  	github.com/ethereum/go-ethereum/core/asm	0.015s	coverage: 72.6% of statements
+373ok  	github.com/ethereum/go-ethereum/core/bloombits	3.168s	coverage: 96.2% of statements
+374ok  	github.com/ethereum/go-ethereum/core/forkid	0.015s	coverage: 85.9% of statements
+375ok  	github.com/ethereum/go-ethereum/core/rawdb	2.915s	coverage: 48.9% of statements
+376ok  	github.com/ethereum/go-ethereum/core/state	5.447s	coverage: 62.0% of statements
+377?   	github.com/ethereum/go-ethereum/core/state/pruner	[no test files]
+378ok  	github.com/ethereum/go-ethereum/core/state/snapshot	4.745s	coverage: 68.7% of statements
+379ok  	github.com/ethereum/go-ethereum/core/types	1.099s	coverage: 56.8% of statements
+380ok  	github.com/ethereum/go-ethereum/core/vm	2.216s	coverage: 39.4% of statements
+381ok  	github.com/ethereum/go-ethereum/core/vm/runtime	0.021s	coverage: 78.8% of statements
+382ok  	github.com/ethereum/go-ethereum/crypto	0.035s	coverage: 83.9% of statements
+383ok  	github.com/ethereum/go-ethereum/crypto/blake2b	0.059s	coverage: 90.6% of statements
+384ok  	github.com/ethereum/go-ethereum/crypto/bls12381	4.527s	coverage: 94.7% of statements
+385?   	github.com/ethereum/go-ethereum/crypto/bn256	[no test files]
+386ok  	github.com/ethereum/go-ethereum/crypto/bn256/cloudflare	0.075s	coverage: 81.3% of statements
+387ok  	github.com/ethereum/go-ethereum/crypto/bn256/google	0.476s	coverage: 91.6% of statements
+388ok  	github.com/ethereum/go-ethereum/crypto/ecies	0.018s	coverage: 82.6% of statements
+389ok  	github.com/ethereum/go-ethereum/crypto/secp256k1	0.454s	coverage: 29.4% of statements
+390ok  	github.com/ethereum/go-ethereum/crypto/signify	0.003s	coverage: 83.8% of statements
+391ok  	github.com/ethereum/go-ethereum/eth	12.248s	coverage: 27.4% of statements
+392ok  	github.com/ethereum/go-ethereum/eth/catalyst	0.051s	coverage: 38.2% of statements
+393ok  	github.com/ethereum/go-ethereum/eth/downloader	79.575s	coverage: 77.7% of statements
+394?   	github.com/ethereum/go-ethereum/eth/ethconfig	[no test files]
+395ok  	github.com/ethereum/go-ethereum/eth/fetcher	9.086s	coverage: 91.2% of statements
+396ok  	github.com/ethereum/go-ethereum/eth/filters	2.702s	coverage: 56.3% of statements
+397ok  	github.com/ethereum/go-ethereum/eth/gasprice	0.521s	coverage: 82.2% of statements
+398ok  	github.com/ethereum/go-ethereum/eth/protocols/eth	1.657s	coverage: 31.5% of statements
+399ok  	github.com/ethereum/go-ethereum/eth/protocols/snap	14.975s	coverage: 63.1% of statements
+400ok  	github.com/ethereum/go-ethereum/eth/tracers	0.340s	coverage: 55.7% of statements
+401?   	github.com/ethereum/go-ethereum/eth/tracers/internal/tracers	[no test files]
+402ok  	github.com/ethereum/go-ethereum/ethclient	0.135s	coverage: 54.9% of statements
+403ok  	github.com/ethereum/go-ethereum/ethclient/gethclient	0.033s	coverage: 94.2% of statements
+404?   	github.com/ethereum/go-ethereum/ethdb	[no test files]
+405?   	github.com/ethereum/go-ethereum/ethdb/dbtest	[no test files]
+406ok  	github.com/ethereum/go-ethereum/ethdb/leveldb	0.017s	coverage: 14.1% of statements
+407ok  	github.com/ethereum/go-ethereum/ethdb/memorydb	0.016s	coverage: 79.8% of statements
+408ok  	github.com/ethereum/go-ethereum/ethstats	0.020s	coverage: 4.2% of statements
+409ok  	github.com/ethereum/go-ethereum/event	0.695s	coverage: 94.4% of statements
+410ok  	github.com/ethereum/go-ethereum/graphql	0.085s	coverage: 22.3% of statements
+411?   	github.com/ethereum/go-ethereum/internal/build	[no test files]
+412?   	github.com/ethereum/go-ethereum/internal/cmdtest	[no test files]
+413?   	github.com/ethereum/go-ethereum/internal/debug	[no test files]
+414?   	github.com/ethereum/go-ethereum/internal/ethapi	[no test files]
+415?   	github.com/ethereum/go-ethereum/internal/flags	[no test files]
+416ok  	github.com/ethereum/go-ethereum/internal/guide	11.551s	coverage: [no statements]
+417ok  	github.com/ethereum/go-ethereum/internal/jsre	0.106s	coverage: 48.9% of statements
+418?   	github.com/ethereum/go-ethereum/internal/jsre/deps	[no test files]
+419?   	github.com/ethereum/go-ethereum/internal/testlog	[no test files]
+420ok  	github.com/ethereum/go-ethereum/internal/utesting	0.002s	coverage: 75.0% of statements
+421?   	github.com/ethereum/go-ethereum/internal/web3ext	[no test files]
+422ok  	github.com/ethereum/go-ethereum/les	44.754s	coverage: 56.8% of statements
+423?   	github.com/ethereum/go-ethereum/les/checkpointoracle	[no test files]
+424ok  	github.com/ethereum/go-ethereum/les/flowcontrol	8.891s	coverage: 37.7% of statements
+425ok  	github.com/ethereum/go-ethereum/les/utils	2.385s	coverage: 88.7% of statements
+426?   	github.com/ethereum/go-ethereum/les/vflux	[no test files]
+427ok  	github.com/ethereum/go-ethereum/les/vflux/client	1.798s	coverage: 80.4% of statements
+428ok  	github.com/ethereum/go-ethereum/les/vflux/server	16.020s	coverage: 81.5% of statements
+429ok  	github.com/ethereum/go-ethereum/light	0.518s	coverage: 36.0% of statements
+430ok  	github.com/ethereum/go-ethereum/log	0.003s	coverage: 10.0% of statements
+431ok  	github.com/ethereum/go-ethereum/metrics	5.470s	coverage: 47.8% of statements
+432?   	github.com/ethereum/go-ethereum/metrics/exp	[no test files]
+433?   	github.com/ethereum/go-ethereum/metrics/influxdb	[no test files]
+434?   	github.com/ethereum/go-ethereum/metrics/librato	[no test files]
+435ok  	github.com/ethereum/go-ethereum/metrics/prometheus	0.003s	coverage: 65.5% of statements
+436ok  	github.com/ethereum/go-ethereum/miner	14.883s	coverage: 74.1% of statements
+437?   	github.com/ethereum/go-ethereum/miner/stress/1559	[no test files]
+438?   	github.com/ethereum/go-ethereum/miner/stress/clique	[no test files]
+439?   	github.com/ethereum/go-ethereum/miner/stress/ethash	[no test files]
+440ok  	github.com/ethereum/go-ethereum/mobile	0.028s	coverage: 16.6% of statements
+441ok  	github.com/ethereum/go-ethereum/node	0.165s	coverage: 60.5% of statements
+442ok  	github.com/ethereum/go-ethereum/p2p	2.144s	coverage: 77.2% of statements
+443ok  	github.com/ethereum/go-ethereum/p2p/discover	97.157s	coverage: 80.2% of statements
+444ok  	github.com/ethereum/go-ethereum/p2p/discover/v4wire	0.014s	coverage: 31.4% of statements
+445ok  	github.com/ethereum/go-ethereum/p2p/discover/v5wire	0.047s	coverage: 75.7% of statements
+446ok  	github.com/ethereum/go-ethereum/p2p/dnsdisc	0.795s	coverage: 86.7% of statements
+447ok  	github.com/ethereum/go-ethereum/p2p/enode	1.083s	coverage: 81.9% of statements
+448ok  	github.com/ethereum/go-ethereum/p2p/enr	0.004s	coverage: 66.3% of statements
+449ok  	github.com/ethereum/go-ethereum/p2p/msgrate	0.002s	coverage: 14.5% of statements
+450ok  	github.com/ethereum/go-ethereum/p2p/nat	2.607s	coverage: 25.4% of statements
+451ok  	github.com/ethereum/go-ethereum/p2p/netutil	0.009s	coverage: 83.2% of statements
+452ok  	github.com/ethereum/go-ethereum/p2p/nodestate	0.415s	coverage: 67.6% of statements
+453ok  	github.com/ethereum/go-ethereum/p2p/rlpx	0.018s	coverage: 81.7% of statements
+454ok  	github.com/ethereum/go-ethereum/p2p/simulations	1.913s	coverage: 68.2% of statements
+455ok  	github.com/ethereum/go-ethereum/p2p/simulations/adapters	0.026s	coverage: 0.2% of statements
+456?   	github.com/ethereum/go-ethereum/p2p/simulations/examples	[no test files]
+457?   	github.com/ethereum/go-ethereum/p2p/simulations/pipes	[no test files]
+458?   	github.com/ethereum/go-ethereum/p2p/tracker	[no test files]
+459ok  	github.com/ethereum/go-ethereum/params	0.002s	coverage: 48.9% of statements
+460ok  	github.com/ethereum/go-ethereum/rlp	0.014s	coverage: 96.3% of statements
+461ok  	github.com/ethereum/go-ethereum/rpc	30.170s	coverage: 85.6% of statements
+462ok  	github.com/ethereum/go-ethereum/signer/core	3.581s	coverage: 41.9% of statements
+463ok  	github.com/ethereum/go-ethereum/signer/fourbyte	2.512s	coverage: 46.4% of statements
+464ok  	github.com/ethereum/go-ethereum/signer/rules	0.131s	coverage: 78.6% of statements
+465?   	github.com/ethereum/go-ethereum/signer/rules/deps	[no test files]
+466ok  	github.com/ethereum/go-ethereum/signer/storage	0.004s	coverage: 52.3% of statements
+467ok  	github.com/ethereum/go-ethereum/tests	394.008s	coverage: 59.6% of statements
+468ok  	github.com/ethereum/go-ethereum/tests/fuzzers/abi	0.015s	coverage: 68.1% of statements
+469?   	github.com/ethereum/go-ethereum/tests/fuzzers/bitutil	[no test files]
+470?   	github.com/ethereum/go-ethereum/tests/fuzzers/bls12381	[no test files]
+471?   	github.com/ethereum/go-ethereum/tests/fuzzers/difficulty	[no test files]
+472?   	github.com/ethereum/go-ethereum/tests/fuzzers/difficulty/debug	[no test files]
+473?   	github.com/ethereum/go-ethereum/tests/fuzzers/keystore	[no test files]
+474?   	github.com/ethereum/go-ethereum/tests/fuzzers/les	[no test files]
+475?   	github.com/ethereum/go-ethereum/tests/fuzzers/les/debug	[no test files]
+476?   	github.com/ethereum/go-ethereum/tests/fuzzers/rangeproof	[no test files]
+477?   	github.com/ethereum/go-ethereum/tests/fuzzers/rangeproof/debug	[no test files]
+478?   	github.com/ethereum/go-ethereum/tests/fuzzers/rlp	[no test files]
+479?   	github.com/ethereum/go-ethereum/tests/fuzzers/runtime	[no test files]
+480ok  	github.com/ethereum/go-ethereum/tests/fuzzers/secp256k1	0.033s	coverage: 81.8% of statements
+481?   	github.com/ethereum/go-ethereum/tests/fuzzers/stacktrie	[no test files]
+482?   	github.com/ethereum/go-ethereum/tests/fuzzers/stacktrie/debug	[no test files]
+483?   	github.com/ethereum/go-ethereum/tests/fuzzers/trie	[no test files]
+484?   	github.com/ethereum/go-ethereum/tests/fuzzers/txfetcher	[no test files]
+485?   	github.com/ethereum/go-ethereum/tests/fuzzers/vflux	[no test files]
+486?   	github.com/ethereum/go-ethereum/tests/fuzzers/vflux/debug	[no test files]
+487ok  	github.com/ethereum/go-ethereum/trie	37.914s	coverage: 77.3% of statements

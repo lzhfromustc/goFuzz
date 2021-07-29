@@ -1,0 +1,176 @@
+ok  	google.golang.org/grpc	16.891s	coverage: 47.2% of statements
+ok  	google.golang.org/grpc/admin	0.470s	coverage: 100.0% of statements
+ok  	google.golang.org/grpc/admin/test	0.553s	coverage: 82.9% of statements
+ok  	google.golang.org/grpc/attributes	0.660s	coverage: 78.9% of statements
+ok  	google.golang.org/grpc/authz	0.313s	coverage: 96.7% of statements
+?   	google.golang.org/grpc/backoff	[no test files]
+?   	google.golang.org/grpc/balancer	[no test files]
+ok  	google.golang.org/grpc/balancer/base	0.172s	coverage: 52.7% of statements
+ok  	google.golang.org/grpc/balancer/grpclb	13.830s	coverage: 87.2% of statements
+?   	google.golang.org/grpc/balancer/grpclb/grpc_lb_v1	[no test files]
+?   	google.golang.org/grpc/balancer/grpclb/state	[no test files]
+ok  	google.golang.org/grpc/balancer/rls/internal	13.036s	coverage: 83.0% of statements
+ok  	google.golang.org/grpc/balancer/rls/internal/adaptive	2.427s	coverage: 97.7% of statements
+ok  	google.golang.org/grpc/balancer/rls/internal/cache	0.407s	coverage: 91.1% of statements
+ok  	google.golang.org/grpc/balancer/rls/internal/keys	0.298s	coverage: 98.8% of statements
+?   	google.golang.org/grpc/balancer/rls/internal/proto/grpc_lookup_v1	[no test files]
+?   	google.golang.org/grpc/balancer/rls/internal/testutils/fakeserver	[no test files]
+ok  	google.golang.org/grpc/balancer/roundrobin	0.798s	coverage: 100.0% of statements
+ok  	google.golang.org/grpc/balancer/weightedroundrobin	0.213s	coverage: 100.0% of statements
+?   	google.golang.org/grpc/benchmark	[no test files]
+?   	google.golang.org/grpc/benchmark/benchmain	[no test files]
+?   	google.golang.org/grpc/benchmark/benchresult	[no test files]
+?   	google.golang.org/grpc/benchmark/client	[no test files]
+ok  	google.golang.org/grpc/benchmark/flags	0.331s	coverage: 96.9% of statements
+ok  	google.golang.org/grpc/benchmark/latency	1.792s	coverage: 77.3% of statements
+ok  	google.golang.org/grpc/benchmark/primitives	0.669s	coverage: [no statements] [no tests to run]
+?   	google.golang.org/grpc/benchmark/server	[no test files]
+?   	google.golang.org/grpc/benchmark/stats	[no test files]
+?   	google.golang.org/grpc/benchmark/worker	[no test files]
+ok  	google.golang.org/grpc/binarylog	0.867s	coverage: 42.9% of statements
+?   	google.golang.org/grpc/binarylog/grpc_binarylog_v1	[no test files]
+?   	google.golang.org/grpc/channelz/grpc_channelz_v1	[no test files]
+ok  	google.golang.org/grpc/channelz/service	0.436s	coverage: 85.9% of statements
+ok  	google.golang.org/grpc/codes	0.408s	coverage: 40.6% of statements
+?   	google.golang.org/grpc/connectivity	[no test files]
+ok  	google.golang.org/grpc/credentials	0.531s	coverage: 61.5% of statements
+?   	google.golang.org/grpc/credentials/alts	[no test files]
+?   	google.golang.org/grpc/credentials/alts/internal	[no test files]
+ok  	google.golang.org/grpc/credentials/alts/internal/authinfo	0.601s	coverage: 90.0% of statements
+ok  	google.golang.org/grpc/credentials/alts/internal/conn	0.417s	coverage: 86.2% of statements
+ok  	google.golang.org/grpc/credentials/alts/internal/handshaker	0.554s	coverage: 73.6% of statements
+ok  	google.golang.org/grpc/credentials/alts/internal/handshaker/service	0.286s	coverage: 90.0% of statements
+?   	google.golang.org/grpc/credentials/alts/internal/proto/grpc_gcp	[no test files]
+?   	google.golang.org/grpc/credentials/alts/internal/testutil	[no test files]
+ok  	google.golang.org/grpc/credentials/google	0.488s	coverage: 68.9% of statements
+?   	google.golang.org/grpc/credentials/insecure	[no test files]
+ok  	google.golang.org/grpc/credentials/local	0.418s	coverage: 61.1% of statements
+?   	google.golang.org/grpc/credentials/oauth	[no test files]
+ok  	google.golang.org/grpc/credentials/sts	2.679s	coverage: 95.1% of statements
+ok  	google.golang.org/grpc/credentials/tls/certprovider	0.509s	coverage: 88.9% of statements
+ok  	google.golang.org/grpc/credentials/tls/certprovider/pemfile	1.461s	coverage: 89.2% of statements
+ok  	google.golang.org/grpc/credentials/xds	1.016s	coverage: 88.2% of statements
+?   	google.golang.org/grpc/encoding	[no test files]
+?   	google.golang.org/grpc/encoding/gzip	[no test files]
+ok  	google.golang.org/grpc/encoding/proto	0.252s	coverage: 80.0% of statements
+ok  	google.golang.org/grpc/grpclog	0.679s	coverage: 29.5% of statements
+?   	google.golang.org/grpc/grpclog/glogger	[no test files]
+ok  	google.golang.org/grpc/health	0.415s	coverage: 37.5% of statements
+?   	google.golang.org/grpc/health/grpc_health_v1	[no test files]
+?   	google.golang.org/grpc/internal	[no test files]
+?   	google.golang.org/grpc/internal/admin	[no test files]
+?   	google.golang.org/grpc/internal/backoff	[no test files]
+?   	google.golang.org/grpc/internal/balancer/stub	[no test files]
+?   	google.golang.org/grpc/internal/balancerload	[no test files]
+ok  	google.golang.org/grpc/internal/binarylog	0.599s	coverage: 75.2% of statements
+ok  	google.golang.org/grpc/internal/buffer	0.820s	coverage: 100.0% of statements
+ok  	google.golang.org/grpc/internal/cache	1.522s	coverage: 92.3% of statements
+?   	google.golang.org/grpc/internal/channelz	[no test files]
+ok  	google.golang.org/grpc/internal/credentials	0.970s	coverage: 82.5% of statements
+ok  	google.golang.org/grpc/internal/credentials/xds	0.576s	coverage: 45.1% of statements
+?   	google.golang.org/grpc/internal/envconfig	[no test files]
+ok  	google.golang.org/grpc/internal/googlecloud	0.909s	coverage: 48.7% of statements
+?   	google.golang.org/grpc/internal/grpclog	[no test files]
+?   	google.golang.org/grpc/internal/grpcrand	[no test files]
+ok  	google.golang.org/grpc/internal/grpcsync	0.903s	coverage: 100.0% of statements
+ok  	google.golang.org/grpc/internal/grpctest	1.035s	coverage: 76.7% of statements
+ok  	google.golang.org/grpc/internal/grpcutil	0.654s	coverage: 88.7% of statements
+ok  	google.golang.org/grpc/internal/hierarchy	0.712s	coverage: 100.0% of statements
+ok  	google.golang.org/grpc/internal/leakcheck	5.146s	coverage: 86.2% of statements
+ok  	google.golang.org/grpc/internal/metadata	0.663s	coverage: 100.0% of statements
+?   	google.golang.org/grpc/internal/pretty	[no test files]
+ok  	google.golang.org/grpc/internal/profiling	1.369s	coverage: 48.4% of statements
+ok  	google.golang.org/grpc/internal/profiling/buffer	0.581s	coverage: 90.2% of statements
+ok  	google.golang.org/grpc/internal/proto/grpc_service_config	0.468s	coverage: 9.9% of statements
+ok  	google.golang.org/grpc/internal/resolver	0.620s	coverage: 60.0% of statements
+ok  	google.golang.org/grpc/internal/resolver/dns	1.168s	coverage: 87.3% of statements
+?   	google.golang.org/grpc/internal/resolver/passthrough	[no test files]
+?   	google.golang.org/grpc/internal/resolver/unix	[no test files]
+ok  	google.golang.org/grpc/internal/serviceconfig	0.400s	coverage: 93.3% of statements
+?   	google.golang.org/grpc/internal/status	[no test files]
+?   	google.golang.org/grpc/internal/stubserver	[no test files]
+?   	google.golang.org/grpc/internal/syscall	[no test files]
+ok  	google.golang.org/grpc/internal/testutils	0.580s	coverage: 36.5% of statements
+ok  	google.golang.org/grpc/internal/transport	81.554s	coverage: 75.6% of statements
+?   	google.golang.org/grpc/internal/transport/networktype	[no test files]
+ok  	google.golang.org/grpc/internal/wrr	0.415s	coverage: 80.0% of statements
+?   	google.golang.org/grpc/internal/xds	[no test files]
+?   	google.golang.org/grpc/internal/xds/env	[no test files]
+ok  	google.golang.org/grpc/internal/xds/matcher	0.556s	coverage: 70.9% of statements
+ok  	google.golang.org/grpc/internal/xds/rbac	0.470s	coverage: 84.9% of statements
+?   	google.golang.org/grpc/interop	[no test files]
+?   	google.golang.org/grpc/interop/alts/client	[no test files]
+?   	google.golang.org/grpc/interop/alts/server	[no test files]
+?   	google.golang.org/grpc/interop/client	[no test files]
+?   	google.golang.org/grpc/interop/fake_grpclb	[no test files]
+?   	google.golang.org/grpc/interop/grpc_testing	[no test files]
+?   	google.golang.org/grpc/interop/grpc_testing/core	[no test files]
+?   	google.golang.org/grpc/interop/http2	[no test files]
+?   	google.golang.org/grpc/interop/server	[no test files]
+?   	google.golang.org/grpc/interop/xds/client	[no test files]
+?   	google.golang.org/grpc/interop/xds/server	[no test files]
+?   	google.golang.org/grpc/keepalive	[no test files]
+ok  	google.golang.org/grpc/metadata	0.196s	coverage: 64.7% of statements
+?   	google.golang.org/grpc/peer	[no test files]
+?   	google.golang.org/grpc/profiling	[no test files]
+?   	google.golang.org/grpc/profiling/cmd	[no test files]
+?   	google.golang.org/grpc/profiling/proto	[no test files]
+?   	google.golang.org/grpc/profiling/service	[no test files]
+ok  	google.golang.org/grpc/reflection	0.344s	coverage: 85.6% of statements
+?   	google.golang.org/grpc/reflection/grpc_reflection_v1alpha	[no test files]
+?   	google.golang.org/grpc/reflection/grpc_testing	[no test files]
+?   	google.golang.org/grpc/reflection/grpc_testingv3	[no test files]
+?   	google.golang.org/grpc/resolver	[no test files]
+?   	google.golang.org/grpc/resolver/dns	[no test files]
+?   	google.golang.org/grpc/resolver/manual	[no test files]
+?   	google.golang.org/grpc/resolver/passthrough	[no test files]
+?   	google.golang.org/grpc/serviceconfig	[no test files]
+ok  	google.golang.org/grpc/stats	0.431s	coverage: 100.0% of statements
+ok  	google.golang.org/grpc/status	0.295s	coverage: 73.9% of statements
+?   	google.golang.org/grpc/stress/client	[no test files]
+?   	google.golang.org/grpc/stress/grpc_testing	[no test files]
+?   	google.golang.org/grpc/stress/metrics_client	[no test files]
+?   	google.golang.org/grpc/tap	[no test files]
+ok  	google.golang.org/grpc/test	37.684s	coverage: 71.4% of statements
+ok  	google.golang.org/grpc/test/bufconn	0.503s	coverage: 90.2% of statements
+?   	google.golang.org/grpc/test/codec_perf	[no test files]
+?   	google.golang.org/grpc/test/go_vet	[no test files]
+?   	google.golang.org/grpc/test/grpc_testing	[no test files]
+ok  	google.golang.org/grpc/xds	0.486s	coverage: 70.3% of statements
+ok  	google.golang.org/grpc/xds/csds	0.940s	coverage: 81.8% of statements
+ok  	google.golang.org/grpc/xds/googledirectpath	0.404s	coverage: 42.4% of statements
+ok  	google.golang.org/grpc/xds/internal	0.476s	coverage: 50.0% of statements
+?   	google.golang.org/grpc/xds/internal/balancer	[no test files]
+ok  	google.golang.org/grpc/xds/internal/balancer/balancergroup	1.782s	coverage: 86.2% of statements
+ok  	google.golang.org/grpc/xds/internal/balancer/cdsbalancer	0.661s	coverage: 91.7% of statements
+--- FAIL: TestPickerUpdateAfterClose (0.00s)
+    balancer.go:107: testClientConn: NewSubConn([{1.1.1.1:1  0xc000716508 0 <nil>}], {CredsBundle:<nil> HealthCheckEnabled:true}) => sc0
+    balancer.go:141: testClientConn: UpdateState({CONNECTING 0xc00053a000})
+    balancer_test.go:381: unexpected picker update after balancer is closed
+FAIL
+coverage: 87.3% of statements
+FAIL	google.golang.org/grpc/xds/internal/balancer/clusterimpl	0.465s
+ok  	google.golang.org/grpc/xds/internal/balancer/clustermanager	0.777s	coverage: 83.3% of statements
+ok  	google.golang.org/grpc/xds/internal/balancer/clusterresolver	3.310s	coverage: 88.5% of statements
+?   	google.golang.org/grpc/xds/internal/balancer/loadstore	[no test files]
+ok  	google.golang.org/grpc/xds/internal/balancer/orca	0.322s	coverage: 77.3% of statements
+ok  	google.golang.org/grpc/xds/internal/balancer/priority	5.745s	coverage: 88.2% of statements
+?   	google.golang.org/grpc/xds/internal/balancer/ringhash	[no test files]
+ok  	google.golang.org/grpc/xds/internal/balancer/weightedtarget	0.344s	coverage: 86.0% of statements
+?   	google.golang.org/grpc/xds/internal/balancer/weightedtarget/weightedaggregator	[no test files]
+?   	google.golang.org/grpc/xds/internal/httpfilter	[no test files]
+ok  	google.golang.org/grpc/xds/internal/httpfilter/fault	0.575s	coverage: 78.3% of statements
+?   	google.golang.org/grpc/xds/internal/httpfilter/router	[no test files]
+ok  	google.golang.org/grpc/xds/internal/resolver	2.381s	coverage: 81.2% of statements
+ok  	google.golang.org/grpc/xds/internal/server	0.439s	coverage: 54.5% of statements
+ok  	google.golang.org/grpc/xds/internal/test	2.596s	coverage: [no statements]
+ok  	google.golang.org/grpc/xds/internal/testutils	0.311s	coverage: 27.0% of statements
+?   	google.golang.org/grpc/xds/internal/testutils/e2e	[no test files]
+?   	google.golang.org/grpc/xds/internal/testutils/fakeclient	[no test files]
+?   	google.golang.org/grpc/xds/internal/testutils/fakeserver	[no test files]
+?   	google.golang.org/grpc/xds/internal/version	[no test files]
+ok  	google.golang.org/grpc/xds/internal/xdsclient	2.185s	coverage: 85.6% of statements
+ok  	google.golang.org/grpc/xds/internal/xdsclient/bootstrap	0.267s	coverage: 87.2% of statements
+ok  	google.golang.org/grpc/xds/internal/xdsclient/load	0.339s	coverage: 92.6% of statements
+ok  	google.golang.org/grpc/xds/internal/xdsclient/v2	1.352s	coverage: 49.1% of statements
+?   	google.golang.org/grpc/xds/internal/xdsclient/v3	[no test files]

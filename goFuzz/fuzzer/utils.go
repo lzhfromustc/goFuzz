@@ -10,6 +10,8 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -51,6 +53,70 @@ func parseGoCmdListOutput(output string) ([]string, error) {
 		}
 	}
 	return filtered, nil
+}
+
+func ListFilesInFolder(dir string) ([]string, error) {
+	var files []string
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+func ListGoTestsFromFolderContainsTestBins(dir string) ([]*GoTest, error) {
+	files, err := ListFilesInFolder(dir)
+	if err != nil {
+		return nil, err
+	}
+	var tests []*GoTest
+	for _, file := range files {
+		testsInFile, err := ListGoTestsFromTestBin(file)
+		if err != nil {
+			return nil, err
+		}
+		tests = append(tests, testsInFile...)
+	}
+	return tests, nil
+}
+
+func ListGoTestsFromTestBin(testBin string) ([]*GoTest, error) {
+	cmd := exec.Command(testBin, "-test.list", ".*")
+	var out bytes.Buffer
+	w := io.MultiWriter(&out, log.Writer())
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	log.Printf("%s -test.list .*", testBin)
+
+	err := cmd.Run()
+
+	if err != nil {
+		return nil, fmt.Errorf("[%s -test.list .*] failed: %v", testBin, err)
+	}
+
+	testFuncs, err := parseGoCmdTestListOutput(out.String())
+	if err != nil {
+		return nil, err
+	}
+
+	goTests := make([]*GoTest, 0, len(testFuncs))
+	binName := path.Base(testBin)
+	for _, testFunc := range testFuncs {
+		goTests = append(goTests, &GoTest{
+			Func:    testFunc,
+			Bin:     testBin,
+			Package: binName,
+		})
+	}
+	return goTests, nil
+
 }
 
 // ListTestsInPackage lists all tests in the given package

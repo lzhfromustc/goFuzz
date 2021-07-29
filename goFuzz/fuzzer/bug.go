@@ -65,7 +65,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 		// trim space and tab
 		line = strings.TrimLeft(line, " \t")
 		if strings.HasPrefix(line, "-----New NonBlocking Bug:") ||
-			strings.HasPrefix(line, "panic") || strings.HasPrefix(line, "fatal error") {
+			strings.HasPrefix(line, "panic: ") || strings.HasPrefix(line, "fatal error") {
 
 			if strings.HasPrefix(line, "panic: test timed out after") {
 				continue
@@ -84,12 +84,12 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 					continue
 				}
 
-				if strings.Contains(lines[idLineIdx], "src/runtime/my") || strings.Contains(lines[idLineIdx], "src/sync") {
+				if strings.Contains(lines[idLineIdx], "/go/src/runtime") || strings.Contains(lines[idLineIdx], "src/sync") || strings.Contains(lines[idLineIdx], "/go/src/testing") {
 					idLineIdx += 2
 					continue
 				}
 
-				if strings.HasPrefix(lines[idLineIdx], "\t") {
+				if strings.HasPrefix(lines[idLineIdx], "\t") && !strings.Contains(lines[idLineIdx], "panic: ") {
 					// first line with filename + linenumer
 					break
 				}
@@ -98,7 +98,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			}
 
 			targetLine := lines[idLineIdx]
-
+			println(targetLine)
 			id, err := getFileAndLineFromStacktraceLine(targetLine)
 
 			if err != nil {
@@ -116,7 +116,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			}
 
 			// then only need to inspect lines betwee idx and idEnd
-			linesThisBug := lines[idx: idEnd + 1]
+			linesThisBug := lines[idx : idEnd+1]
 			bug := &bugInfo{}
 
 			// find "---Blocking location:", if any
@@ -125,10 +125,10 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			if err != nil {
 				// this is OK, some bug reports don't contain "---Blocking location:"
 			} else {
-				if idBlockLoc + 1 >= len(linesThisBug) {
+				if idBlockLoc+1 >= len(linesThisBug) {
 					log.Printf("the next line of \"---Blocking location:\" doesn't exist")
 				} else {
-					bug.strBlockLoc = linesThisBug[idBlockLoc + 1]
+					bug.strBlockLoc = linesThisBug[idBlockLoc+1]
 				}
 			}
 
@@ -210,7 +210,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 		} else if strings.HasPrefix(line, "-----Withdraw prim:") {
 			// We need to delete all bugs in mapBlockingBug whose vecPrimStr contains this ptr
 			strPtr := strings.TrimPrefix(line, "-----Withdraw prim:")
-			for bug, _ := range mapBlockingBug {
+			for bug := range mapBlockingBug {
 				for _, primPtr := range bug.vecPrimPtr {
 					if strPtr == primPtr {
 						delete(mapBlockingBug, bug)
@@ -222,11 +222,11 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 	}
 
 	// for survival bugs in this map, we believe they are real bugs
-	for bug, _ := range mapBlockingBug {
+	for bug := range mapBlockingBug {
 		ids[bug.id] = struct{}{}
 	}
 
-	for id, _ := range ids {
+	for id := range ids {
 		result = append(result, id)
 	}
 

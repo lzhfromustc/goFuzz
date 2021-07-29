@@ -1,0 +1,227 @@
+ok  	github.com/prometheus/prometheus/cmd/prometheus	73.051s	coverage: 8.2% of statements
+ok  	github.com/prometheus/prometheus/cmd/promtool	48.881s	coverage: 33.1% of statements
+ok  	github.com/prometheus/prometheus/config	1.576s	coverage: 90.2% of statements
+ok  	github.com/prometheus/prometheus/discovery	3.882s	coverage: 46.6% of statements
+?   	github.com/prometheus/prometheus/discovery/aws	[no test files]
+ok  	github.com/prometheus/prometheus/discovery/azure	0.355s	coverage: 10.7% of statements
+ok  	github.com/prometheus/prometheus/discovery/consul	3.087s	coverage: 81.8% of statements
+ok  	github.com/prometheus/prometheus/discovery/digitalocean	0.894s	coverage: 71.2% of statements
+ok  	github.com/prometheus/prometheus/discovery/dns	0.739s	coverage: 60.0% of statements
+ok  	github.com/prometheus/prometheus/discovery/eureka	1.193s	coverage: 69.7% of statements
+ok  	github.com/prometheus/prometheus/discovery/file	3.689s	coverage: 69.7% of statements
+?   	github.com/prometheus/prometheus/discovery/gce	[no test files]
+ok  	github.com/prometheus/prometheus/discovery/hetzner	0.971s	coverage: 64.2% of statements
+ok  	github.com/prometheus/prometheus/discovery/http	1.061s	coverage: 59.4% of statements
+?   	github.com/prometheus/prometheus/discovery/install	[no test files]
+ok  	github.com/prometheus/prometheus/discovery/kubernetes	19.712s	coverage: 77.3% of statements
+ok  	github.com/prometheus/prometheus/discovery/linode	0.474s	coverage: 76.6% of statements
+ok  	github.com/prometheus/prometheus/discovery/marathon	0.321s	coverage: 66.9% of statements
+ok  	github.com/prometheus/prometheus/discovery/moby	0.292s	coverage: 81.8% of statements
+ok  	github.com/prometheus/prometheus/discovery/openstack	0.607s	coverage: 67.3% of statements
+ok  	github.com/prometheus/prometheus/discovery/refresh	0.226s	coverage: 85.7% of statements
+ok  	github.com/prometheus/prometheus/discovery/scaleway	1.019s	coverage: 45.9% of statements
+ok  	github.com/prometheus/prometheus/discovery/targetgroup	0.734s	coverage: 100.0% of statements
+ok  	github.com/prometheus/prometheus/discovery/triton	0.345s	coverage: 67.1% of statements
+ok  	github.com/prometheus/prometheus/discovery/xds	3.027s	coverage: 59.6% of statements
+ok  	github.com/prometheus/prometheus/discovery/zookeeper	0.414s	coverage: 10.3% of statements
+ok  	github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter	0.982s	coverage: 66.1% of statements
+?   	github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter-usage	[no test files]
+?   	github.com/prometheus/prometheus/documentation/examples/remote_storage/example_write_adapter	[no test files]
+?   	github.com/prometheus/prometheus/documentation/examples/remote_storage/remote_storage_adapter	[no test files]
+ok  	github.com/prometheus/prometheus/documentation/examples/remote_storage/remote_storage_adapter/graphite	0.220s	coverage: 54.8% of statements
+ok  	github.com/prometheus/prometheus/documentation/examples/remote_storage/remote_storage_adapter/influxdb	1.076s	coverage: 19.2% of statements
+ok  	github.com/prometheus/prometheus/documentation/examples/remote_storage/remote_storage_adapter/opentsdb	0.876s	coverage: 53.3% of statements
+ok  	github.com/prometheus/prometheus/notifier	1.634s	coverage: 81.9% of statements
+?   	github.com/prometheus/prometheus/pkg/exemplar	[no test files]
+?   	github.com/prometheus/prometheus/pkg/gate	[no test files]
+ok  	github.com/prometheus/prometheus/pkg/labels	0.912s	coverage: 62.3% of statements
+ok  	github.com/prometheus/prometheus/pkg/logging	1.183s	coverage: 71.2% of statements
+?   	github.com/prometheus/prometheus/pkg/modtimevfs	[no test files]
+ok  	github.com/prometheus/prometheus/pkg/pool	0.874s	coverage: 85.2% of statements
+ok  	github.com/prometheus/prometheus/pkg/relabel	1.478s	coverage: 55.6% of statements
+ok  	github.com/prometheus/prometheus/pkg/rulefmt	2.617s	coverage: 91.6% of statements
+?   	github.com/prometheus/prometheus/pkg/runtime	[no test files]
+ok  	github.com/prometheus/prometheus/pkg/textparse	2.574s	coverage: 82.4% of statements
+?   	github.com/prometheus/prometheus/pkg/timestamp	[no test files]
+?   	github.com/prometheus/prometheus/pkg/value	[no test files]
+?   	github.com/prometheus/prometheus/prompb	[no test files]
+ok  	github.com/prometheus/prometheus/promql	17.248s	coverage: 88.5% of statements
+ok  	github.com/prometheus/prometheus/promql/parser	4.414s	coverage: 82.7% of statements
+ok  	github.com/prometheus/prometheus/rules	36.169s	coverage: 78.2% of statements
+ok  	github.com/prometheus/prometheus/scrape	16.408s	coverage: 79.4% of statements
+ok  	github.com/prometheus/prometheus/storage	2.453s	coverage: 77.6% of statements
+ok  	github.com/prometheus/prometheus/storage/remote	11.199s	coverage: 75.5% of statements
+ok  	github.com/prometheus/prometheus/template	1.128s	coverage: 85.4% of statements
+level=info msg="Found healthy block" mint=0 maxt=3 ulid=01FBQT0X151W1RWXXQRV9PVMN6
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=1.856µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=0
+level=info msg="WAL replay completed" checkpoint_replay_duration=115.554µs wal_replay_duration=230.867µs total_replay_duration=354.708µs
+level=info msg="write block" mint=3 maxt=10000 ulid=01FBQT0XXBB0ERT6G0EB10CS5D duration=850.366138ms
+level=info msg="Head GC completed" duration=953.335µs
+level=info msg="Compactions disabled"
+level=info msg="Found healthy block" mint=0 maxt=3 ulid=01FBQT0X151W1RWXXQRV9PVMN6
+level=info msg="Found healthy block" mint=3 maxt=10000 ulid=01FBQT0XXBB0ERT6G0EB10CS5D
+level=info msg="Found healthy block" mint=15005 maxt=15006 ulid=01FBQT0YWQ2QDYZYATN9X9ER92
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=4.052µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=2
+level=info msg="WAL segment loaded" segment=1 maxSegment=2
+level=info msg="WAL segment loaded" segment=2 maxSegment=2
+level=info msg="WAL replay completed" checkpoint_replay_duration=170.22µs wal_replay_duration=703.145µs total_replay_duration=884.128µs
+level=info msg="write block" mint=15006 maxt=20000 ulid=01FBQT0ZS78EW5FGWN4NAM102S duration=855.072352ms
+level=info msg="Head GC completed" duration=1.189449ms
+level=info msg="Found healthy block" mint=10 maxt=12 ulid=01FBQT10R43Z2TRRA1307DWW3S
+level=info msg="Found healthy block" mint=12 maxt=14 ulid=01FBQT11JVHY6Y143YBEK9T97H
+level=info msg="Found healthy block" mint=14 maxt=16 ulid=01FBQT12DSQFXM4PB43M4A9QAX
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=1.931µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=1
+level=info msg="WAL segment loaded" segment=1 maxSegment=1
+level=info msg="WAL replay completed" checkpoint_replay_duration=138.06µs wal_replay_duration=488.43µs total_replay_duration=634.512µs
+level=info msg="Compactions disabled"
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=1.778µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=1
+level=info msg="WAL segment loaded" segment=1 maxSegment=1
+level=info msg="WAL replay completed" checkpoint_replay_duration=108.815µs wal_replay_duration=492.081µs total_replay_duration=608.398µs
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=1.414µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=1
+level=info msg="WAL segment loaded" segment=1 maxSegment=1
+level=info msg="WAL replay completed" checkpoint_replay_duration=123.312µs wal_replay_duration=1.104382ms total_replay_duration=1.233871ms
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=1.382µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=0
+level=info msg="WAL replay completed" checkpoint_replay_duration=91.306µs wal_replay_duration=442.615µs total_replay_duration=540.327µs
+level=info msg="Compactions disabled"
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=2.409µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=0
+level=info msg="WAL replay completed" checkpoint_replay_duration=122.276µs wal_replay_duration=51.664008ms total_replay_duration=51.794649ms
+level=info msg="write block" mint=0 maxt=1000 ulid=01FBQT13F1MCKBNJTDJN3VMG60 duration=861.578917ms
+level=info msg="Fixing broken block" mint=1511366400000 maxt=1511368200000 ulid=01BZJ9WJQPWHGNC2W4J9TA62KC
+level=info msg="Found healthy block" mint=0 maxt=10 ulid=01FBQT17276ZYHKFG8716N6KMF
+level=info msg="Found healthy block" mint=10 maxt=20 ulid=01FBQT17ZERZ955E46NNYF72WH
+level=error msg="failed to read meta.json for a block during repair process; skipping" dir=/var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT18VWVDCKFCAZCDT280A8 err="open /var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT18VWVDCKFCAZCDT280A8/meta.json: no such file or directory"
+level=info msg="Found healthy block" mint=50 maxt=60 ulid=01FBQT1CAD0218G0RQ7A7X6HX1
+level=info msg="Found healthy block" mint=50 maxt=55 ulid=01FBQT1D5V7QFB536WAFSS2J6J
+level=info msg="Found and deleted tmp block dir" dir=/var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT19PFEZKRH59GTDMMVZ1M.tmp-for-creation
+level=info msg="Found and deleted tmp block dir" dir=/var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT1AJBD4E9S9PG4K3Q6PS7.tmp-for-deletion
+level=info msg="Found and deleted tmp block dir" dir=/var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT1BENFX224WZD6X6KX0NK.tmp
+level=error msg="Failed to read meta.json for a block during reloadBlocks. Skipping" dir=/var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT18VWVDCKFCAZCDT280A8 err="open /var/folders/h7/sr1nns017kx16l2pw_9lbs5m0000gn/T/test480459000/01FBQT18VWVDCKFCAZCDT280A8/meta.json: no such file or directory"
+level=info msg="Deleting obsolete block" block=01FBQT1D5V7QFB536WAFSS2J6J
+level=info msg="Replaying on-disk memory mappable chunks if any"
+level=info msg="On-disk memory mappable chunks replay completed" duration=4.476µs
+level=info msg="Replaying WAL, this may take a while"
+level=info msg="WAL segment loaded" segment=0 maxSegment=0
+level=info msg="WAL replay completed" checkpoint_replay_duration=187.6µs wal_replay_duration=280.136µs total_replay_duration=479.125µs
+coverage: 62.2% of statements
+panic: test timed out after 10m0s
+
+goroutine 10509 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:1700 +0xe5
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:180 +0x45
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0xc0000a0c00, 0x16d1224, 0x1f, 0x16ebeb0, 0x1092201)
+	/usr/local/go/src/testing/testing.go:1239 +0x2da
+testing.runTests.func1(0xc000102300)
+	/usr/local/go/src/testing/testing.go:1511 +0x78
+testing.tRunner(0xc000102300, 0xc0000d1ca0)
+	/usr/local/go/src/testing/testing.go:1193 +0xef
+testing.runTests(0xc000110bd0, 0x1ace780, 0x8a, 0x8a, 0xc0389ae457cd1808, 0x8bb4295e4c, 0x1ad3d00, 0xc0000d1d38)
+	/usr/local/go/src/testing/testing.go:1509 +0x2fe
+testing.(*M).Run(0xc000122080, 0x0)
+	/usr/local/go/src/testing/testing.go:1417 +0x1eb
+go.uber.org/goleak.VerifyTestMain(0x1780340, 0xc000122080, 0xc0000bbe80, 0x1, 0x1)
+	/Users/xsh/go/pkg/mod/go.uber.org/goleak@v1.1.10/testmain.go:53 +0x38
+github.com/prometheus/prometheus/tsdb.TestMain(0xc000122080)
+	/Users/xsh/code/prometheus/tsdb/db_test.go:57 +0x8c
+main.main()
+	_testmain.go:427 +0x1f6
+
+goroutine 10416 [runnable]:
+syscall.syscallX(0x1085460, 0x69, 0x0, 0x1, 0x0, 0x0, 0x0)
+	/usr/local/go/src/runtime/sys_darwin.go:30 +0x2e
+syscall.Seek(0x69, 0x0, 0x1, 0x104401c, 0xc000001c80, 0x300000002)
+	/usr/local/go/src/syscall/zsyscall_darwin_amd64.go:1363 +0x58
+internal/poll.(*FD).Seek(0xc0008bc060, 0x0, 0x1, 0x0, 0x0, 0x0)
+	/usr/local/go/src/internal/poll/fd_unix.go:421 +0xe9
+os.(*File).seek(0xc00021c000, 0x0, 0x1, 0xc0000c10d0, 0x0, 0x0)
+	/usr/local/go/src/os/file_unix.go:274 +0x74
+os.(*File).Seek(0xc00021c000, 0x0, 0x1, 0x0, 0x300000004, 0x0)
+	/usr/local/go/src/os/file.go:236 +0x59
+github.com/prometheus/prometheus/tsdb/fileutil.preallocExtendTrunc(0xc00021c000, 0x20000000, 0x0, 0x0)
+	/Users/xsh/code/prometheus/tsdb/fileutil/preallocate.go:39 +0x45
+github.com/prometheus/prometheus/tsdb/fileutil.preallocExtend(0xc00021c000, 0x20000000, 0x0, 0x0)
+	/Users/xsh/code/prometheus/tsdb/fileutil/preallocate_darwin.go:27 +0x77
+github.com/prometheus/prometheus/tsdb/fileutil.Preallocate(0xc00021c000, 0x20000000, 0x201, 0x1b6, 0xc00021c000)
+	/Users/xsh/code/prometheus/tsdb/fileutil/preallocate.go:33 +0x47
+github.com/prometheus/prometheus/tsdb/chunks.cutSegmentFile(0xc00023a400, 0x185bd40dd, 0x20000000, 0x0, 0x0, 0x1, 0x0, 0x0)
+	/Users/xsh/code/prometheus/tsdb/chunks/chunks.go:243 +0x7e7
+github.com/prometheus/prometheus/tsdb/chunks.(*Writer).cut(0xc00012f1d0, 0xc000244030, 0x17)
+	/Users/xsh/code/prometheus/tsdb/chunks/chunks.go:205 +0x6d
+github.com/prometheus/prometheus/tsdb/chunks.(*Writer).WriteChunks(0xc00012f1d0, 0xc000c0e690, 0x1, 0x1, 0x0, 0xc000039000)
+	/Users/xsh/code/prometheus/tsdb/chunks/chunks.go:330 +0x3b6
+github.com/prometheus/prometheus/tsdb.(*instrumentedChunkWriter).WriteChunks(0xc00023c6c0, 0xc000c0e690, 0x1, 0x1, 0x1, 0xc000c0e690)
+	/Users/xsh/code/prometheus/tsdb/compact.go:544 +0x189
+github.com/prometheus/prometheus/tsdb.(*LeveledCompactor).populateBlock(0xc000aa1800, 0xc0000c1b00, 0x1, 0x1, 0xc0001ab560, 0x1788670, 0xc0001834a0, 0x17844c8, 0xc00023c6c0, 0x0, ...)
+	/Users/xsh/code/prometheus/tsdb/compact.go:783 +0xd97
+github.com/prometheus/prometheus/tsdb.(*LeveledCompactor).write(0xc000aa1800, 0xc000026e00, 0x3e, 0xc0001ab560, 0xc0000c1b00, 0x1, 0x1, 0x0, 0x0)
+	/Users/xsh/code/prometheus/tsdb/compact.go:596 +0x62c
+github.com/prometheus/prometheus/tsdb.(*LeveledCompactor).Write(0xc000aa1800, 0xc000026e00, 0x3e, 0x178bf18, 0xc000206d80, 0xb3b0, 0xb798, 0x0, 0x0, 0x0, ...)
+	/Users/xsh/code/prometheus/tsdb/compact.go:503 +0x20d
+github.com/prometheus/prometheus/tsdb.(*DB).compactHead(0xc0000e02d0, 0xc000206d80, 0x0, 0x0)
+	/Users/xsh/code/prometheus/tsdb/db.go:965 +0xbd
+github.com/prometheus/prometheus/tsdb.(*DB).Compact(0xc0000e02d0, 0x0, 0x0)
+	/Users/xsh/code/prometheus/tsdb/db.go:923 +0x305
+github.com/prometheus/prometheus/tsdb.TestOneCheckpointPerCompactCall(0xc0000a0c00)
+	/Users/xsh/code/prometheus/tsdb/db_test.go:3032 +0x879
+testing.tRunner(0xc0000a0c00, 0x16ebeb0)
+	/usr/local/go/src/testing/testing.go:1193 +0xef
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1238 +0x2b3
+
+goroutine 10600 [select]:
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc0000e02d0)
+	/Users/xsh/code/prometheus/tsdb/db.go:808 +0x1c5
+created by github.com/prometheus/prometheus/tsdb.open
+	/Users/xsh/code/prometheus/tsdb/db.go:758 +0xa35
+
+goroutine 10527 [select]:
+github.com/prometheus/prometheus/tsdb/wal.(*WAL).run(0xc0000cd170)
+	/Users/xsh/code/prometheus/tsdb/wal/wal.go:332 +0xbc
+created by github.com/prometheus/prometheus/tsdb/wal.NewSize
+	/Users/xsh/code/prometheus/tsdb/wal/wal.go:301 +0x325
+FAIL	github.com/prometheus/prometheus/tsdb	600.835s
+ok  	github.com/prometheus/prometheus/tsdb/chunkenc	0.368s	coverage: 74.3% of statements
+ok  	github.com/prometheus/prometheus/tsdb/chunks	4.890s	coverage: 54.2% of statements
+?   	github.com/prometheus/prometheus/tsdb/encoding	[no test files]
+?   	github.com/prometheus/prometheus/tsdb/errors	[no test files]
+ok  	github.com/prometheus/prometheus/tsdb/fileutil	0.555s	coverage: 14.5% of statements
+ok  	github.com/prometheus/prometheus/tsdb/goversion	0.330s	coverage: [no statements]
+ok  	github.com/prometheus/prometheus/tsdb/index	9.745s	coverage: 71.4% of statements
+ok  	github.com/prometheus/prometheus/tsdb/record	0.563s	coverage: 89.5% of statements
+ok  	github.com/prometheus/prometheus/tsdb/test	0.244s	coverage: [no statements] [no tests to run]
+ok  	github.com/prometheus/prometheus/tsdb/tombstones	0.412s	coverage: 70.1% of statements
+ok  	github.com/prometheus/prometheus/tsdb/tsdbutil	0.270s	coverage: 65.6% of statements
+ok  	github.com/prometheus/prometheus/tsdb/wal	23.385s	coverage: 78.6% of statements
+ok  	github.com/prometheus/prometheus/util/httputil	0.360s	coverage: 69.4% of statements
+?   	github.com/prometheus/prometheus/util/osutil	[no test files]
+ok  	github.com/prometheus/prometheus/util/stats	0.305s	coverage: 81.4% of statements
+ok  	github.com/prometheus/prometheus/util/strutil	0.442s	coverage: 100.0% of statements
+?   	github.com/prometheus/prometheus/util/teststorage	[no test files]
+?   	github.com/prometheus/prometheus/util/testutil	[no test files]
+?   	github.com/prometheus/prometheus/util/treecache	[no test files]
+ok  	github.com/prometheus/prometheus/web	16.166s	coverage: 54.7% of statements
+ok  	github.com/prometheus/prometheus/web/api/v1	2.380s	coverage: 81.3% of statements

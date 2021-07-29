@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 )
 
+var (
+	testBinsDir string
+)
+
 // parseFlag init logger and settings for the fuzzer
 func parseFlag() {
 
@@ -24,6 +28,7 @@ func parseFlag() {
 	pTargetTestBin := flag.String("testBin", "", "Use given binary file instead of calling go test")
 	pBoolScoreAllPrim := flag.Bool("scoreAllPrim", false, "Recording/scoring other primitives like Mutex together with channel")
 	pTimeDivide := flag.Int("timeDivideBy", 1, "Durations in time/sleep.go will be divided by this int number")
+	pTestBinsDir := flag.String("testBinsDir", "", "")
 	flag.Parse()
 
 	fuzzer.TargetTestFunc = *pTargetTestFunc
@@ -37,6 +42,7 @@ func parseFlag() {
 	fuzzer.TargetTestPkg = *pTargetTestPkg
 	fuzzer.TargetTestBin = *pTargetTestBin
 	fuzzer.TimeDivide = *pTimeDivide
+	testBinsDir = *pTestBinsDir
 
 	if fuzzer.OutputDir == "" {
 		log.Fatal("-outputDir is required")
@@ -49,8 +55,8 @@ func parseFlag() {
 		}
 	}
 
-	if fuzzer.TargetGoModDir == "" {
-		log.Fatal("-goModDir is required")
+	if fuzzer.TargetGoModDir == "" && testBinsDir == "" {
+		log.Fatal("Either -goModDir or -testBinsDir is required")
 	}
 
 }
@@ -89,6 +95,12 @@ func main() {
 		testsToFuzz = append(testsToFuzz, &fuzzer.GoTest{
 			Func: fuzzer.TargetTestFunc,
 		})
+	} else if testBinsDir != "" {
+		tests, err := fuzzer.ListGoTestsFromFolderContainsTestBins(testBinsDir)
+		if err != nil {
+			log.Fatalf("failed to list tests by test bin at %s: %v", testBinsDir, err)
+		}
+		testsToFuzz = append(testsToFuzz, tests...)
 	} else {
 		log.Printf("finding all tests under module %s", fuzzer.TargetGoModDir)
 
