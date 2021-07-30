@@ -38,6 +38,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	src := runTask.input.Src()
 
 	if result.IsTimeout {
+		log.Printf("[Worker %s][Task %s] found timeout", workerID, runTask.id)
 		fuzzCtx.RecordTargetTimeoutOnce(src)
 	}
 
