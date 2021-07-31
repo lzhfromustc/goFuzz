@@ -82,12 +82,13 @@ func BeforeRunFuzz() (result *OracleEntry) {
 		BoolOracleStarted = true
 	}
 	var err error
-	time.DurDivideBy, err = strconv.Atoi(os.Getenv("GF_TIME_DIVIDE"))
+	baseStr := os.Getenv("GF_TIME_DIVIDE")
+	if baseStr == "" {
+		baseStr == "1"
+	}
+	time.DurDivideBy, err = strconv.Atoi(baseStr)
 	if err != nil {
 		fmt.Println("Failed to set time.DurDivideBy. time.DurDivideBy is set to 1. Err:", err)
-	}
-	if time.DurDivideBy == 0 {
-		time.DurDivideBy = 1
 	}
 
 	result = &OracleEntry{

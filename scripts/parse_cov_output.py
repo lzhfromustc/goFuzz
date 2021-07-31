@@ -15,11 +15,11 @@ def main():
         for line in lines:
             cov_idx = line.find(cov_key)
             num_str = line[cov_idx+len(cov_key):line.find("%")]
+            cnt += 1
             if num_str[0] == '[':
                 continue
         
             total += float(num_str)
-            cnt += 1
     print(f"{total/cnt:.2f}%")
 
 if __name__ == "__main__":
