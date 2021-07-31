@@ -84,7 +84,7 @@ func BeforeRunFuzz() (result *OracleEntry) {
 	var err error
 	baseStr := os.Getenv("GF_TIME_DIVIDE")
 	if baseStr == "" {
-		baseStr == "1"
+		baseStr = "1"
 	}
 	time.DurDivideBy, err = strconv.Atoi(baseStr)
 	if err != nil {
