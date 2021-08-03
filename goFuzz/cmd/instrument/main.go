@@ -19,13 +19,15 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
-var boolNeedInstrument bool = false // remember: if we instrument, we always need to import gooracle
-var additionalNode ast.Stmt
-var currentFSet *token.FileSet
-var Uint16OpID uint16
-
-var recordOutputFile string
-var records []string
+var (
+	boolNeedInstrument bool = false // remember: if we instrument, we always need to import gooracle
+	additionalNode     ast.Stmt
+	currentFSet        *token.FileSet
+	Uint16OpID         uint16
+	recordOutputFile   string
+	records            []string
+	numOfSelects       uint32
+)
 
 var sliceStrNoInstr = []string{
 	"src/runtime",
@@ -125,7 +127,6 @@ func main() {
 	ioutil.WriteFile(filename, newSource, fi.Mode())
 
 	if recordOutputFile != "" {
-		fmt.Printf("Dump operations to %s", recordOutputFile)
 		dir := path.Dir(recordOutputFile)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			err := os.MkdirAll(dir, 0755)
@@ -152,6 +153,8 @@ func main() {
 			panic(err)
 		}
 	}
+
+	fmt.Printf("number of selects: %d\n", numOfSelects)
 
 }
 
@@ -181,13 +184,13 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 			Type: nil,
 		}
 		newIdent := &ast.Ident{
-			Name:    "oracleEntry",
-			Obj:     newObject,
+			Name: "oracleEntry",
+			Obj:  newObject,
 		}
-		newAssign.Lhs = []ast.Expr {
+		newAssign.Lhs = []ast.Expr{
 			newIdent,
 		}
-		newAssign.Rhs = []ast.Expr {
+		newAssign.Rhs = []ast.Expr{
 			NewArgCall("gooracle", "BeforeRun", nil),
 		}
 		c.InsertBefore(newAssign)
@@ -209,12 +212,12 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 			if recvAndFirstStmt.firstStmt == cStmt {
 				newCall := NewArgCallExpr("gooracle", "CurrentGoAddValue", []ast.Expr{
 					&ast.Ident{
-						Name:    recvAndFirstStmt.recvName,
-						Obj:     recvAndFirstStmt.recvObj,
+						Name: recvAndFirstStmt.recvName,
+						Obj:  recvAndFirstStmt.recvObj,
 					},
 					&ast.Ident{
-						Name:    "nil",
-						Obj:     nil,
+						Name: "nil",
+						Obj:  nil,
 					},
 					&ast.BasicLit{
 						ValuePos: 0,
@@ -442,9 +445,9 @@ func preWithoutSelect(c *astutil.Cursor) bool {
 }
 
 type RecvAndFirstStmt struct {
-	recvName string
+	recvName  string
 	firstStmt ast.Stmt
-	recvObj *ast.Object
+	recvObj   *ast.Object
 }
 
 var vecRecvAndFirstStmt []*RecvAndFirstStmt
@@ -464,6 +467,7 @@ func preOnlySelect(c *astutil.Cursor) bool {
 	switch concrete := c.Node().(type) {
 
 	case *ast.SelectStmt:
+		numOfSelects += 1
 		positionOriSelect := currentFSet.Position(concrete.Select)
 		positionOriSelect.Filename, _ = filepath.Abs(positionOriSelect.Filename)
 		// store the original select

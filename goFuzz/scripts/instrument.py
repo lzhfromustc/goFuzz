@@ -11,8 +11,11 @@ PROJ_ROOT_DIR = pathlib.Path(os.path.realpath(__file__)).parent.parent.as_posix(
 BIN_INSTRUMENT = None
 BIN_PRINTOPERATION = None
 
+# Metrics
+NUM_OF_FILES_INSTRUMENTED = 0
+NUM_OF_SELECTS = 0
 
-def find_gotest_in_folder(folder: str) -> List[str]:
+def find_go_files_in_folder(folder: str) -> List[str]:
     """Find all *_test.go files under the given folder
 
     Args:
@@ -24,7 +27,6 @@ def find_gotest_in_folder(folder: str) -> List[str]:
     if folder.endswith("/"):
         folder = folder[:-1]
     glob_path = os.path.join(folder, '**', '*.go')
-    print(f"using glob {glob_path}")
     return glob.glob(glob_path, recursive=True)
 
 def generate_ch_statistics(bin:str, go_file:str, output_file:str):
@@ -35,17 +37,38 @@ def generate_ch_statistics(bin:str, go_file:str, output_file:str):
     """
     res = subprocess.run([bin, f"-file={go_file}", f"-output={output_file}"])
     res.check_returncode()
-    print(f"Dump channel statistics of file {go_file} to {output_file}")
 
-def instrument_gotest(bin:str, go_file: str, rec_out_file:str):
+def instrument_go_file(bin:str, go_file: str, rec_out_file:str):
     """Instrument Golang test file by bin/instrument
 
     Args:
         file (str): Golang test file going to be instrumented
     """
-    res = subprocess.run([bin, f"-file={go_file}", f"-output={rec_out_file}"])
+    res = subprocess.run([bin, f"-file={go_file}", f"-output={rec_out_file}"], stdout=subprocess.PIPE)
     res.check_returncode()
-    print(f"Instrumented file {go_file}")
+    num_of_selects = parse_inst_output(res.stdout.decode('utf-8'))
+    global NUM_OF_FILES_INSTRUMENTED, NUM_OF_SELECTS
+    NUM_OF_FILES_INSTRUMENTED += 1
+    NUM_OF_SELECTS += num_of_selects
+
+
+def parse_inst_output(output: str) -> int:
+    """Parse stdout of binary `instrument` to get number of selects
+       for that given instrumented go file.
+
+    Args:
+        output (str): stdout string
+
+    Returns:
+        int: number of selects
+    """
+    lines = output.splitlines()
+    for line in lines:
+        if line.find("number of selects: ") != -1:
+            num_str = line[line.rfind(" ")+1:]
+            return int(num_str)
+
+    return 0
 
 def main():
     parser = argparse.ArgumentParser(description='Instrument Golang test files.')
@@ -72,17 +95,20 @@ def main():
 
     all_go_files = []
     for d in args.dir:
-        files = find_gotest_in_folder(d)
+        files = find_go_files_in_folder(d)
         all_go_files.extend(files)
 
     futures = []
     with ThreadPoolExecutor(5) as executor:
         for f in all_go_files:
-            future = executor.submit(instrument_gotest, BIN_INSTRUMENT, f, op_out)
+            future = executor.submit(instrument_go_file, BIN_INSTRUMENT, f, op_out)
             futures.append(future)
 
     for f in futures:
         f.result()
+    
+    print(f"total number of instrumented files: {NUM_OF_FILES_INSTRUMENTED}")
+    print(f"total number of selects: {NUM_OF_SELECTS}")
 
 
 
