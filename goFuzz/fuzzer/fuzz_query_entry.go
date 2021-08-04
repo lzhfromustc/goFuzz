@@ -6,6 +6,11 @@ import (
 	"math/rand"
 )
 
+var (
+	test2HighScore = make(map[*GoTest]int)
+	cusTest2HighScore = make(map[string]int)
+)
+
 // FuzzQueryEntry records the multiple run results for an input and history score
 // Notes:
 //   1. An input can be run multiple times
@@ -78,9 +83,44 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 		}
 		runTasks = append(runTasks, t)
 	} else if e.Stage == RandStage {
-
-		randNum := rand.Int31n(101)
-		if e.BestScore < int(randNum) {
+		/* Determine whether we should skip the current entry based on score. */
+		isSkip := false
+		if e.CurrInput.GoTestCmd != nil { // This is Go Test command.
+			/* If we have seen this unit test before. */
+			if prevHighestScore, ok := test2HighScore[e.CurrInput.GoTestCmd]; ok {
+				if prevHighestScore <= e.BestScore {
+					test2HighScore[e.CurrInput.GoTestCmd] = e.BestScore
+				} else {
+					/* Current score smaller than the highest score, skip by chances. */
+					randNum := rand.Int31n(101)
+					skipPos := (prevHighestScore - e.BestScore) / prevHighestScore
+					if randNum < int32(skipPos) {
+						isSkip = true
+					}
+				}
+			} else {
+				/* If we haven't seen this unit test before. */
+				test2HighScore[e.CurrInput.GoTestCmd] = e.BestScore
+			}
+		} else if e.CurrInput.CustomCmd != "" { // This is custom test command. Similar to the previous case.
+			if prevHighestScore, ok := cusTest2HighScore[e.CurrInput.CustomCmd]; ok {
+				/* If we have seen this unit test before. */
+				if prevHighestScore <= e.BestScore {
+					cusTest2HighScore[e.CurrInput.CustomCmd] = e.BestScore
+				} else {
+					/* Current score smaller than the highest score, skip by chances. */
+					randNum := rand.Int31n(101)
+					skipPos := (prevHighestScore - e.BestScore) / prevHighestScore
+					if randNum < int32(skipPos) {
+						isSkip = true
+					}
+				}
+			} else {
+				/* If we haven't seen this unit test before. */
+				cusTest2HighScore[e.CurrInput.CustomCmd] = e.BestScore
+			}
+		}
+		if isSkip == true {
 			log.Printf("[%s] randomly skipped", e)
 			// if skip, simply add entry to the tail
 			fuzzCtx.EnqueueQueryEntry(e)
