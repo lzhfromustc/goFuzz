@@ -85,6 +85,16 @@ func ShouldSkipInput(fuzzCtx *FuzzContext, i *Input) bool {
 		}
 	}
 
+	if SkipIntegration == true {
+		if i.GoTestCmd != nil && (strings.Contains(i.GoTestCmd.Func, "integration") || strings.Contains(i.GoTestCmd.Func, "Integration")) {
+			log.Printf("drop %s since it is a integration unit test", i)
+			return true
+		} else if i.CustomCmd != "" && (strings.Contains(i.CustomCmd, "integration") || strings.Contains(i.CustomCmd, "Integration")) {
+			log.Printf("drop %s since it is a integration unit test", i)
+			return true
+		}
+	}
+
 	return false
 }
 

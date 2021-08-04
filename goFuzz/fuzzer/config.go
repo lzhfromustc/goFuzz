@@ -14,4 +14,5 @@ var (
 	TargetTestBin           string // used given binary file(compiled binary of all tests) to trigger test run instead of `go test`
 	GoRoot                  string
 	TimeDivide              int    // Durations in time package will be divided by this int number
+	SkipIntegration         bool   // Should skip all the integration tests from the package.
 )

@@ -29,6 +29,7 @@ func parseFlag() {
 	pBoolScoreAllPrim := flag.Bool("scoreAllPrim", false, "Recording/scoring other primitives like Mutex together with channel")
 	pTimeDivide := flag.Int("timeDivideBy", 1, "Durations in time/sleep.go will be divided by this int number")
 	pTestBinsDir := flag.String("testBinsDir", "", "")
+	pSkipIntegration := flag.Bool("skipIntegration", false, "Should skip all the integration tests from the package.")
 	flag.Parse()
 
 	fuzzer.TargetTestFunc = *pTargetTestFunc
@@ -42,6 +43,7 @@ func parseFlag() {
 	fuzzer.TargetTestPkg = *pTargetTestPkg
 	fuzzer.TargetTestBin = *pTargetTestBin
 	fuzzer.TimeDivide = *pTimeDivide
+	fuzzer.SkipIntegration  = *pSkipIntegration
 	testBinsDir = *pTestBinsDir
 
 	if fuzzer.OutputDir == "" {
