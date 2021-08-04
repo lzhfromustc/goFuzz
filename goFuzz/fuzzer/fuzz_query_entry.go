@@ -123,6 +123,7 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 		if isSkip == true {
 			log.Printf("[%s] randomly skipped", e)
 			// if skip, simply add entry to the tail
+			// TODO:: Should we add the skipped query to the tail??? s
 			fuzzCtx.EnqueueQueryEntry(e)
 			return nil
 		}
