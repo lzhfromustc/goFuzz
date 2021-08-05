@@ -273,7 +273,7 @@ func CheckBugLate() {
 	// print stdout
 	out, err := os.OpenFile(os.Getenv("GF_OUTPUT_FILE"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		fmt.Println("Failed to create file:", FileNameOfRecord())
+		fmt.Println("Failed to create file:", os.Getenv("GF_OUTPUT_FILE"), err)
 		print(str)
 		return
 	}
@@ -314,7 +314,7 @@ func CheckBugEnd(entry *OracleEntry) {
 		// print stdout
 		out, err := os.OpenFile(os.Getenv("GF_OUTPUT_FILE"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			fmt.Println("Failed to create file:", FileNameOfRecord())
+			fmt.Println("Failed to create file:", os.Getenv("GF_OUTPUT_FILE"), err)
 			print(str)
 			return
 		}
@@ -347,7 +347,7 @@ func AfterRunTestOnce(entry *OracleEntry) {
 	strOutputPath := os.Getenv("OutputFullPath")
 	out, err := os.OpenFile(strOutputPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		fmt.Println("Failed to create file:", strOutputPath)
+		fmt.Println("Failed to create file:", strOutputPath, err)
 		return
 	}
 	defer out.Close()

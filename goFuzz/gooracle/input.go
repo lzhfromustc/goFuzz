@@ -65,7 +65,7 @@ func ParseInputStr(text []string) map[string]runtime.SelectInfo {
 func CreateInput() {
 	out, err := os.Create(FileNameOfInput())
 	if err != nil {
-		fmt.Println("Failed to create file:", FileNameOfInput())
+		fmt.Println("Failed to create file:", FileNameOfInput(), err)
 		return
 	}
 	defer out.Close()
