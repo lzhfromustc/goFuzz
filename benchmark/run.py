@@ -56,9 +56,9 @@ def main():
     inst_run_env["GF_OUTPUT_FILE"] = STD_OUTPUT_FILE
 
     for t in tests:
-        native_dur = benchmark(5, lambda: subprocess.run([TEST_BIN_NATIVE, "-test.v", "-test.run", t]))
+        native_dur = benchmark(10, lambda: subprocess.run([TEST_BIN_NATIVE, "-test.v", "-test.run", t]))
         total_native_dur += native_dur
-        inst_dur = benchmark(5, lambda: subprocess.run(
+        inst_dur = benchmark(10, lambda: subprocess.run(
             [TEST_BIN_INST, "-test.run", t],
             env=inst_run_env
         ), lambda: restore_inst_run(std_input_content)
