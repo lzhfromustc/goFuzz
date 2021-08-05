@@ -33,7 +33,7 @@ def main():
     """
     print(f"project root: {PROJ_ROOT_DIR}")
 
-    tests = ["TestOneSelect","TestCockroach1462"]
+    tests = ["TestOneSelect","TestCockroach1462","TestNoSelect","TestEtcd6873"]
     
     # step 1
     copytree(TEST_PKG, TEST_PKG_INST_TMP)

@@ -18,3 +18,9 @@ func TestOneSelect(t *testing.T) {
 		fmt.Println("Should be buggy")
 	}
 }
+
+func TestNoSelect(t *testing.T) {
+	if 1+2 != 3 {
+		t.Fail()
+	}
+}
