@@ -1,10 +1,7 @@
 # TODO: use multi-stage build to reduce image size
 
 FROM golang:1.16.4
-
-RUN apt update \
-&& apt -y install python3
-
+RUN apt update && apt install -y python3
 WORKDIR /gofuzz
 
 # copy source files to docker
