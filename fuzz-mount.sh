@@ -14,4 +14,5 @@ rm -rf ./target-tmp
 docker run --rm -it \
 -v $OUTPUT_DIR:/fuzz/output \
 -v $TARGET_GO_MOD_DIR:/fuzz/target \
+--memory-swap -1 \
 gofuzz:latest /fuzz/target /fuzz/output 4 $@
