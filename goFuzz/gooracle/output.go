@@ -55,6 +55,10 @@ func FileNameOfRecord() string {
 }
 
 func CreateRecordFile() {
+	if GFuzzBenchmark {
+		// during brenchmark, ignore creating record file
+		return
+	}
 	out, err := os.Create(FileNameOfRecord())
 	if err != nil {
 		fmt.Println("Failed to create file:", FileNameOfRecord())
