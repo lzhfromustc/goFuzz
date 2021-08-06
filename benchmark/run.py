@@ -3,12 +3,15 @@ import shutil
 import subprocess
 import pathlib
 import os
+import argparse
 from shutil import copytree
 from time import time
 
 
 PROJ_ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 INST_SCRIPT = os.path.join(PROJ_ROOT_DIR, "goFuzz/scripts/instrument.py")
+PATCH_RUNTIME_SCRIPT = os.path.join(PROJ_ROOT_DIR, "scripts/patch-go-runtime.sh")
+
 BENCHMARK_DIR = os.path.join(PROJ_ROOT_DIR, "benchmark")
 STD_INPUT_FILE = os.path.join(BENCHMARK_DIR, "std-input")
 
@@ -26,50 +29,43 @@ STD_OUTPUT_FILE = os.path.join(TMP_FOLDER, "output")
 
 
 def main():
-    """
-    step 1: copy the `tests` folder and instrument that folder (in order to keep clean at `test` folder)
-    step 2: compile native and instrumented package into binary file: native.test and inst.test
-    step 3: run all tests 5 times and get average speeds regarding to native and inst.
-    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('benchmark_type', choices=["native", "inst"])
+
+    args = parser.parse_args()
+
     print(f"project root: {PROJ_ROOT_DIR}")
-
-    tests = ["TestOneSelect","TestCockroach1462"]
+    tests = ["TestOneSelect","TestCockroach1462","TestNoSelect","TestEtcd6873"]
     
-    # step 1
-    copytree(TEST_PKG, TEST_PKG_INST_TMP)
-    inst_dir(TEST_PKG_INST_TMP)
+    # prepare test bin
+    if args.benchmark_type == "inst":
+        patch_go_runtime()
+        copytree(TEST_PKG, TEST_PKG_INST_TMP)
+        inst_dir(TEST_PKG_INST_TMP)
+        compile_test_bin(TEST_PKG_INST_TMP, TEST_BIN_INST)
+    else:
+        compile_test_bin(TEST_PKG, TEST_BIN_NATIVE)
 
-    # step 2
-    compile_test_bin(TEST_PKG_INST_TMP, TEST_BIN_INST)
-    compile_test_bin(TEST_PKG, TEST_BIN_NATIVE)
+    
+    # run tests
+    total_dur = 0
 
-    # step 3
-    total_native_dur = 0
-    total_inst_dur = 0
-    std_input_content = ""
-    with open(STD_INPUT_FILE, "r") as f:
-        std_input_content = f.read()
-
-    inst_run_env = os.environ.copy()
-    inst_run_env["GF_INPUT_FILE"] = STD_INPUT_FILE
-    inst_run_env["GF_RECORD_FILE"] = STD_RECORD_FILE
-    inst_run_env["GF_OUTPUT_FILE"] = STD_OUTPUT_FILE
+    if args.benchmark_type == "inst":
+        inst_run_env = os.environ.copy()
+        inst_run_env["GF_BENCHMARK"] = "1"
 
     for t in tests:
-        native_dur = benchmark(5, lambda: subprocess.run([TEST_BIN_NATIVE, "-test.v", "-test.run", t]))
-        total_native_dur += native_dur
-        inst_dur = benchmark(5, lambda: subprocess.run(
-            [TEST_BIN_INST, "-test.run", t],
-            env=inst_run_env
-        ), lambda: restore_inst_run(std_input_content)
-            
-        )
-        total_inst_dur += inst_dur
-        print(f"{t}: native {native_dur:.04f} seconds")
-        print(f"{t}: inst {inst_dur:.04f} seconds")
-    
-    print(f"total native average {total_native_dur/len(tests):.04f} seconds / test")
-    print(f"total inst average {total_inst_dur/len(tests):.04f} seconds / test")
+
+        if args.benchmark_type == "inst":
+            dur = benchmark(10, lambda: subprocess.run(
+                [TEST_BIN_INST, "-test.run", t], env=inst_run_env))
+        else:
+            dur = benchmark(10, lambda: subprocess.run([TEST_BIN_NATIVE, "-test.v", "-test.run", t]))
+        
+        print(f"{t}: {dur:.04f} seconds")
+        total_dur += dur
+
+    print(f"total average {total_dur/len(tests):.04f} seconds / test")
 
 def inst_dir(dir: str):
     subprocess.run([INST_SCRIPT, dir]).check_returncode()
@@ -79,6 +75,9 @@ def compile_test_bin(pkg_dir:str, dest:str):
         ["go","test","-c", "-o", dest, pkg_dir], 
         cwd=BENCHMARK_DIR
     ).check_returncode()
+
+def patch_go_runtime():
+    subprocess.run([PATCH_RUNTIME_SCRIPT]).check_returncode()
 
 def restore_inst_run(std_input_content:str):
     if os.path.exists(STD_RECORD_FILE):

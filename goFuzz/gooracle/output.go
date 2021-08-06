@@ -3,10 +3,10 @@ package gooracle
 import (
 	"bufio"
 	"fmt"
-	"hash/fnv"
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 //func FileNameOfOutput() string {
@@ -55,6 +55,10 @@ func FileNameOfRecord() string {
 }
 
 func CreateRecordFile() {
+	if GFuzzBenchmark {
+		// during brenchmark, ignore creating record file
+		return
+	}
 	out, err := os.Create(FileNameOfRecord())
 	if err != nil {
 		fmt.Println("Failed to create file:", FileNameOfRecord())
@@ -65,17 +69,21 @@ func CreateRecordFile() {
 	w := bufio.NewWriter(out)
 	defer w.Flush()
 
-	str := ""
+	var sb strings.Builder
 	// tuple record
 	for xorLoc, count := range runtime.TupleRecord {
 		if count == 0 {
 			continue // no need to record tuple that doesn't show up at all
 		}
-		h := fnv.New32a()
-		h.Write([]byte(strconv.Itoa(xorLoc)))
-		str += strconv.Itoa(xorLoc) + ":" + strconv.Itoa(int(count)) + "\n"
+		// h := fnv.New32a()
+		// h.Write([]byte(strconv.Itoa(xorLoc)))
+		sb.WriteString(strconv.Itoa(xorLoc))
+		sb.WriteString(":")
+		sb.WriteString(strconv.Itoa(int(count)))
+		sb.WriteString("\n")
 	}
-	str += RecordSplitter + "\n"
+	sb.WriteString(RecordSplitter)
+	sb.WriteString("\n")
 
 	// channel record
 	for _, chRecord := range runtime.ChRecord {
@@ -84,22 +92,25 @@ func CreateRecordFile() {
 		}
 		//chIDString:closedBit:notClosedBit:capBuf:peakBuf
 		strChID := chRecord.StrCreation
-		str += strChID + ":"
+		sb.WriteString(strChID)
+		sb.WriteString(":")
 		if chRecord.Closed {
-			str += "1" + ":"
+			sb.WriteString("1:")
 		} else {
-			str += "0" + ":"
+			sb.WriteString("0:")
 		}
 		if chRecord.NotClosed {
-			str += "1" + ":"
+			sb.WriteString("1:")
 		} else {
-			str += "0" + ":"
+			sb.WriteString("0:")
 		}
-		str += strconv.Itoa(int(chRecord.CapBuf)) + ":"
-		str += strconv.Itoa(int(chRecord.PeakBuf)) + "\n"
+		sb.WriteString(strconv.Itoa(int(chRecord.CapBuf)))
+		sb.WriteString(":")
+		sb.WriteString(strconv.Itoa(int(chRecord.PeakBuf)))
+		sb.WriteString("\n")
 	}
 
-	w.WriteString(str)
+	w.WriteString(sb.String())
 }
 
 func StrPointer(v interface{}) string {

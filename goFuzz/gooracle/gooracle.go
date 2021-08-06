@@ -21,6 +21,11 @@ const (
 	RecordSplitter        = "-----"
 )
 
+// GFuzzBenchmark will omit any operations related to fuzzing
+// including:
+// 1. writing input, record file
+var GFuzzBenchmark bool = os.Getenv("GF_BENCHMARK") == "1"
+
 var StrTestPath string
 var BoolFirstRun bool = true
 var StrTestMod string
@@ -109,33 +114,37 @@ func BeforeRunFuzz() (result *OracleEntry) {
 	//OpenOutputFile() // No need
 
 	// read input file
-	file, err := os.Open(FileNameOfInput())
-	if err != nil {
-		fmt.Println("Failed to open input file:", FileNameOfInput())
-		return
-	}
-	defer file.Close()
-
-	var text []string
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		text = append(text, scanner.Text())
-	}
-
-	if len(text) > 0 && text[0] == NotePrintInput {
-		runtime.RecordSelectChoice = true
-	} else {
+	if GFuzzBenchmark {
 		BoolFirstRun = false
-	}
+		runtime.RecordSelectChoice = false
+	} else {
+		file, err := os.Open(FileNameOfInput())
+		if err != nil {
+			fmt.Println("Failed to open input file:", FileNameOfInput())
+			return
+		}
+		defer file.Close()
 
-	MapInput = ParseInputStr(text)
-	if MapInput == nil {
-		fmt.Println("Error when parsing input during text start: MapInput is nil")
-	}
+		var text []string
 
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
+
+		for scanner.Scan() {
+			text = append(text, scanner.Text())
+		}
+
+		if len(text) > 0 && text[0] == NotePrintInput {
+			runtime.RecordSelectChoice = true
+		} else {
+			BoolFirstRun = false
+		}
+
+		MapInput = ParseInputStr(text)
+		if MapInput == nil {
+			fmt.Println("Error when parsing input during text start: MapInput is nil")
+		}
+	}
 	CheckBugStart(result)
 	return
 }
@@ -267,6 +276,10 @@ func CheckBugLate() {
 			}
 		}
 	}
+
+	if GFuzzBenchmark {
+		return
+	}
 	// print bug info
 	str, _ := runtime.CheckBlockEntry()
 
@@ -311,6 +324,9 @@ func CheckBugEnd(entry *OracleEntry) {
 
 		str, _ := runtime.CheckBlockEntry()
 
+		if GFuzzBenchmark {
+			return
+		}
 		// print stdout
 		out, err := os.OpenFile(os.Getenv("GF_OUTPUT_FILE"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {

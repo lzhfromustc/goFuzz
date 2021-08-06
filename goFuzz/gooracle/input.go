@@ -73,12 +73,15 @@ func CreateInput() {
 	w := bufio.NewWriter(out)
 	defer w.Flush()
 
-	str := ""
+	var sb strings.Builder
+
 	// The first line indicates that: if this input is used, then after the run a new input should be printed
-	str += NotePrintInput + "\n"
+	sb.WriteString(NotePrintInput)
+	sb.WriteString("\n")
 
 	// The second line is how many seconds to wait
-	str += strconv.Itoa(SelectDelayMS) + "\n"
+	sb.WriteString(strconv.Itoa(SelectDelayMS))
+	sb.WriteString("\n")
 
 	// Each line corresponds to a select
 	for _, selectInput := range runtime.MapSelectInfo {
@@ -87,11 +90,15 @@ func CreateInput() {
 		if indexEnter := strings.Index(strFileName, "\n"); indexEnter > -1 {
 			strFileName = strFileName[:indexEnter]
 		}
-		str += strFileName + ":" + selectInput.StrLineNum
-		str += ":" + strconv.Itoa(selectInput.IntNumCase)
-		str += ":" + strconv.Itoa(selectInput.IntPrioCase)
-		str += "\n"
+		sb.WriteString(strFileName)
+		sb.WriteString(":")
+		sb.WriteString(selectInput.StrLineNum)
+		sb.WriteString(":")
+		sb.WriteString(strconv.Itoa(selectInput.IntNumCase))
+		sb.WriteString(":")
+		sb.WriteString(strconv.Itoa(selectInput.IntPrioCase))
+		sb.WriteString("\n")
 	}
 
-	w.WriteString(str)
+	w.WriteString(sb.String())
 }
