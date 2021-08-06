@@ -60,7 +60,7 @@ func ComputeScore(mainRecord, curRecord *Record) int {
 				//log.Printf("Score_Log: ScorePeakBufLog2Increase: %d", int(countLog) - int(mainCountLog))
 
 				// ScoreBufFull: score if this is the first time for buffer to fill out more than half;
-				if chRecord.PeakBuf >= (chRecord.CapBuf / 2) && chRecord.CapBuf != 0 {
+				if chRecord.PeakBuf >= (chRecord.CapBuf / 2) && chRecord.CapBuf != 0 && chRecord.PeakBuf != chRecord.CapBuf{
 					score += ScoreBufFull / 2
 					log.Printf("Score_Log: ScoreBufHalf: %d", 1)
 				}

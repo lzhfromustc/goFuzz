@@ -138,9 +138,9 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			currentFuzzEntry := runTask.entry
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
 			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-				curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
+				//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
 				currentFuzzEntry.ExecutionCount = 1
-				currentFuzzEntry.BestScore = curScore
+				currentFuzzEntry.BestScore = 0
 				currentFuzzEntry.CurrInput = runTask.input
 				currentFuzzEntry.CurrRecordHashSlice = []string{recordHash}
 
