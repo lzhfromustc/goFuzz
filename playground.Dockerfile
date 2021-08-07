@@ -16,9 +16,4 @@ COPY time ./time
 COPY reflect ./reflect
 RUN cd goFuzz && make build
 
-# Patch golang runtime in the container
-RUN chmod +x scripts/patch-go-runtime.sh \
-&& ./scripts/patch-go-runtime.sh
-
-
-WORKDIR /target
+WORKDIR /playground

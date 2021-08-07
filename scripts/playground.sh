@@ -6,5 +6,6 @@ docker build -f playground.Dockerfile -t gofuzzpg:latest .
 
 CWD=$(pwd)
 docker run --rm -it \
--v "${CWD}/playground":"/playground" \
+-v "${CWD}/playground":/playground \
+-v "${CWD}/tmp/pkgmod":/go/pkg/mod \
 gofuzzpg:latest bash
