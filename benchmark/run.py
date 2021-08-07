@@ -80,11 +80,15 @@ def run_benchmark_with_tests(tests: List[BinTest], mode:str):
     for t in tests:
         if mode == "inst":
             dur = benchmark(10, lambda: subprocess.run(
-                [t.bin, "-test.timeout", "10s","-test.run", t.func], env=inst_run_env))
+                [t.bin, "-test.timeout", "10s","-test.run", t.func], 
+                env=inst_run_env, timeout=10
+                ))
         else:
             dur = benchmark(10, lambda: subprocess.run([t.bin, "-test.timeout", "10s", "-test.run", t.func]))
-        
         full_name = f"{t.bin}->{t.func}"
+        if dur == -1:
+            print(f"{full_name}: timeout")
+            continue
         tests_dur[full_name] = dur
         total_dur += dur
     print(f"total {len(tests)} tests")
@@ -159,13 +163,20 @@ def get_tests_from_test_bin(bin: str) -> List[BinTest]:
 
 def benchmark(reps, func, prefunc=None):
     dur = 0
+    cnt = 0
     for _ in range(0, reps):
-        if prefunc:
-            prefunc()
-        start = time()
-        func()
-        end = time()
-        dur += (end-start)
+        try:
+            if prefunc:
+                prefunc()
+            start = time()
+            func()
+            end = time()
+            dur += (end-start)
+            cnt += 1
+        except:
+            pass
+    if cnt == 0:
+        return -1
     return dur / reps
 
 if __name__ == "__main__":
