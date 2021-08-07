@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
+)
+
+var (
+	recordHashMapLock sync.RWMutex
 )
 
 type RunResult struct {
@@ -137,6 +142,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			recordHash := HashOfRecord(retRecord)
 			currentFuzzEntry := runTask.entry
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
+			recordHashMapLock.Lock()
 			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
 				//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
 				currentFuzzEntry.ExecutionCount = 1
@@ -149,6 +155,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				fuzzCtx.EnqueueQueryEntry(currentFuzzEntry)
 				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
 			}
+			recordHashMapLock.Unlock()
 		}
 
 	} else if stage == CalibStage {
@@ -160,9 +167,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
 			}
 
+			recordHashMapLock.Lock()
 			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
 				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
 			}
+			recordHashMapLock.Unlock()
+
 			curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
 			if curScore > currentEntry.BestScore {
 				currentEntry.BestScore = curScore
@@ -178,6 +188,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 		if retRecord != nil {
 			// If we are handling the output from RandStage
 			recordHash := HashOfRecord(retRecord)
+			recordHashMapLock.Lock()
 			if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
 				curScore := ComputeScore(fuzzerContext.mainRecord, retRecord)
 				newEntry := &FuzzQueryEntry{
@@ -192,6 +203,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				fuzzCtx.EnqueueQueryEntry(newEntry)
 				fuzzerContext.allRecordHashMap[recordHash] = struct{}{}
 			}
+			recordHashMapLock.Unlock()
 		}
 	} else {
 		return fmt.Errorf("[Worker %s] found incorrect stage [%s]", workerID, stage)
