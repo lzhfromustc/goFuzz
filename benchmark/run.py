@@ -79,10 +79,10 @@ def run_benchmark_with_tests(tests: List[BinTest], mode:str):
     tests_dur = {}
     for t in tests:
         if mode == "inst":
-            dur = benchmark(5, lambda: subprocess.run(
+            dur = benchmark(10, lambda: subprocess.run(
                 [t.bin, "-test.timeout", "10s","-test.run", t.func], env=inst_run_env))
         else:
-            dur = benchmark(5, lambda: subprocess.run([t.bin, "-test.timeout", "10s", "-test.run", t.func]))
+            dur = benchmark(10, lambda: subprocess.run([t.bin, "-test.timeout", "10s", "-test.run", t.func]))
         
         full_name = f"{t.bin}->{t.func}"
         tests_dur[full_name] = dur
@@ -99,6 +99,7 @@ def main():
     parser.add_argument('--mode', choices=["native", "inst"], required=True)
     parser.add_argument('--dir', type=str)
     parser.add_argument('--bins',  nargs='*')
+    parser.add_argument('--bins-list-file', type=str)
     args = parser.parse_args()
 
     print(args)
@@ -107,6 +108,7 @@ def main():
     selected_bins = args.bins
     mode = args.mode
     testsuite = args.testsuite
+    bins_list_file = args.bins_list_file
 
     if testsuite == "custom" and not bins_dir:
         raise Exception("--dir is required if testsuite is custom")
@@ -115,8 +117,15 @@ def main():
     if testsuite == "simple":
         benchmark_simple(mode)
     else:
+        if bins_list_file:
+            bins = get_bins_from_file(bins_list_file)
+            selected_bins = [os.path.join(bins_dir, bin) for bin in bins]
         benchmark_custom(bins_dir, mode, selected_bins)
 
+def get_bins_from_file(file: str)->List[str]:
+    with open(file, "r") as f:
+        bins = f.read().splitlines()
+    return bins
 
 def inst_dir(dir: str):
     subprocess.run([INST_SCRIPT, dir]).check_returncode()
