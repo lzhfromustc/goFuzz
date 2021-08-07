@@ -4,3 +4,4 @@ goFuzz/bin
 .git
 target-tmp/.git
 tmp
+playground
