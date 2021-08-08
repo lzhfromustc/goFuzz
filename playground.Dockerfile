@@ -6,12 +6,16 @@ RUN apt update \
 && apt -y install python3
 
 WORKDIR /gofuzz
+COPY scripts ./scripts
 
+WORKDIR /repos
+RUN /gofuzz/scripts/clone-repos.sh
+
+WORKDIR /gofuzz
 # copy source files to docker
 COPY goFuzz ./goFuzz
 COPY sync ./sync
 COPY runtime ./runtime
-COPY scripts ./scripts
 COPY time ./time
 COPY reflect ./reflect
 RUN cd goFuzz && make build
