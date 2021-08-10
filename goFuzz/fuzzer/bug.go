@@ -107,9 +107,25 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			}
 			ids[id] = struct{}{}
 
-			// if this is a fatal bug, ignore all other bugs found in this unit test, because fatal program can cause lots of strange things
 			if strings.HasPrefix(line, "fatal error") {
-				return []string{id}, nil
+				// if this is a fatal bug, ignore all other bugs found in this unit test, because fatal program can cause lots of strange things
+				oneID := []string{}
+
+				// let's watch for two places indicating that our oracle is causing fatal. If they exist, don't record this bug
+				// Why the first place will fatal is unsure. See https://github.com/golang/go/issues/41285
+				boolFoundOracleFatal := false
+				for i := idx; i < numOfLines; i++ {
+					sucLine := lines[i]
+					if strings.Contains(sucLine, "runtime/map_fast64.go:291") ||strings.Contains(sucLine, "runtime/string.go:63") {
+						boolFoundOracleFatal = true
+						break
+					}
+				}
+				if boolFoundOracleFatal == false {
+					oneID = []string{id}
+				}
+
+				return oneID , nil
 			}
 
 		} else if strings.HasPrefix(line, "-----New Blocking Bug:") {
