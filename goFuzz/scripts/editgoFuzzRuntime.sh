@@ -3,9 +3,9 @@ cd "$(dirname "$0")"
 
 echo "Copying from /usr/local/go/src/runtime into goFuzz's runtime, sync and gooracle"
 
-#GOROOT=$(go env GOROOT)
-GOROOT=/usr/local/go
+GOROOT=$(go env GOROOT)
 RUNTIME=$GOROOT/src/runtime
+echo "Runtime is:\t$RUNTIME"
 
 cp $RUNTIME/my* ../../runtime
 cp $RUNTIME/select.go ../../runtime/select.go

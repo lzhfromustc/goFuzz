@@ -79,9 +79,10 @@ func ListGoTestsFromFolderContainsTestBins(dir string) ([]*GoTest, error) {
 	for _, file := range files {
 		testsInFile, err := ListGoTestsFromTestBin(file)
 		if err != nil {
-			return nil, err
+			log.Printf("ListGoTestsFromTestBin '%s' failed: %v", file, err)
+		} else {
+			tests = append(tests, testsInFile...)
 		}
-		tests = append(tests, testsInFile...)
 	}
 	return tests, nil
 }

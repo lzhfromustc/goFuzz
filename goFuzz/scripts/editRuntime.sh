@@ -6,6 +6,8 @@ echo "In runtime, select.go, chan.go, runtime2.go, proc.go will be overwritten. 
 
 GOROOT=$(go env GOROOT)
 RUNTIME=$GOROOT/src/runtime
+echo "Runtime is:\t$RUNTIME"
+
 
 cp ../../runtime/my* $RUNTIME
 mv $RUNTIME/select.go $RUNTIME/select.go.backup

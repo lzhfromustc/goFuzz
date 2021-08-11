@@ -7,7 +7,9 @@ func init() {
 }
 
 var GlobalEnableOracle = true
-var BoolReportBug = true
+
+// during benchmark, we don't need to print bugs to stdout
+var BoolReportBug = gogetenv("GF_BENCHMARK") != "1"
 var BoolDelayCheck = true
 
 var MuReportBug mutex
@@ -27,8 +29,8 @@ type PrimInfo interface {
 
 // ChanInfo is 1-to-1 with every channel. It tracks a list of goroutines that hold the reference to the channel
 type ChanInfo struct {
-	Chan            *hchan          // Stores the channel. Can be used as ID of channel
-	IntBuffer       int             // The buffer capability of channel. 0 if channel is unbuffered
+	Chan            *hchan               // Stores the channel. Can be used as ID of channel
+	IntBuffer       int                  // The buffer capability of channel. 0 if channel is unbuffered
 	MapRefGoroutine map[*GoInfo]struct{} // Stores all goroutines that still hold reference to this channel
 	StrDebug        string
 	OKToCheck       bool  // Disable oracle for not instrumented channels
@@ -37,7 +39,7 @@ type ChanInfo struct {
 	Mu              mutex
 	SpecialFlag     int8
 	Uint32Monitor   uint32 // Default: 0. When a bug is based on the assumption that this primitive won't execute again, set to 1.
-							// When it is 1 and still executed, print information to withdraw bugs containing it
+	// When it is 1 and still executed, print information to withdraw bugs containing it
 }
 
 const (
@@ -47,15 +49,15 @@ const (
 type OpType uint8
 
 const (
-	ChSend OpType = 1
-	ChRecv OpType = 2
-	ChClose OpType = 3
+	ChSend   OpType = 1
+	ChRecv   OpType = 2
+	ChClose  OpType = 3
 	ChSelect OpType = 4
-
 )
 
 var MapChToChanInfo map[interface{}]PrimInfo
 var MuMapChToChanInfo mutex
+
 //var DefaultCaseChanInfo = &ChanInfo{}
 
 var strSDKPath string = gogetenv("GOROOT")
@@ -73,7 +75,7 @@ func NewChanInfo(ch *hchan) *ChanInfo {
 		IntBuffer:       int(ch.dataqsiz),
 		MapRefGoroutine: make(map[*GoInfo]struct{}),
 		StrDebug:        strLoc,
-		OKToCheck: false,
+		OKToCheck:       false,
 		BoolInSDK:       Index(strLoc, strSDKPath) < 0,
 		IntFlagFoundBug: 0,
 		SpecialFlag:     0,
@@ -225,13 +227,13 @@ func (chInfo *ChanInfo) RemoveGoroutine(goInfo *GoInfo) {
 // Only when BoolDelayCheck is true, this struct is used
 // CheckEntry contains information needed for a CheckBlockBug
 type CheckEntry struct {
-	CS []PrimInfo
+	CS              []PrimInfo
 	Uint32NeedCheck uint32 // if 0, delete this CheckEntry; if 1, check this CheckEntry
 }
 
 var VecCheckEntry []*CheckEntry
 var MuCheckEntry mutex
-var FnCheckCount = func (*uint32) {} // this is defined in gooracle/gooracle.go
+var FnCheckCount = func(*uint32) {} // this is defined in gooracle/gooracle.go
 var PtrCheckCounter *uint32
 
 func LockCheckEntry() {
@@ -351,9 +353,8 @@ func CheckBlockBug(CS []PrimInfo) (finished bool) {
 		mapCS[primI] = struct{}{}
 	}
 
-
 	boolAtLeastOneBlocking := false
-	loopGS:
+loopGS:
 	if BoolDebug {
 		println("Going through mapGS whose length is:", len(mapGS))
 	}
@@ -517,6 +518,7 @@ func CheckBlockBug(CS []PrimInfo) (finished bool) {
 //}
 
 func ReportBug(mapCS map[PrimInfo]struct{}) {
+
 	//for chInfo, _ := range mapCS {
 	//	atomic.AddInt32(&chInfo.IntFlagFoundBug, 1)
 	//}
@@ -559,7 +561,7 @@ type WgInfo struct {
 	WgCounter       uint32
 	MapRefGoroutine map[*GoInfo]struct{}
 	StrDebug        string
-	EnableOracle    bool // Disable oracle for channels in SDK
+	EnableOracle    bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
 	Mu              mutex // Protects MapRefGoroutine
 	Uint32Monitor   uint32
@@ -632,11 +634,9 @@ func (w *WgInfo) RemoveGoroutine(goInfo *GoInfo) {
 	delete(w.MapRefGoroutine, goInfo)
 }
 
-
 func (w *WgInfo) IamBug() {
 
 }
-
 
 // Part 1.3 Data structure for mutex
 
@@ -644,7 +644,7 @@ func (w *WgInfo) IamBug() {
 type MuInfo struct {
 	MapRefGoroutine map[*GoInfo]struct{}
 	StrDebug        string
-	EnableOracle    bool // Disable oracle for channels in SDK
+	EnableOracle    bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
 	Mu              mutex // Protects MapRefGoroutine
 	Uint32Monitor   uint32
@@ -722,7 +722,7 @@ func (mu *MuInfo) RemoveGoroutine(goInfo *GoInfo) {
 type RWMuInfo struct {
 	MapRefGoroutine map[*GoInfo]struct{}
 	StrDebug        string
-	EnableOracle    bool // Disable oracle for channels in SDK
+	EnableOracle    bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
 	Mu              mutex // Protects MapRefGoroutine
 	Uint32Monitor   uint32
@@ -800,7 +800,7 @@ func (mu *RWMuInfo) RemoveGoroutine(goInfo *GoInfo) {
 type CondInfo struct {
 	MapRefGoroutine map[*GoInfo]struct{}
 	StrDebug        string
-	EnableOracle    bool // Disable oracle for channels in SDK
+	EnableOracle    bool  // Disable oracle for channels in SDK
 	IntFlagFoundBug int32 // Use atomic int32 operations to mark if a bug is reported
 	Mu              mutex // Protects MapRefGoroutine
 	Uint32Monitor   uint32
@@ -891,23 +891,23 @@ type GoInfo struct {
 }
 
 type BlockInfo struct {
-	Prim PrimInfo
+	Prim  PrimInfo
 	StrOp string
 }
 
 const (
-	Send = "Send"
-	Recv = "Recv"
-	Close = "Close"
+	Send   = "Send"
+	Recv   = "Recv"
+	Close  = "Close"
 	Select = "Select"
 
-	MuLock = "MuLock"
+	MuLock   = "MuLock"
 	MuUnlock = "MuUnlock"
 
 	WgWait = "WgWait"
 
-	CdWait = "CdWait"
-	CdSignal = "CdSignal"
+	CdWait      = "CdWait"
+	CdSignal    = "CdSignal"
 	CdBroadcast = "CdBroadcast"
 )
 
@@ -951,7 +951,6 @@ func (goInfo *GoInfo) RemovePrime(chInfo PrimInfo) {
 	}
 }
 
-
 func CurrentGoAddCh(ch interface{}) {
 	lock(&MuMapChToChanInfo)
 	chInfo, exist := MapChToChanInfo[ch]
@@ -976,7 +975,7 @@ func (goInfo *GoInfo) RemoveAllRef() {
 		}
 		CS := []PrimInfo{chInfo}
 		if BoolDelayCheck {
-			 EnqueueCheckEntry(CS)
+			EnqueueCheckEntry(CS)
 		} else {
 			CheckBlockBug(CS)
 		}
@@ -1056,4 +1055,3 @@ func (goInfo *GoInfo) IsBlockAtGivenChan(chInfo *ChanInfo) (boolIsBlockAtGiven b
 
 	return
 }
-

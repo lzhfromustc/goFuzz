@@ -421,6 +421,12 @@ func closechan(c *hchan) {
 	if BoolRecord {
 		RecordChOp(c)
 	}
+	if c.chInfo != nil {
+		if GlobalEnableOracle && c.chInfo.OKToCheck && okToCheck(c) {
+			currentGo := CurrentGoInfo()
+			AddRefGoroutine(c.chInfo, currentGo)
+		}
+	}
 
 
 	if c.closed != 0 {
