@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -72,7 +73,7 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 			}
 			idLineIdx := idx + 1
 
-			// Skip file location(s) that is belongs to my*.go until find the bug root cause
+			// Skip file location(s) that belongs to my*.go until find the bug root cause
 			// if this line is not from our my*.go files, then it is where bug happened
 			for {
 				if idLineIdx >= numOfLines {
@@ -119,6 +120,11 @@ func GetListOfBugIDFromStdoutContent(c string) ([]string, error) {
 					if strings.Contains(sucLine, "runtime/map_fast64.go:291") ||strings.Contains(sucLine, "runtime/string.go:63") {
 						boolFoundOracleFatal = true
 						break
+					} else if strings.Contains(sucLine, "runtime/myoracle.go:") {
+						if isContainMayFatalOracle(sucLine) {
+							boolFoundOracleFatal = true
+							break
+						}
 					}
 				}
 				if boolFoundOracleFatal == false {
@@ -285,4 +291,15 @@ func findSucLinePrefix(idx int, lines []string, strTarget string) (int, error) {
 		}
 	}
 	return -1, fmt.Errorf("malformed bug, can't find prefix %s since line %d", strTarget, idx)
+}
+
+// isContainMayFatalOracle checks whether the line contains myoracle.go:200~225.
+//
+func isContainMayFatalOracle(str string) bool {
+	for i := 200; i < 226; i++ {
+		if strings.Contains(str, "runtime/myoracle.go:" + strconv.Itoa(i)) {
+			return true
+		}
+	}
+	return false
 }
