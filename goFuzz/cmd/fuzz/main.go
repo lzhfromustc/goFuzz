@@ -98,7 +98,7 @@ func main() {
 	} else if testBinsDir != "" {
 		tests, err := fuzzer.ListGoTestsFromFolderContainsTestBins(testBinsDir)
 		if err != nil {
-			log.Printf("[ignored] failed to list tests by test bin at %s: %v", testBinsDir, err)
+			log.Fatalf("failed to list tests by test bin at %s: %v", testBinsDir, err)
 		}
 		testsToFuzz = append(testsToFuzz, tests...)
 	} else {
