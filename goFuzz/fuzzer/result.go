@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"math"
 )
 
 type RunResult struct {
@@ -134,7 +135,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	} else if stage == DeterStage {
 		if retRecord != nil {
 			// If we are handling the output from DeterStage
-			recordHash := HashOfRecord(retRecord)
+			var log2RetRecord = retRecord
+			for key, element := range log2RetRecord.MapTupleRecord{
+				log2element := math.Log2(float64(element))
+				log2RetRecord.MapTupleRecord[key] = int(log2element)
+			}
+			recordHash := HashOfRecord(log2RetRecord)
 			currentFuzzEntry := runTask.entry
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
 			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
@@ -154,7 +160,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	} else if stage == CalibStage {
 		if retRecord != nil {
 			// If we are handling the output from CalibStage
-			recordHash := HashOfRecord(retRecord)
+			var log2RetRecord = retRecord
+			for key, element := range log2RetRecord.MapTupleRecord{
+				log2element := math.Log2(float64(element))
+				log2RetRecord.MapTupleRecord[key] = int(log2element)
+			}
+			recordHash := HashOfRecord(log2RetRecord)
 			currentEntry := runTask.entry
 			if !FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) {
 				currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
@@ -177,7 +188,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	} else if stage == RandStage {
 		if retRecord != nil {
 			// If we are handling the output from RandStage
-			recordHash := HashOfRecord(retRecord)
+			var log2RetRecord = retRecord
+			for key, element := range log2RetRecord.MapTupleRecord{
+				log2element := math.Log2(float64(element))
+				log2RetRecord.MapTupleRecord[key] = int(log2element)
+			}
+			recordHash := HashOfRecord(log2RetRecord)
 			if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
 				curScore := ComputeScore(fuzzerContext.mainRecord, retRecord)
 				newEntry := &FuzzQueryEntry{
