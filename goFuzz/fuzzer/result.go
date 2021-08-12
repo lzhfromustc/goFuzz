@@ -143,7 +143,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			currentFuzzEntry := runTask.entry
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
 			recordHashMapLock.Lock()
-			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
+			//if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
 				//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
 				currentFuzzEntry.ExecutionCount = 1
 				currentFuzzEntry.BestScore = 0
@@ -154,7 +154,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				currentFuzzEntry.Stage = CalibStage
 				fuzzCtx.EnqueueQueryEntry(currentFuzzEntry)
 				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
-			}
+			//}
 			recordHashMapLock.Unlock()
 		}
 
@@ -189,7 +189,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			// If we are handling the output from RandStage
 			recordHash := HashOfRecord(retRecord)
 			recordHashMapLock.Lock()
-			if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
+			//if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
 				curScore := ComputeScore(fuzzerContext.mainRecord, retRecord)
 				newEntry := &FuzzQueryEntry{
 					IsFavored:           false,
@@ -202,7 +202,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				}
 				fuzzCtx.EnqueueQueryEntry(newEntry)
 				fuzzerContext.allRecordHashMap[recordHash] = struct{}{}
-			}
+			//}
 			recordHashMapLock.Unlock()
 		}
 	} else {
