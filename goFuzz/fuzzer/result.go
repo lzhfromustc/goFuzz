@@ -197,13 +197,17 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	//
 	//} else if stage == RandStage {
 	if stage == InitStage || stage == RandStage || stage == DeterStage || stage == CalibStage {
+		var input *Input
 		// If we are handling the output from RandStage
-		if result.RetInput == nil {
+		if stage == InitStage && result.RetInput == nil {
 			return fmt.Errorf("input should not be empty")
 		}
-		if runTask.input == nil  {
-			runTask.input = result.RetInput
+		if stage == InitStage {
+			input = result.RetInput
+		} else {
+			input = runTask.input
 		}
+
 
 		if retRecord != nil {
 			var log2RetRecord = retRecord
@@ -223,7 +227,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 					IsFavored:           false,
 					ExecutionCount:      1,
 					BestScore:           curScore,
-					CurrInput:           runTask.input,
+					CurrInput:           input,
 					CurrRecordHashSlice: []string{recordHash},
 					Stage:               RandStage,
 					Idx:                 fuzzCtx.NewFuzzQueryEntryIndex(),
