@@ -189,6 +189,9 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 		if result.RetInput == nil {
 			return fmt.Errorf("input should not be empty")
 		}
+		if runTask.input == nil {
+			runTask.input = result.RetInput
+		}
 		if retRecord != nil {
 			// If we are handling the output from RandStage
 			recordHash := HashOfRecord(retRecord)
