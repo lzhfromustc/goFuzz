@@ -196,7 +196,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	//	}
 	//
 	//} else if stage == RandStage {
-	if stage == InitStage || stage == RandStage {
+	if stage == InitStage || stage == RandStage || stage == DeterStage || stage == CalibStage {
 		if retRecord != nil {
 			// If we are handling the output from RandStage
 			if result.RetInput == nil {
