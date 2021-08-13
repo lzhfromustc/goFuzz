@@ -69,6 +69,21 @@ def benchmark_custom(dir:str, mode:str, selected_bins: List[str] = None):
     
     run_benchmark_with_tests(tests, mode)
 
+def benchmark_custom_native_parallel(dir:str, selected_bins: List[str] = None):
+    if not selected_bins:
+        selected_bins = glob(f"{dir}/*")
+
+    total_num_of_tests = 0
+    total_duration = 0
+    for bin in selected_bins:
+        ts = get_tests_from_test_bin(bin)
+        num_of_tests = len(ts)
+        dur = benchmark(1, lambda: subprocess.run([bin, "-test.timeout", "10s", "-test.parallel","5"]))
+        total_num_of_tests += num_of_tests
+        total_duration += dur
+    
+    print(f"total {total_num_of_tests} tests, total {total_duration} seconds")
+
     
     
 def run_benchmark_with_tests(tests: List[BinTest], mode:str):
@@ -83,7 +98,7 @@ def run_benchmark_with_tests(tests: List[BinTest], mode:str):
                 [t.bin, "-test.timeout", "10s","-test.run", t.func], 
                 env=inst_run_env, timeout=10
                 ))
-        else:
+        elif mode == "native":
             dur = benchmark(10, lambda: subprocess.run([t.bin, "-test.timeout", "10s", "-test.run", t.func]))
         full_name = f"{t.bin}->{t.func}"
         if dur == -1:
@@ -99,8 +114,8 @@ def run_benchmark_with_tests(tests: List[BinTest], mode:str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('testsuite', choices=["simple", "custom"])
-    parser.add_argument('--mode', choices=["native", "inst"], required=True)
+    parser.add_argument('testsuite', choices=["simple", "custom"], required=True)
+    parser.add_argument('--mode', choices=["native", "inst", "parallel-native"], required=True)
     parser.add_argument('--dir', type=str)
     parser.add_argument('--bins',  nargs='*')
     parser.add_argument('--bins-list-file', type=str)
@@ -117,6 +132,8 @@ def main():
     if testsuite == "custom" and not bins_dir:
         raise Exception("--dir is required if testsuite is custom")
 
+    if mode == "parallel-native":
+        return benchmark_custom_native_parallel(bins_dir, selected_bins)
     
     if testsuite == "simple":
         benchmark_simple(mode)
