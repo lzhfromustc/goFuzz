@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"math"
+	"strings"
 	"sync"
 )
 
@@ -197,11 +197,15 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 	//
 	//} else if stage == RandStage {
 	if stage == InitStage || stage == RandStage || stage == DeterStage || stage == CalibStage {
+		// If we are handling the output from RandStage
+		if result.RetInput == nil {
+			return fmt.Errorf("input should not be empty")
+		}
+		if runTask.input == nil  {
+			runTask.input = result.RetInput
+		}
+
 		if retRecord != nil {
-			// If we are handling the output from RandStage
-			if result.RetInput == nil {
-				return fmt.Errorf("input should not be empty")
-			}
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
 				log2element := math.Log2(float64(element))
