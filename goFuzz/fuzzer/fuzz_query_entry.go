@@ -132,6 +132,9 @@ func HandleFuzzQueryEntry(e *FuzzQueryEntry, fuzzCtx *FuzzContext) error {
 		generatedSelectsHash := make(map[string]bool)
 		execCount := e.ExecutionCount
 		log.Printf("[%+v] randomly mutate with energy %d", *e, currentFuzzingEnergy)
+		if len(e.CurrInput.VecSelect) == 0 {
+			return nil
+		}
 		for randFuzzIdx := 0; randFuzzIdx < currentFuzzingEnergy; randFuzzIdx++ {
 			randomInput, err := RandomMutateInput(e.CurrInput)
 			if err != nil {
