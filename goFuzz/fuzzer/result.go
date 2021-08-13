@@ -114,77 +114,81 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 
 	log.Printf("[Worker %s][Task %s] has %d bug(s), %d unique bug(s)", workerID, runTask.id, len(result.BugIDs), numOfBugs)
 
-	if stage == InitStage {
-		// If we are handling the output from InitStage
-		// Generate all possible deter_inputs based on the current retInput. Only changing one select per time
+	//if stage == InitStage {
+	//	// If we are handling the output from InitStage
+	//	// Generate all possible deter_inputs based on the current retInput. Only changing one select per time
+	//	if result.RetInput == nil {
+	//		return fmt.Errorf("input should not be empty")
+	//	}
+	//
+	//	deterInputs := Deterministic_enumerate_input(result.RetInput)
+	//	log.Printf("[Worker %s][Task %s] generated %d inputs for deter stage", workerID, runTask.id, len(deterInputs))
+	//
+	//	for _, deterInput := range deterInputs {
+	//
+	//		// Create multiple entries based on deterministic enumeration
+	//		err := fuzzCtx.EnqueueQueryEntry(&FuzzQueryEntry{
+	//			Stage:     DeterStage,
+	//			CurrInput: deterInput,
+	//			Idx:       fuzzCtx.NewFuzzQueryEntryIndex(),
+	//		})
+	//		if err != nil {
+	//			log.Panicln(err)
+	//		}
+	//	}
+	//} else if stage == DeterStage {
+	//	if retRecord != nil {
+	//		// If we are handling the output from DeterStage
+	//		recordHash := HashOfRecord(retRecord)
+	//		currentFuzzEntry := runTask.entry
+	//		/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
+	//		recordHashMapLock.Lock()
+	//		//if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
+	//			//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
+	//			currentFuzzEntry.ExecutionCount = 1
+	//			currentFuzzEntry.BestScore = 0
+	//			currentFuzzEntry.CurrInput = runTask.input
+	//			currentFuzzEntry.CurrRecordHashSlice = []string{recordHash}
+	//
+	//			// After running at DeterStage, move to CalibStage to run more times
+	//			currentFuzzEntry.Stage = CalibStage
+	//			fuzzCtx.EnqueueQueryEntry(currentFuzzEntry)
+	//			fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
+	//		//}
+	//		recordHashMapLock.Unlock()
+	//	}
+	//
+	//} else if stage == CalibStage {
+	//	if retRecord != nil {
+	//		// If we are handling the output from CalibStage
+	//		recordHash := HashOfRecord(retRecord)
+	//		currentEntry := runTask.entry
+	//		if !FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) {
+	//			currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
+	//		}
+	//
+	//		recordHashMapLock.Lock()
+	//		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
+	//			fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
+	//		}
+	//		recordHashMapLock.Unlock()
+	//
+	//		curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
+	//		if curScore > currentEntry.BestScore {
+	//			currentEntry.BestScore = curScore
+	//		}
+	//
+	//		// After calibration, we can move stage to RandStage
+	//		currentEntry.Stage = RandStage
+	//		currentEntry.ExecutionCount += 1
+	//		fuzzCtx.EnqueueQueryEntry(currentEntry)
+	//	}
+	//
+	//} else if stage == RandStage {
+	if stage == InitStage || stage == DeterStage || stage == CalibStage || stage == RandStage {
 		if result.RetInput == nil {
 			return fmt.Errorf("input should not be empty")
 		}
-
-		deterInputs := Deterministic_enumerate_input(result.RetInput)
-		log.Printf("[Worker %s][Task %s] generated %d inputs for deter stage", workerID, runTask.id, len(deterInputs))
-
-		for _, deterInput := range deterInputs {
-
-			// Create multiple entries based on deterministic enumeration
-			err := fuzzCtx.EnqueueQueryEntry(&FuzzQueryEntry{
-				Stage:     DeterStage,
-				CurrInput: deterInput,
-				Idx:       fuzzCtx.NewFuzzQueryEntryIndex(),
-			})
-			if err != nil {
-				log.Panicln(err)
-			}
-		}
-	} else if stage == DeterStage {
-		if retRecord != nil {
-			// If we are handling the output from DeterStage
-			recordHash := HashOfRecord(retRecord)
-			currentFuzzEntry := runTask.entry
-			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
-			recordHashMapLock.Lock()
-			//if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-				//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
-				currentFuzzEntry.ExecutionCount = 1
-				currentFuzzEntry.BestScore = 0
-				currentFuzzEntry.CurrInput = runTask.input
-				currentFuzzEntry.CurrRecordHashSlice = []string{recordHash}
-
-				// After running at DeterStage, move to CalibStage to run more times
-				currentFuzzEntry.Stage = CalibStage
-				fuzzCtx.EnqueueQueryEntry(currentFuzzEntry)
-				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
-			//}
-			recordHashMapLock.Unlock()
-		}
-
-	} else if stage == CalibStage {
-		if retRecord != nil {
-			// If we are handling the output from CalibStage
-			recordHash := HashOfRecord(retRecord)
-			currentEntry := runTask.entry
-			if !FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) {
-				currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
-			}
-
-			recordHashMapLock.Lock()
-			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
-			}
-			recordHashMapLock.Unlock()
-
-			curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
-			if curScore > currentEntry.BestScore {
-				currentEntry.BestScore = curScore
-			}
-
-			// After calibration, we can move stage to RandStage
-			currentEntry.Stage = RandStage
-			currentEntry.ExecutionCount += 1
-			fuzzCtx.EnqueueQueryEntry(currentEntry)
-		}
-
-	} else if stage == RandStage {
 		if retRecord != nil {
 			// If we are handling the output from RandStage
 			recordHash := HashOfRecord(retRecord)
