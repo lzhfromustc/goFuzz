@@ -23,8 +23,10 @@ func ComputeScore(mainRecord, curRecord *Record) int {
 	score := 0
 	for _, count := range curRecord.MapTupleRecord {
 		countLog := math.Log2(float64(count))
-		score += int(countLog) * ScoreTupleCountLog2
-		log.Printf("Score_Log: ScoreTupleCountLog2: %d", int(countLog))
+		if int(countLog) != -9223372036854775808 {
+			score += int(countLog) * ScoreTupleCountLog2
+			log.Printf("Score_Log: ScoreTupleCountLog2: %d", int(countLog))
+		}
 	}
 
 	for chID, chRecord := range curRecord.MapChanRecord {

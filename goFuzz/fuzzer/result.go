@@ -209,7 +209,11 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
 				log2element := math.Log2(float64(element))
-				log2RetRecord.MapTupleRecord[key] = int(log2element)
+				if int(log2element) != -9223372036854775808 {
+					log2RetRecord.MapTupleRecord[key] = int(log2element)
+				} else {
+					log2RetRecord.MapTupleRecord[key] = 0
+				}
 			}
 			recordHash := HashOfRecord(log2RetRecord)
 			recordHashMapLock.Lock()
