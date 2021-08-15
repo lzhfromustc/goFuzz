@@ -40,7 +40,7 @@ func ComputeScore(mainRecord, curRecord *Record, runResult *RunResult) int {
 		// ScoreNewClosed/ScoreNotClosed: score if this is the first time for a closed/notclosed status of existing channel
 		if chRecord.NotClosed == true {
 			score += ScoreNotClosed
-			notClosedScore += ScoreNewClosed
+			notClosedScore += ScoreNotClosed
 		}
 
 		// ScoreBuf: ScoreBuffer * BufferPercentage
