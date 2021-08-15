@@ -10,6 +10,7 @@ import (
 
 // fuzzerContext is a global context during whole fuzzing process.
 var fuzzerContext *FuzzContext = NewFuzzContext()
+var curQueueEntry *list.Element  = nil
 
 type FuzzStage string
 
@@ -68,26 +69,37 @@ func NewFuzzContext() *FuzzContext {
 	}
 }
 
-func (c *FuzzContext) DequeueQueryEntry() (*FuzzQueryEntry, error) {
+func (c *FuzzContext) IterateQueryEntry() (*FuzzQueryEntry, error) {
 	c.fqLock.RLock()
 	if c.fuzzingQueue.Len() == 0 {
 		c.fqLock.RUnlock()
 		return nil, nil
 	}
-	elm := c.fuzzingQueue.Front()
+	if curQueueEntry == nil {
+		curQueueEntry = c.fuzzingQueue.Front()
+	} else {
+		curQueueEntry = curQueueEntry.Next()
+	}
+	if curQueueEntry == nil {
+		if c.fuzzingQueue.Front() == nil {
+			// Should not happen. Dead loop outside.
+			return nil, nil
+		}
+		curQueueEntry = c.fuzzingQueue.Front()
+	}
 	c.fqLock.RUnlock()
 
-	c.fqLock.Lock()
-	entry := c.fuzzingQueue.Remove(elm)
-	c.fqLock.Unlock()
-	return entry.(*FuzzQueryEntry), nil
+	elm := curQueueEntry.Value
 
+	return elm.(*FuzzQueryEntry), nil
 }
+
 func (c *FuzzContext) EnqueueQueryEntry(e *FuzzQueryEntry) error {
 	c.fqLock.Lock()
 	c.fuzzingQueue.PushBack(e)
+	queueLength := c.fuzzingQueue.Len()
 	c.fqLock.Unlock()
-	log.Printf("enqueued entry: %s", e)
+	log.Printf("enqueued entry: %s, queue length currently (cur entry): %d", e, queueLength)
 	return nil
 }
 
