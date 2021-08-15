@@ -314,7 +314,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	if boolInvolveChNotOK{
 		goto outOfOracle
 	}
-	if LastMySwitchChoice() == -1 || true { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
+	if LastMySwitchChoice() == -1 { // If LastMySwitchChoice is not -1, then we are blocked at our fabricate select. Don't report bug here
 		for _, hc := range vecHChan {
 			vecPrimInfo = append(vecPrimInfo, hc.chInfo)
 		}
