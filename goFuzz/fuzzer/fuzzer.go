@@ -102,7 +102,7 @@ func Fuzz(tests []*GoTest, customCmds []string, numOfWorkers int) {
 	InitWorkers(numOfWorkers, fuzzerContext)
 
 	for {
-		e, err := fuzzerContext.DequeueQueryEntry()
+		e, err := fuzzerContext.IterateQueryEntry()
 		if err != nil {
 			log.Println(err)
 			continue

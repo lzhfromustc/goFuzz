@@ -30,7 +30,7 @@ func TestFuzzContextDequeueQueryEntry(t *testing.T) {
 	entry2 := &FuzzQueryEntry{}
 	c.EnqueueQueryEntry(entry1)
 	c.EnqueueQueryEntry(entry2)
-	c.DequeueQueryEntry()
+	c.IterateQueryEntry()
 	if c.fuzzingQueue.Len() != 1 {
 		t.Fail()
 	}
@@ -43,7 +43,7 @@ func TestFuzzContextDequeueQueryEntry(t *testing.T) {
 		t.Fail()
 	}
 
-	re, _ := c.DequeueQueryEntry()
+	re, _ := c.IterateQueryEntry()
 	if re != entry2 {
 		t.Fail()
 	}
