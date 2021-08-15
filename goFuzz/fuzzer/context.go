@@ -72,6 +72,7 @@ func NewFuzzContext() *FuzzContext {
 func (c *FuzzContext) IterateQueryEntry() (*FuzzQueryEntry, error) {
 	c.fqLock.RLock()
 	if c.fuzzingQueue.Len() == 0 {
+		// Should not happen. Dead loop outside.
 		c.fqLock.RUnlock()
 		return nil, nil
 	}
@@ -81,10 +82,6 @@ func (c *FuzzContext) IterateQueryEntry() (*FuzzQueryEntry, error) {
 		curQueueEntry = curQueueEntry.Next()
 	}
 	if curQueueEntry == nil {
-		if c.fuzzingQueue.Front() == nil {
-			// Should not happen. Dead loop outside.
-			return nil, nil
-		}
 		curQueueEntry = c.fuzzingQueue.Front()
 	}
 	c.fqLock.RUnlock()
