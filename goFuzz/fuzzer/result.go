@@ -222,7 +222,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			recordHash := HashOfRecord(log2RetRecord)
 			recordHashMapLock.Lock()
 			if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
-				curScore := ComputeScore(fuzzerContext.mainRecord, retRecord)
+				curScore := ComputeScore(fuzzerContext.mainRecord, retRecord, result)
 				newEntry := &FuzzQueryEntry{
 					IsFavored:           false,
 					ExecutionCount:      1,
