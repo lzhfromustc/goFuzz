@@ -31,34 +31,34 @@ func ComputeScore(mainRecord, curRecord *Record, runResult *RunResult) int {
 		}
 	}
 
-	var notClosedScore = 0
-	var bufferScore = 0
-	var chScore = 0
-
-	for _, chRecord := range curRecord.MapChanRecord {
-
-		// ScoreNewClosed/ScoreNotClosed: score if this is the first time for a closed/notclosed status of existing channel
-		if chRecord.NotClosed == true {
-			score += ScoreNotClosed
-			notClosedScore += ScoreNotClosed
-		}
-
-		// ScoreBuf: ScoreBuffer * BufferPercentage
-		if chRecord.PeakBuf > 0 && chRecord.CapBuf != 0 {
-			bufferPer := chRecord.PeakBuf / chRecord.CapBuf
-			score += ScoreBuf * bufferPer
-			bufferScore += ScoreBuf * bufferPer
-		}
-
-		// ScoreCh: score for each detected channel
-		score += ScoreCh
-		chScore += ScoreCh
-	}
+	//var notClosedScore = 0
+	//var bufferScore = 0
+	//var chScore = 0
+	//
+	//for _, chRecord := range curRecord.MapChanRecord {
+	//
+	//	// ScoreNewClosed/ScoreNotClosed: score if this is the first time for a closed/notclosed status of existing channel
+	//	if chRecord.NotClosed == true {
+	//		score += ScoreNotClosed
+	//		notClosedScore += ScoreNotClosed
+	//	}
+	//
+	//	// ScoreBuf: ScoreBuffer * BufferPercentage
+	//	if chRecord.PeakBuf > 0 && chRecord.CapBuf != 0 {
+	//		bufferPer := chRecord.PeakBuf / chRecord.CapBuf
+	//		score += ScoreBuf * bufferPer
+	//		bufferScore += ScoreBuf * bufferPer
+	//	}
+	//
+	//	// ScoreCh: score for each detected channel
+	//	score += ScoreCh
+	//	chScore += ScoreCh
+	//}
 
 	log.Printf("Score_Log: For stdout case: %s, ScoreTupleCountLog2: %d", runResult.StdoutFilepath, tupleCountScore)
-	log.Printf("Score_Log: For stdout case: %s, ScoreNotClosed: %d", runResult.StdoutFilepath, notClosedScore)
-	log.Printf("Score_Log: For stdout case: %s, ScoreBuf: %d", runResult.StdoutFilepath, bufferScore)
-	log.Printf("Score_Log: For stdout case: %s, ScoreCh: %d", runResult.StdoutFilepath, chScore)
+	//log.Printf("Score_Log: For stdout case: %s, ScoreNotClosed: %d", runResult.StdoutFilepath, notClosedScore)
+	//log.Printf("Score_Log: For stdout case: %s, ScoreBuf: %d", runResult.StdoutFilepath, bufferScore)
+	//log.Printf("Score_Log: For stdout case: %s, ScoreCh: %d", runResult.StdoutFilepath, chScore)
 
 	return score
 }
