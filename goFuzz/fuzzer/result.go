@@ -39,12 +39,15 @@ func CheckBugFromStdout(content string) (numBug int) {
 // HandleRunResult handle the result for the given runTask
 func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) error {
 	workerID := ctx.Value("workerID").(string)
-
-	log.Printf("[Worker %s][Task %s] handling result", workerID, runTask.id)
+	if runTask.entry != nil {
+		log.Printf("[Worker %s][Task %s][PrevID %s] handling result", workerID, runTask.entry.PrevID, runTask.id)
+	} else {
+		log.Printf("[Worker %s][Task %s][PrevID %s] handling result", workerID, "Empty", runTask.id)
+	}
 	src := runTask.input.Src()
 
 	if result.IsTimeout {
-		log.Printf("[Worker %s][Task %s] found timeout", workerID, runTask.id)
+		log.Printf( "[Worker %s][Task %s] found timeout", workerID, runTask.id)
 		fuzzCtx.RecordTargetTimeoutOnce(src)
 	}
 
@@ -231,6 +234,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 					CurrRecordHashSlice: []string{recordHash},
 					Stage:               RandStage,
 					Idx:                 fuzzCtx.NewFuzzQueryEntryIndex(),
+					PrevID:              runTask.id,
 				}
 				fuzzCtx.EnqueueQueryEntry(newEntry)
 				fuzzerContext.allRecordHashMap[recordHash] = struct{}{}
