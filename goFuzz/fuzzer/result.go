@@ -118,88 +118,115 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 
 	log.Printf("[Worker %s][Task %s] has %d bug(s), %d unique bug(s)", workerID, runTask.id, len(result.BugIDs), numOfBugs)
 
-	//if stage == InitStage {
-	//	// If we are handling the output from InitStage
-	//	// Generate all possible deter_inputs based on the current retInput. Only changing one select per time
-	//	if result.RetInput == nil {
-	//		return fmt.Errorf("input should not be empty")
-	//	}
-	//
-	//	deterInputs := Deterministic_enumerate_input(result.RetInput)
-	//	log.Printf("[Worker %s][Task %s] generated %d inputs for deter stage", workerID, runTask.id, len(deterInputs))
-	//
-	//	for _, deterInput := range deterInputs {
-	//
-	//		// Create multiple entries based on deterministic enumeration
-	//		err := fuzzCtx.EnqueueQueryEntry(&FuzzQueryEntry{
-	//			Stage:     DeterStage,
-	//			CurrInput: deterInput,
-	//			Idx:       fuzzCtx.NewFuzzQueryEntryIndex(),
-	//		})
-	//		if err != nil {
-	//			log.Panicln(err)
-	//		}
-	//	}
-	//} else if stage == DeterStage {
-	//	if retRecord != nil {
-	//		// If we are handling the output from DeterStage
-	//		var log2RetRecord = retRecord
-	//		for key, element := range log2RetRecord.MapTupleRecord{
-	//			log2element := math.Log2(float64(element))
-	//			log2RetRecord.MapTupleRecord[key] = int(log2element)
-	//		}
-	//		recordHash := HashOfRecord(log2RetRecord)
-	//		currentFuzzEntry := runTask.entry
-	//		/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
-	//		recordHashMapLock.Lock()
-	//		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-	//			//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
-	//			currentFuzzEntry.ExecutionCount = 1
-	//			currentFuzzEntry.BestScore = 0
-	//			currentFuzzEntry.CurrInput = runTask.input
-	//			currentFuzzEntry.CurrRecordHashSlice = []string{recordHash}
-	//
-	//			// After running at DeterStage, move to CalibStage to run more times
-	//			currentFuzzEntry.Stage = CalibStage
-	//			fuzzCtx.EnqueueQueryEntry(currentFuzzEntry)
-	//			fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
-	//		}
-	//		recordHashMapLock.Unlock()
-	//	}
-	//
-	//} else if stage == CalibStage {
-	//	if retRecord != nil {
-	//		// If we are handling the output from CalibStage
-	//		var log2RetRecord = retRecord
-	//		for key, element := range log2RetRecord.MapTupleRecord{
-	//			log2element := math.Log2(float64(element))
-	//			log2RetRecord.MapTupleRecord[key] = int(log2element)
-	//		}
-	//		recordHash := HashOfRecord(log2RetRecord)
-	//		currentEntry := runTask.entry
-	//		if !FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) {
-	//			currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
-	//		}
-	//
-	//		recordHashMapLock.Lock()
-	//		if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-	//			fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
-	//		}
-	//		recordHashMapLock.Unlock()
-	//
-	//		curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
-	//		if curScore > currentEntry.BestScore {
-	//			currentEntry.BestScore = curScore
-	//		}
-	//
-	//		// After calibration, we can move stage to RandStage
-	//		currentEntry.Stage = RandStage
-	//		currentEntry.ExecutionCount += 1
-	//		fuzzCtx.EnqueueQueryEntry(currentEntry)
-	//	}
-	//
-	//} else if stage == RandStage {
-	if stage == InitStage || stage == RandStage || stage == DeterStage || stage == CalibStage {
+	// Increase queue entry execution count.
+	runTask.entry.ExecutionCount++
+
+	if stage == InitStage {
+		// If we are handling the output from InitStage
+		// Generate all possible deter_inputs based on the current retInput. Only changing one select per time
+		if result.RetInput == nil {
+			return fmt.Errorf("input should not be empty")
+		}
+
+		deterInputs := Deterministic_enumerate_input(result.RetInput)
+		log.Printf("[Worker %s][Task %s] generated %d inputs for deter stage", workerID, runTask.id, len(deterInputs))
+
+		for _, deterInput := range deterInputs {
+
+			// Create multiple entries based on deterministic enumeration
+			err := fuzzCtx.EnqueueQueryEntry(&FuzzQueryEntry{
+				Stage:     DeterStage,
+				CurrInput: deterInput,
+				Idx:       fuzzCtx.NewFuzzQueryEntryIndex(),
+				PrevID:    runTask.id,
+				IsFavored: false,
+				ExecutionCount: 1,
+				Depth:	   1,
+			})
+			if err != nil {
+				log.Panicln(err)
+			}
+		}
+		/* We only want to apply InitStage once. Next time we see this in the queue, treat it as RandStage */
+		runTask.entry.Stage = RandStage
+
+	} else if stage == DeterStage {
+		if retRecord != nil {
+			// If we are handling the output from DeterStage
+			var log2RetRecord = retRecord
+			for key, element := range log2RetRecord.MapTupleRecord{
+				log2element := math.Log2(float64(element))
+				log2RetRecord.MapTupleRecord[key] = int(log2element)
+			}
+			recordHash := HashOfRecord(log2RetRecord)
+			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
+			recordHashMapLock.Lock()
+			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
+				//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
+				currentFuzzEntry := &FuzzQueryEntry{
+					IsFavored:           false,
+					ExecutionCount:      1,
+					BestScore:           0,
+					CurrInput:           runTask.input,
+					CurrRecordHashSlice: []string{recordHash},
+					Stage:               CalibStage,
+					Idx:                 fuzzCtx.NewFuzzQueryEntryIndex(),
+					PrevID:              runTask.id,
+					Depth:               runTask.entry.Depth + 1,
+				}
+
+				// After running at DeterStage, move to CalibStage to run more times
+				fuzzCtx.EnqueueQueryEntry(currentFuzzEntry)
+				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
+			}
+			recordHashMapLock.Unlock()
+		}
+
+		/* We only want to apply DeterStage once. Next time we see this in the queue, treat it as RandStage */
+		runTask.entry.Stage = RandStage
+
+	} else if stage == CalibStage {
+		if retRecord != nil {
+			// If we are handling the output from CalibStage
+			var log2RetRecord = retRecord
+			for key, element := range log2RetRecord.MapTupleRecord{
+				log2element := math.Log2(float64(element))
+				log2RetRecord.MapTupleRecord[key] = int(log2element)
+			}
+			recordHash := HashOfRecord(log2RetRecord)
+			currentEntry := &FuzzQueryEntry{
+				IsFavored:           false,
+				ExecutionCount:      1,
+				CurrInput:           runTask.input,
+				Stage:               RandStage,
+				Idx:                 fuzzCtx.NewFuzzQueryEntryIndex(),
+				PrevID:              runTask.id,
+				Depth:               runTask.entry.Depth + 1,
+			}
+			if !FindRecordHashInSlice(recordHash, currentEntry.CurrRecordHashSlice) {
+				currentEntry.CurrRecordHashSlice = append(currentEntry.CurrRecordHashSlice, recordHash)
+			}
+
+			recordHashMapLock.Lock()
+			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
+				fuzzCtx.allRecordHashMap[recordHash] = struct{}{}
+			}
+			recordHashMapLock.Unlock()
+
+			curScore := ComputeScore(fuzzCtx.mainRecord, retRecord, result)
+			if curScore > currentEntry.BestScore {
+				currentEntry.BestScore = curScore
+			}
+
+			// After calibration, we can move stage to RandStage
+			fuzzCtx.EnqueueQueryEntry(currentEntry)
+		}
+
+		/* We only want to apply CalibStage once. Next time we see this in the queue, treat it as RandStage */
+		runTask.entry.Stage = RandStage
+
+	} else if stage == RandStage {
+	//if stage == InitStage || stage == RandStage || stage == DeterStage || stage == CalibStage {
 		var input *Input
 		// If we are handling the output from RandStage
 		if stage == InitStage && result.RetInput == nil {
@@ -235,6 +262,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 					Stage:               RandStage,
 					Idx:                 fuzzCtx.NewFuzzQueryEntryIndex(),
 					PrevID:              runTask.id,
+					Depth:               runTask.entry.Depth + 1,
 				}
 				fuzzCtx.EnqueueQueryEntry(newEntry)
 				fuzzerContext.allRecordHashMap[recordHash] = struct{}{}

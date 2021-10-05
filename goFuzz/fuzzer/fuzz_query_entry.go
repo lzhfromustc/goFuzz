@@ -24,6 +24,7 @@ type FuzzQueryEntry struct {
 	CurrInput           *Input
 	CurrRecordHashSlice []string
 	PrevID				string
+	Depth				int
 }
 
 func (e *FuzzQueryEntry) String() string {
