@@ -39,10 +39,10 @@ func CheckBugFromStdout(content string) (numBug int) {
 // HandleRunResult handle the result for the given runTask
 func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, fuzzCtx *FuzzContext) error {
 	workerID := ctx.Value("workerID").(string)
-	if runTask.entry != nil {
-		log.Printf("[Worker %s][Task %s][PrevID %s] handling result", workerID, runTask.entry.PrevID, runTask.id)
+	if runTask.entry != nil && runTask.entry.PrevID != "" {
+		log.Printf("[Worker %s][Task %s][PrevID %s] handling result", workerID, runTask.id, runTask.entry.PrevID)
 	} else {
-		log.Printf("[Worker %s][Task %s][PrevID %s] handling result", workerID, "Empty", runTask.id)
+		log.Printf("[Worker %s][Task %s][PrevID %s] handling result", workerID, runTask.id, runTask.entry.PrevID)
 	}
 	src := runTask.input.Src()
 
