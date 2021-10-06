@@ -162,7 +162,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
 			recordHashMapLock.Lock()
 			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-				//curScore := ComputeScore(fuzzCtx.mainRecord, retRecord)
+				ComputeScore(fuzzCtx.mainRecord, retRecord, result)
 				currentFuzzEntry := &FuzzQueryEntry{
 					IsFavored:           false,
 					ExecutionCount:      1,
@@ -194,6 +194,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				log2RetRecord.MapTupleRecord[key] = int(log2element)
 			}
 			recordHash := HashOfRecord(log2RetRecord)
+			ComputeScore(fuzzCtx.mainRecord, retRecord, result)
 			currentEntry := &FuzzQueryEntry{
 				IsFavored:           false,
 				ExecutionCount:      1,
