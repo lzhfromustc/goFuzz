@@ -44,10 +44,9 @@ func RandomMutateInput(input *Input) (*Input, error) {
 	if reInput.SelectDelayMS > 5000*TimeDivide {
 		reInput.SelectDelayMS = 500 * TimeDivide
 	}
-	mutateMethod := Get_Random_Int_With_Max(2)
+	mutateMethod := Get_Random_Int_With_Max(10)
 
-	switch mutateMethod {
-	case 0:
+	if mutateMethod < 8 {
 		/* Mutate one select per time */
 		mutateWhichSelect := Get_Random_Int_With_Max(numOfSelects)
 		numOfSelectCases := reInput.VecSelect[mutateWhichSelect].IntNumCase
@@ -57,7 +56,7 @@ func RandomMutateInput(input *Input) (*Input, error) {
 		mutateToWhatValue := Get_Random_Int_With_Max(numOfSelectCases)
 
 		reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
-	case 1:
+	} else {
 		/* Mutate random number of select. */
 		mutateChance := Get_Random_Int_With_Max(numOfSelects)
 		for mutateIdx := 0; mutateIdx < mutateChance; mutateIdx++ {
@@ -70,10 +69,8 @@ func RandomMutateInput(input *Input) (*Input, error) {
 
 			reInput.VecSelect[mutateWhichSelect].IntPrioCase = mutateToWhatValue
 		}
-
-	default:
-		return nil, fmt.Errorf("cannot randomly mutate an input with non-exist mutate method %d", mutateMethod)
 	}
+
 	return reInput, nil
 }
 
