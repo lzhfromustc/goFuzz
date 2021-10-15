@@ -19,46 +19,79 @@ const (
 //		ScoreTupleCountLog2: For every detected tuple, scores = log2(tuple_num).
 //		ScoreChNum: For every detected channel, we add score = 10
 //		ScorePeakBuffer: The score for each peak buffer would be: score = 10 * (PeakBuffer / BufferSize).
-func ComputeScore(mainRecord, curRecord *Record, runResult *RunResult) int {
+func ComputeScore(mainRecord *Record, curRecord *Record, runResult *RunResult) int {
 	score := 0
+	var curTupleCount = 0
+	var preTupleCount = 0
+	var curTupleNum = 0
+	var preTupleNum = 0
+
 	var tupleCountScore = 0
+	var tupleNumScore = 0
+
 	for _, count := range curRecord.MapTupleRecord {
 		countLog := math.Log2(float64(count))
 		if int(countLog) != -9223372036854775808 {
-			score += int(countLog) * ScoreTupleCountLog2
-			tupleCountScore += int(countLog) * ScoreTupleCountLog2
-			//log.Printf("Score_Log: ScoreTupleCountLog2: %d", int(countLog))
+			curTupleCount += int(countLog)
+			curTupleNum += 1
 		}
 	}
 
-	var notClosedScore = 0
-	var bufferScore = 0
-	var chScore = 0
-
-	for _, chRecord := range curRecord.MapChanRecord {
-
-		// ScoreNewClosed/ScoreNotClosed: score if this is the first time for a closed/notclosed status of existing channel
-		if chRecord.NotClosed == true {
-			score += ScoreNotClosed
-			notClosedScore += ScoreNotClosed
+	// If the previous main record is not nil. We can calculate the current record based on
+	// tuple differences. Otherwise, use score = 0
+	if mainRecord != nil {
+		for _, count := range mainRecord.MapTupleRecord {
+			countLog := math.Log2(float64(count))
+			if int(countLog) != -9223372036854775808 {
+				preTupleCount += int(countLog)
+				preTupleNum += 1
+			}
 		}
 
-		// ScoreBuf: ScoreBuffer * BufferPercentage
-		if chRecord.PeakBuf > 0 && chRecord.CapBuf != 0 {
-			bufferPer := chRecord.PeakBuf / chRecord.CapBuf
-			score += ScoreBuf * bufferPer
-			bufferScore += ScoreBuf * bufferPer
+		tupleCountScore = curTupleCount - preTupleCount
+		if tupleCountScore < 0 {
+			tupleCountScore = - tupleCountScore
 		}
-
-		// ScoreCh: score for each detected channel
-		score += ScoreCh
-		chScore += ScoreCh
+		tupleNumScore = curTupleNum - preTupleNum
+		if tupleNumScore < 0 {
+			tupleNumScore = - tupleNumScore
+		}
 	}
+
+	// Rewrite mainRecord, use it to save the current Record for the next run.
+	mainRecord = curRecord
+
+	score = tupleCountScore + tupleNumScore
+
+	//var notClosedScore = 0
+	//var bufferScore = 0
+	//var chScore = 0
+	//
+	//for _, chRecord := range curRecord.MapChanRecord {
+	//
+	//	// ScoreNewClosed/ScoreNotClosed: score if this is the first time for a closed/notclosed status of existing channel
+	//	if chRecord.NotClosed == true {
+	//		score += ScoreNotClosed
+	//		notClosedScore += ScoreNotClosed
+	//	}
+	//
+	//	// ScoreBuf: ScoreBuffer * BufferPercentage
+	//	if chRecord.PeakBuf > 0 && chRecord.CapBuf != 0 {
+	//		bufferPer := chRecord.PeakBuf / chRecord.CapBuf
+	//		score += ScoreBuf * bufferPer
+	//		bufferScore += ScoreBuf * bufferPer
+	//	}
+	//
+	//	// ScoreCh: score for each detected channel
+	//	score += ScoreCh
+	//	chScore += ScoreCh
+	//}
 
 	log.Printf("Score_Log: For stdout case: %s, ScoreTupleCountLog2: %d", runResult.StdoutFilepath, tupleCountScore)
-	log.Printf("Score_Log: For stdout case: %s, ScoreNotClosed: %d", runResult.StdoutFilepath, notClosedScore)
-	log.Printf("Score_Log: For stdout case: %s, ScoreBuf: %d", runResult.StdoutFilepath, bufferScore)
-	log.Printf("Score_Log: For stdout case: %s, ScoreCh: %d", runResult.StdoutFilepath, chScore)
+	log.Printf("Score_Log: For stdout case: %s, ScoreTupleNum: %d", runResult.StdoutFilepath, tupleNumScore)
+	//log.Printf("Score_Log: For stdout case: %s, ScoreNotClosed: %d", runResult.StdoutFilepath, notClosedScore)
+	//log.Printf("Score_Log: For stdout case: %s, ScoreBuf: %d", runResult.StdoutFilepath, bufferScore)
+	//log.Printf("Score_Log: For stdout case: %s, ScoreCh: %d", runResult.StdoutFilepath, chScore)
 
 	return score
 }
