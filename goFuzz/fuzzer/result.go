@@ -155,8 +155,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			// If we are handling the output from DeterStage
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
-				log2element := math.Log2(float64(element))
-				log2RetRecord.MapTupleRecord[key] = int(log2element)
+				log2element := int(math.Log2(float64(element)))
+				if log2element < 0 {
+					log2RetRecord.MapTupleRecord[key] = log2element
+				} else {
+					log2RetRecord.MapTupleRecord[key] = 0
+				}
 			}
 			recordHash := HashOfRecord(log2RetRecord)
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
@@ -190,8 +194,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			// If we are handling the output from CalibStage
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
-				log2element := math.Log2(float64(element))
-				log2RetRecord.MapTupleRecord[key] = int(log2element)
+				log2element := int(math.Log2(float64(element)))
+				if log2element < 0 {
+					log2RetRecord.MapTupleRecord[key] = log2element
+				} else {
+					log2RetRecord.MapTupleRecord[key] = 0
+				}
 			}
 			recordHash := HashOfRecord(log2RetRecord)
 			ComputeScore(fuzzCtx.mainRecord, retRecord, result)
@@ -243,9 +251,9 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 		if retRecord != nil {
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
-				log2element := math.Log2(float64(element))
-				if int(log2element) != -9223372036854775808 {
-					log2RetRecord.MapTupleRecord[key] = int(log2element)
+				log2element := int(math.Log2(float64(element)))
+				if log2element < 0 {
+					log2RetRecord.MapTupleRecord[key] = log2element
 				} else {
 					log2RetRecord.MapTupleRecord[key] = 0
 				}
