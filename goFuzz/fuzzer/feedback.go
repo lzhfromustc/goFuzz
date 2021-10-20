@@ -32,6 +32,7 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 
 	for _, count := range runResult.RetRecord.MapTupleRecord {
 		countLog := math.Log2(float64(count))
+		log.Printf("Get countLog: " + strconv.Itoa(int(countLog)))
 		if int(countLog) != -9223372036854775808 {
 			curTupleCount += int(countLog)
 			curTupleNum += 1
@@ -40,6 +41,8 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 	}
 
 	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum))
+
+	log.Printf("In computeScore, getting mainRecord size: " + strconv.Itoa(len(mainRecord)))
 
 	curMainRecord := mainRecord[prevID]
 

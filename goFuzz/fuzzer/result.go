@@ -128,6 +128,8 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			return fmt.Errorf("input should not be empty")
 		}
 
+		ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, "")
+
 		deterInputs := Deterministic_enumerate_input(result.RetInput)
 		log.Printf("[Worker %s][Task %s] generated %d inputs for deter stage", workerID, runTask.id, len(deterInputs))
 
