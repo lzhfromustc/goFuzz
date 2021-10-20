@@ -21,6 +21,11 @@ const (
 func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *RunResult, id string, prevID string) int {
 	score := 0
 	var tupleCountScore = 0
+
+	if curRecord == nil {
+		return 0;
+	}
+
 	for _, count := range curRecord.MapTupleRecord {
 		score += int(count) * ScoreTupleCountLog2
 		tupleCountScore += int(count) * ScoreTupleCountLog2
