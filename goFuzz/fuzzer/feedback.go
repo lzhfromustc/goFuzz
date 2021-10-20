@@ -30,12 +30,13 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 	var tupleCountScore = 0
 	var tupleNumScore = 0
 
-	for _, count := range curRecord.MapTupleRecord {
+	for _, count := range runResult.RetRecord.MapTupleRecord {
 		countLog := math.Log2(float64(count))
 		if int(countLog) != -9223372036854775808 {
 			curTupleCount += int(countLog)
 			curTupleNum += 1
 		}
+		log.Printf("Log: Get tuples! ")
 	}
 
 	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum))
