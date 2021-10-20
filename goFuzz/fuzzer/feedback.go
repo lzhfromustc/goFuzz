@@ -3,6 +3,7 @@ package fuzzer
 import (
 	"log"
 	"math"
+	"strconv"
 )
 
 const (
@@ -36,6 +37,8 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 			curTupleNum += 1
 		}
 	}
+
+	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum))
 
 	curMainRecord := mainRecord[prevID]
 
