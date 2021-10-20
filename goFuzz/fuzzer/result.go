@@ -128,6 +128,16 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			return fmt.Errorf("input should not be empty")
 		}
 
+		var log2RetRecord = retRecord
+		for key, element := range log2RetRecord.MapTupleRecord{
+			log2element := int(math.Log2(float64(element)))
+			if log2element > 0 {
+				log2RetRecord.MapTupleRecord[key] = log2element
+			} else {
+				log2RetRecord.MapTupleRecord[key] = 0
+			}
+		}
+
 		ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, "")
 
 		deterInputs := Deterministic_enumerate_input(result.RetInput)
@@ -158,7 +168,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
 				log2element := int(math.Log2(float64(element)))
-				if log2element < 0 {
+				if log2element > 0 {
 					log2RetRecord.MapTupleRecord[key] = log2element
 				} else {
 					log2RetRecord.MapTupleRecord[key] = 0
@@ -201,7 +211,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
 				log2element := int(math.Log2(float64(element)))
-				if log2element < 0 {
+				if log2element > 0 {
 					log2RetRecord.MapTupleRecord[key] = log2element
 				} else {
 					log2RetRecord.MapTupleRecord[key] = 0
@@ -262,7 +272,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			var log2RetRecord = retRecord
 			for key, element := range log2RetRecord.MapTupleRecord{
 				log2element := int(math.Log2(float64(element)))
-				if log2element < 0 {
+				if log2element > 0 {
 					log2RetRecord.MapTupleRecord[key] = log2element
 				} else {
 					log2RetRecord.MapTupleRecord[key] = 0

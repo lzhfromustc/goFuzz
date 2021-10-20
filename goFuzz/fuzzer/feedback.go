@@ -31,14 +31,9 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 	var tupleNumScore = 0
 
 	for _, count := range runResult.RetRecord.MapTupleRecord {
-		log.Printf("Before log function, tuple count is: " + strconv.Itoa(count))
-		countLog := math.Log2(float64(count))
-		log.Printf("Get countLog: " + strconv.FormatFloat(countLog, 'E', -1, 64) + " int: "  + strconv.Itoa(int(countLog)))
-		if int(countLog) != -9223372036854775808 {
-			curTupleCount += int(countLog)
-			curTupleNum += 1
-		}
-		log.Printf("Log: Get tuples! ")
+		curTupleCount += count
+		curTupleNum += 1
+		log.Printf("Log: Get tuples count: " + strconv.Itoa(count))
 	}
 
 	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum))
