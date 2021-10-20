@@ -3,7 +3,6 @@ package fuzzer
 import (
 	"log"
 	"math"
-	"strconv"
 )
 
 const (
@@ -33,12 +32,10 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 	for _, count := range runResult.RetRecord.MapTupleRecord {
 		curTupleCount += count
 		curTupleNum += 1
-		log.Printf("Log: Get tuples count: " + strconv.Itoa(count))
+		//log.Printf("Log: Get tuples count: " + strconv.Itoa(count))
 	}
 
-	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum))
-
-	log.Printf("In computeScore, getting mainRecord size: " + strconv.Itoa(len(mainRecord)))
+	//log.Printf("In computeScore, getting mainRecord size: " + strconv.Itoa(len(mainRecord)))
 
 	curMainRecord := mainRecord[prevID]
 
@@ -65,7 +62,7 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 		log.Printf("MainRecord is NULL. ")
 	}
 
-	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum) + " preTupleCount: " + strconv.Itoa(preTupleCount) + " preTupleNum: " + strconv.Itoa(preTupleNum))
+	//log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum) + " preTupleCount: " + strconv.Itoa(preTupleCount) + " preTupleNum: " + strconv.Itoa(preTupleNum))
 
 	// Write curRecord, use it to save the current Record for the next run.
 	mainRecord[id] = curRecord
