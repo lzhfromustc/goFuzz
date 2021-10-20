@@ -129,16 +129,17 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 		}
 
 		var log2RetRecord = retRecord
-		for key, element := range log2RetRecord.MapTupleRecord{
-			log2element := int(math.Log2(float64(element)))
-			if log2element > 0 {
-				log2RetRecord.MapTupleRecord[key] = log2element
-			} else {
-				log2RetRecord.MapTupleRecord[key] = 0
+		if log2RetRecord != nil {
+			for key, element := range log2RetRecord.MapTupleRecord {
+				log2element := int(math.Log2(float64(element)))
+				if log2element > 0 {
+					log2RetRecord.MapTupleRecord[key] = log2element
+				} else {
+					log2RetRecord.MapTupleRecord[key] = 0
+				}
 			}
+			ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, "")
 		}
-
-		ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, "")
 
 		deterInputs := Deterministic_enumerate_input(result.RetInput)
 		log.Printf("[Worker %s][Task %s] generated %d inputs for deter stage", workerID, runTask.id, len(deterInputs))
