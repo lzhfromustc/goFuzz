@@ -65,6 +65,8 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 		log.Printf("MainRecord is NULL. ")
 	}
 
+	log.Printf("In current " + id + ", prevID:" + prevID + " curTupleCount: " + strconv.Itoa(curTupleCount) + "curTupleNum: " + strconv.Itoa(curTupleNum) + " preTupleCount: " + strconv.Itoa(preTupleCount) + " preTupleNum: " + strconv.Itoa(preTupleNum))
+
 	// Write curRecord, use it to save the current Record for the next run.
 	mainRecord[id] = curRecord
 
