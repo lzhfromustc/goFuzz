@@ -33,7 +33,7 @@ type FuzzContext struct {
 	runTaskCh        chan *RunTask // task for worker to run
 	fuzzingQueue     *list.List
 	fqLock           sync.RWMutex // lock for fuzzingQueue
-	mainRecord       *Record
+	mainRecord       map[string]*Record
 	allRecordHashMap map[string]struct{}
 
 	// A map from bug ID to stdout file contains that bug
@@ -60,7 +60,7 @@ func NewFuzzContext() *FuzzContext {
 	return &FuzzContext{
 		runTaskCh:        make(chan *RunTask),
 		fuzzingQueue:     list.New(),
-		mainRecord:       EmptyRecord(),
+		mainRecord:       make(map[string]*Record),
 		allRecordHashMap: make(map[string]struct{}),
 		allBugID2Fp:      make(map[string]*BugMetrics),
 		targetStages:     make(map[string]*TargetMetrics),

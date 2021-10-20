@@ -166,7 +166,11 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			/* See whether the current deter_input trigger a new record. If yes, save the record hash and the input to the queue. */
 			recordHashMapLock.Lock()
 			if _, exist := fuzzCtx.allRecordHashMap[recordHash]; !exist {
-				ComputeScore(fuzzCtx.mainRecord, retRecord, result)
+				if runTask.entry != nil && runTask.entry.PrevID != "" {
+					ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, runTask.entry.PrevID)
+				} else {
+					log.Printf("Error, cannot find previous ID in Deter. ")
+				}
 				currentFuzzEntry := &FuzzQueryEntry{
 					IsFavored:           false,
 					ExecutionCount:      1,
@@ -202,7 +206,6 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				}
 			}
 			recordHash := HashOfRecord(log2RetRecord)
-			ComputeScore(fuzzCtx.mainRecord, retRecord, result)
 			currentEntry := &FuzzQueryEntry{
 				IsFavored:           false,
 				ExecutionCount:      1,
@@ -222,7 +225,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			}
 			recordHashMapLock.Unlock()
 
-			curScore := ComputeScore(fuzzCtx.mainRecord, retRecord, result)
+			curScore := 0
+			if runTask.entry != nil && runTask.entry.PrevID != "" {
+				curScore = ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, runTask.entry.PrevID)
+			} else {
+				log.Printf("Error, cannot find previous ID in Calib. ")
+			}
 			if curScore > currentEntry.BestScore {
 				currentEntry.BestScore = curScore
 			}
@@ -261,7 +269,12 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			recordHash := HashOfRecord(log2RetRecord)
 			recordHashMapLock.Lock()
 			if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
-				curScore := ComputeScore(fuzzerContext.mainRecord, retRecord, result)
+				curScore := 0
+				if runTask.entry != nil && runTask.entry.PrevID != "" {
+					ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, runTask.entry.PrevID)
+				} else {
+					log.Printf("Error, cannot find previous ID in Rand. ")
+				}
 				newEntry := &FuzzQueryEntry{
 					IsFavored:           false,
 					ExecutionCount:      1,

@@ -19,7 +19,7 @@ const (
 //		ScoreTupleCountLog2: For every detected tuple, scores = log2(tuple_num).
 //		ScoreChNum: For every detected channel, we add score = 10
 //		ScorePeakBuffer: The score for each peak buffer would be: score = 10 * (PeakBuffer / BufferSize).
-func ComputeScore(mainRecord *Record, curRecord *Record, runResult *RunResult) int {
+func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *RunResult, id string, prevID string) int {
 	score := 0
 	var curTupleCount = 0
 	var preTupleCount = 0
@@ -37,10 +37,12 @@ func ComputeScore(mainRecord *Record, curRecord *Record, runResult *RunResult) i
 		}
 	}
 
+	curMainRecord := mainRecord[prevID]
+
 	// If the previous main record is not nil. We can calculate the current record based on
 	// tuple differences. Otherwise, use score = 0
-	if mainRecord != nil {
-		for _, count := range mainRecord.MapTupleRecord {
+	if curMainRecord != nil {
+		for _, count := range curMainRecord.MapTupleRecord {
 			countLog := math.Log2(float64(count))
 			if int(countLog) != -9223372036854775808 {
 				preTupleCount += int(countLog)
@@ -56,10 +58,12 @@ func ComputeScore(mainRecord *Record, curRecord *Record, runResult *RunResult) i
 		if tupleNumScore < 0 {
 			tupleNumScore = - tupleNumScore
 		}
+	} else {
+		log.Printf("MainRecord is NULL. ")
 	}
 
-	// Rewrite mainRecord, use it to save the current Record for the next run.
-	mainRecord = curRecord
+	// Write curRecord, use it to save the current Record for the next run.
+	mainRecord[id] = curRecord
 
 	score = tupleCountScore + tupleNumScore
 
