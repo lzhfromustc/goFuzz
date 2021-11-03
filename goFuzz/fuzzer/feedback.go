@@ -37,7 +37,7 @@ func ComputeScore(mainRecord map[string]*Record, curRecord *Record, runResult *R
 	for _, count := range curRecord.MapTupleRecord {
 		score += int(count) * ScoreTupleCountLog2
 		tupleCountScore += int(count) * ScoreTupleCountLog2
-		tupleCount += int(tupleCount)
+		tupleCount += int(count)
 		tupleNum += 1
 	}
 
