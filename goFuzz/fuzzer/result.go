@@ -281,7 +281,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 			}
 			recordHash := HashOfRecord(log2RetRecord)
 			recordHashMapLock.Lock()
-			if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
+			//if _, exist := fuzzerContext.allRecordHashMap[recordHash]; !exist { // Found a new input with unique record!!!
 				curScore := 0
 				if runTask.entry != nil && runTask.entry.PrevID != "" {
 					ComputeScore(fuzzCtx.mainRecord, retRecord, result, runTask.id, runTask.entry.PrevID)
@@ -301,7 +301,7 @@ func HandleRunResult(ctx context.Context, runTask *RunTask, result *RunResult, f
 				}
 				fuzzCtx.EnqueueQueryEntry(newEntry)
 				fuzzerContext.allRecordHashMap[recordHash] = struct{}{}
-			}
+			//}
 			recordHashMapLock.Unlock()
 		}
 	} else {
