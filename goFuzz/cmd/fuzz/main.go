@@ -43,7 +43,7 @@ func parseFlag() {
 	fuzzer.TargetTestPkg = *pTargetTestPkg
 	fuzzer.TargetTestBin = *pTargetTestBin
 	fuzzer.TimeDivide = *pTimeDivide
-	fuzzer.SkipIntegration  = *pSkipIntegration
+	fuzzer.SkipIntegration = *pSkipIntegration
 	testBinsDir = *pTestBinsDir
 
 	if fuzzer.OutputDir == "" {
@@ -95,7 +95,8 @@ func main() {
 	var testsToFuzz []*fuzzer.GoTest
 	if fuzzer.TargetTestFunc != "" {
 		testsToFuzz = append(testsToFuzz, &fuzzer.GoTest{
-			Func: fuzzer.TargetTestFunc,
+			Func:    fuzzer.TargetTestFunc,
+			Package: fuzzer.TargetTestPkg,
 		})
 	} else if testBinsDir != "" {
 		tests, err := fuzzer.ListGoTestsFromFolderContainsTestBins(testBinsDir)

@@ -137,12 +137,11 @@ func init() {
 
 var BoolDebug = false
 
-
 var MuBlockEntry mutex
 var MapBlockEntry map[*BlockEntry]struct{} = make(map[*BlockEntry]struct{})
 
 type BlockEntry struct {
-	VecPrim []PrimInfo
+	VecPrim       []PrimInfo
 	StrOpPosition string
 	CurrentGoInfo *GoInfo
 }
@@ -204,7 +203,17 @@ func Monitor(prim PrimInfo) {
 
 var MuWithdraw mutex
 var StrWithdraw string
+var DumpedAllStack bool = false
 
+func DumpAllStack() {
+	if !DumpedAllStack {
+		const size = 64 << 10
+		buf := make([]byte, size)
+		buf = buf[:Stack(buf, true)]
+		print("---Stack:\n", string(buf), "\n")
+		DumpedAllStack = true
+	}
+}
 func CheckBlockEntry() (strReturn string, foundBug bool) {
 	strReturn = ""
 	foundBug = false

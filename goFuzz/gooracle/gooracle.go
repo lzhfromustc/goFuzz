@@ -297,7 +297,11 @@ func CheckBugLate() {
 
 	w.WriteString(str)
 	w.WriteString(runtime.StrWithdraw)
-
+	w.WriteString("---Stack:\n")
+	const size = 64 << 10
+	buf := make([]byte, size)
+	buf = buf[:runtime.Stack(buf, true)]
+	w.Write(buf)
 	// print record
 	// create output file using runtime's global variable
 	CreateRecordFile()
@@ -403,6 +407,8 @@ func AfterRunFuzz(entry *OracleEntry) {
 			println(err)
 		}
 	}
+
+	runtime.DumpAllStack()
 }
 
 // Only enables oracle
