@@ -23,7 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		aufs-tools \
 		vim-common \
 	&& rm -rf /var/lib/apt/lists/*
-WORKDIR /playground
+WORKDIR /benchmark
+COPY benchmark/run.py ./run.py
 
-CMD [ "bash" ]
+ENTRYPOINT [ "/benchmark/run.py" ]
 

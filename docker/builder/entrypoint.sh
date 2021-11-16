@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 OUTPUT_DIR=/builder
 
 # build native part

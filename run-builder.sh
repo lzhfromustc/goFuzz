@@ -2,8 +2,8 @@
 
 docker build -f docker/builder/Dockerfile -t gfuzzbuilder:latest .
 
-CWD=$(pwd)
+
 docker run --rm -it \
--v "${CWD}/tmp/builder":/builder \
--v "${CWD}/tmp/pkgmod":/go/pkg/mod \
+-v $(pwd)/tmp/builder:/builder \
+-v $(pwd)/tmp/pkgmod:/go/pkg/mod \
 gfuzzbuilder:latest
