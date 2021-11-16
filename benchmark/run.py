@@ -114,7 +114,7 @@ def run_benchmark_with_tests(tests: List[BinTest], mode:str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('testsuite', choices=["simple", "custom"], required=True)
+    parser.add_argument('testsuite', choices=["simple", "custom"])
     parser.add_argument('--mode', choices=["native", "inst", "parallel-native"], required=True)
     parser.add_argument('--dir', type=str)
     parser.add_argument('--bins',  nargs='*')

@@ -183,7 +183,10 @@ func CheckBugRun(entry *OracleEntry) {
 	defer entry.WgCheckBug.Done()
 
 	boolBreakLoop := false
+	fmt.Println("Gooracle CheckBugRun")
 	for {
+		t1 := time.Now()
+
 		switch DelayCheckMod {
 		case DelayCheckModPerTime:
 			select {
@@ -243,6 +246,10 @@ func CheckBugRun(entry *OracleEntry) {
 		for _, CS := range enqueueAgain {
 			runtime.EnqueueCheckEntry(CS)
 		}
+
+		t2 := time.Now()
+		diff := t2.Sub(t1)
+		fmt.Println("Gooracle Loop:", diff)
 		if boolBreakLoop {
 			break
 		}

@@ -12,4 +12,5 @@
 docker build -f benchmark.Dockerfile -t gfuzzbenchmark:latest .
 docker run -it --rm -v $(pwd)/playground:/playground \
 -v $(pwd)/benchmark:/benchmark \
+-v "${CWD}/tmp/pkgmod":/go/pkg/mod \
 gfuzzbenchmark:latest 
